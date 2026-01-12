@@ -55,8 +55,21 @@ export type UserProfileUpdate = Partial<{
   avatar_url: string;
 }>;
 
-export async function listUsers(): Promise<UserRow[]> {
-  const res = await apiFetch("/api/users");
+export async function listUsers(opts?: {
+  search?: string;
+  roles?: Array<UserRow["role"]>;
+  activeOnly?: boolean;
+  limit?: number;
+}): Promise<UserRow[]> {
+  const params = new URLSearchParams();
+
+  if (opts?.search && opts.search.trim()) params.set("search", opts.search.trim());
+  if (opts?.activeOnly) params.set("active", "1");
+  if (typeof opts?.limit === "number") params.set("limit", String(opts.limit));
+  if (opts?.roles && opts.roles.length > 0) params.set("roles", opts.roles.join(","));
+
+  const qs = params.toString();
+  const res = await apiFetch(`/api/users${qs ? `?${qs}` : ""}`);
   return res.json();
 }
 

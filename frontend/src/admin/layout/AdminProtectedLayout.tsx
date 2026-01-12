@@ -38,7 +38,7 @@ function mapHeaderNotification(n: NotificationRow): HeaderNotification {
     message: n.body,
     when: n.created_at,
     timeLabel: formatWhen(n.created_at),
-    href: "/admin/notifications",
+    href: "/notifications",
     read: Boolean(n.read_at),
     unread: !n.read_at,
   };
@@ -147,7 +147,7 @@ export default function AdminProtectedLayout() {
           role: user.role,
         }}
         headerNotifications={headerNotifications}
-        headerNotificationsHref="/admin/notifications"
+        headerNotificationsHref="/notifications"
         onHeaderNotificationRead={(notificationId) => {
           const id = Number(notificationId);
           if (!Number.isFinite(id) || id <= 0) return;

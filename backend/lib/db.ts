@@ -89,11 +89,19 @@ async function ensureNotificationsTables(database: Database) {
       title TEXT NOT NULL,
       body TEXT NOT NULL,
       type TEXT NOT NULL DEFAULT 'info',
+      level TEXT NOT NULL DEFAULT 'normal',
       created_by INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL
     );
   `);
+
+  // If the table existed before we introduced notifications.level, add it.
+  const cols = (await database.all("PRAGMA table_info(notifications)")) as Array<{ name: string }>;
+  const existing = new Set(cols.map((c) => String(c.name)));
+  if (!existing.has("level")) {
+    await database.exec("ALTER TABLE notifications ADD COLUMN level TEXT NOT NULL DEFAULT 'normal';");
+  }
 
   await database.exec(`
     CREATE TABLE IF NOT EXISTS notification_recipients (

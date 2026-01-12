@@ -26,7 +26,13 @@ export async function GET(req: Request) {
         n.id as id,
         n.title as title,
         n.body as body,
-        n.type as type,
+        COALESCE(n.level, CASE
+          WHEN n.type = 'error' THEN 'critical'
+          WHEN n.type = 'warning' THEN 'high'
+          WHEN n.type = 'success' THEN 'normal'
+          WHEN n.type = 'info' THEN 'normal'
+          ELSE 'normal'
+        END) as level,
         n.created_at as created_at,
         n.created_by as created_by,
         cu.email as created_by_email,

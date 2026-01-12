@@ -1,12 +1,12 @@
 import { apiFetch } from "./apiClient";
 
-export type NotificationType = "info" | "success" | "warning" | "error";
+export type NotificationLevel = "low" | "normal" | "high" | "critical";
 
 export type NotificationRow = {
   id: number;
   title: string;
   body: string;
-  type: NotificationType;
+  level: NotificationLevel;
   created_at: string;
   created_by: number | null;
   created_by_email: string | null;
@@ -43,7 +43,7 @@ export type AdminNotificationListItem = {
   id: number;
   title: string;
   body: string;
-  type: NotificationType;
+  level: NotificationLevel;
   created_at: string;
   created_by: number | null;
   created_by_email: string | null;
@@ -64,8 +64,9 @@ export async function listAdminNotifications(opts?: { limit?: number; offset?: n
 export async function createAdminNotification(payload: {
   title: string;
   body: string;
-  type?: NotificationType;
+  level?: NotificationLevel;
   all_users?: boolean;
+  roles?: Array<"admin" | "editor" | "viewer">;
   user_ids?: number[];
 }) {
   const res = await apiFetch("/api/admin/notifications", {

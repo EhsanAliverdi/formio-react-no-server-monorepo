@@ -6,7 +6,7 @@ import {
   getMyNotifications,
   markNotificationRead,
   type NotificationRow,
-  type NotificationType,
+  type NotificationLevel,
 } from "../../shared/services/notificationsService";
 import Button from "../../template/tailAdmin/components/ui/button/Button";
 import Badge from "../../template/tailAdmin/components/ui/badge/Badge";
@@ -17,11 +17,11 @@ function formatWhen(value: string) {
   return new Date(t).toLocaleString();
 }
 
-function badgeColor(type: NotificationType): "info" | "success" | "warning" | "error" {
-  if (type === "success") return "success";
-  if (type === "warning") return "warning";
-  if (type === "error") return "error";
-  return "info";
+function badgeColor(level: NotificationLevel): "info" | "success" | "warning" | "error" {
+  if (level === "critical") return "error";
+  if (level === "high") return "warning";
+  if (level === "low") return "info";
+  return "success";
 }
 
 export default function NotificationsPage() {
@@ -133,8 +133,8 @@ export default function NotificationsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge color={badgeColor(n.type)} variant={unread ? "solid" : "light"} size="sm">
-                          {n.type}
+                        <Badge color={badgeColor(n.level)} variant={unread ? "solid" : "light"} size="sm">
+                          {n.level}
                         </Badge>
                         <div className="font-medium text-gray-800 dark:text-white/90 truncate">{n.title}</div>
                       </div>

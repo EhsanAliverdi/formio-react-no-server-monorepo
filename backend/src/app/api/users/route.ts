@@ -11,12 +11,64 @@ export async function GET(req: Request) {
   const auth = await requireAdmin(req);
   if (!auth.ok) return auth.res;
 
+  const url = new URL(req.url);
+  const search = (url.searchParams.get("search") ?? "").trim();
+  const activeOnly = (url.searchParams.get("active") ?? "").trim() === "1";
+
+  const limit = Math.max(1, Math.min(200, Number(url.searchParams.get("limit") ?? 200) || 200));
+
+  const rolesParam = (url.searchParams.get("roles") ?? "").trim();
+  const rolesRaw = rolesParam
+    ? rolesParam
+        .split(",")
+        .map((r) => r.trim())
+        .filter(Boolean)
+    : [];
+
+  const roles = rolesRaw.filter((r): r is Role => r === "admin" || r === "editor" || r === "viewer");
+
+  const where: string[] = [];
+  const params: Array<string | number> = [];
+
+  if (activeOnly) {
+    where.push("COALESCE(is_active, 1) = 1");
+  }
+
+  if (roles.length > 0) {
+    where.push(`role IN (${roles.map(() => "?").join(", ")})`);
+    params.push(...roles);
+  }
+
+  if (search) {
+    const like = `%${search.toLowerCase()}%`;
+    where.push(
+      "(LOWER(email) LIKE ? OR LOWER(COALESCE(display_name, '')) LIKE ? OR LOWER(COALESCE(preferred_name, '')) LIKE ? OR LOWER(COALESCE(first_name, '')) LIKE ? OR LOWER(COALESCE(last_name, '')) LIKE ?)"
+    );
+    params.push(like, like, like, like, like);
+  }
+
+  const whereSql = where.length > 0 ? `WHERE ${where.join(" AND ")}` : "";
+
   const db = await getDb();
   const users = await db.all(
-    "SELECT id, email, role, is_active, created_at, display_name, preferred_name, first_name, middle_name, last_name, pronouns, date_of_birth, phone, job_title, department, company, website_url, bio, address_line1, address_line2, city, state, postal_code, country, timezone, locale, avatar_url FROM users ORDER BY id DESC"
+    `
+      SELECT
+        id, email, role, is_active, created_at,
+        display_name, preferred_name, first_name, middle_name, last_name,
+        pronouns, date_of_birth, phone, job_title, department, company,
+        website_url, bio,
+        address_line1, address_line2, city, state, postal_code, country,
+        timezone, locale, avatar_url
+      FROM users
+      ${whereSql}
+      ORDER BY LOWER(email) ASC
+      LIMIT ?
+    `,
+    ...params,
+    limit
   );
 
-  return jsonResponse(users);
+  return jsonResponse(users ?? []);
 }
 
 export async function POST(req: Request) {
