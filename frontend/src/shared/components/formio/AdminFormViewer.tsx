@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import SmartFormRenderer from "./SmartFormRenderer";
+import Button from "../../../template/tailAdmin/components/ui/button/Button";
 
 type AnyRecord = Record<string, unknown>;
 
@@ -45,6 +46,7 @@ export type AdminFormViewerProps = {
 };
 
 export default function AdminFormViewer({ formId, backTo, title = "View Form", loadFormById }: AdminFormViewerProps) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<LoadedForm | null>(null);
@@ -91,9 +93,9 @@ export default function AdminFormViewer({ formId, backTo, title = "View Form", l
       <div className="bg-white p-8 rounded shadow w-full">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">{title}</h1>
-          <Link to={backTo} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">
+          <Button variant="outline" onClick={() => navigate(backTo)}>
             Back
-          </Link>
+          </Button>
         </div>
         <div className="text-red-700">Invalid form id.</div>
       </div>
@@ -105,9 +107,9 @@ export default function AdminFormViewer({ formId, backTo, title = "View Form", l
       <div className="bg-white p-8 rounded shadow w-full">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">{title}</h1>
-          <Link to={backTo} className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">
+          <Button variant="outline" onClick={() => navigate(backTo)}>
             Back
-          </Link>
+          </Button>
         </div>
 
         {error && <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-red-700">{error}</div>}

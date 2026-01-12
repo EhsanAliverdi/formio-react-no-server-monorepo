@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { jsPDF } from "jspdf";
+import Button from "../../../template/tailAdmin/components/ui/button/Button";
 
 export type PreviewItem = {
   label: string;
@@ -110,30 +111,18 @@ export default function SubmissionPreview({
 
         <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
           {allowPdfDownload && hasItems && (
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              onClick={() => downloadItemsAsPdf(title, nonEmptyItems)}
-            >
+            <Button variant="outline" size="sm" onClick={() => downloadItemsAsPdf(title, nonEmptyItems)}>
               Download PDF
-            </button>
+            </Button>
           )}
 
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            onClick={onBack}
-          >
+          <Button variant="outline" size="sm" onClick={onBack}>
             Back
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            onClick={onConfirmSubmit}
-          >
+          <Button size="sm" onClick={onConfirmSubmit}>
             Submit
-          </button>
+          </Button>
         </div>
       </div>
     </div>

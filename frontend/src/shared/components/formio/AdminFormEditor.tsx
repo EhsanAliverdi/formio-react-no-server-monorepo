@@ -3,6 +3,11 @@ import toast from "react-hot-toast";
 import FormioBuilder from "./FormioBuilder";
 import SmartFormRenderer from "./SmartFormRenderer";
 import Switch from "../../../template/tailAdmin/components/form/switch/Switch";
+import Button from "../../../template/tailAdmin/components/ui/button/Button";
+import Label from "../../../template/tailAdmin/components/form/Label";
+import Input from "../../../template/tailAdmin/components/form/input/InputField";
+import TextArea from "../../../template/tailAdmin/components/form/input/TextArea";
+import Select from "../../../template/tailAdmin/components/form/Select";
 import {
   FaRegFileAlt,
   FaClipboardList,
@@ -559,13 +564,9 @@ export default function AdminFormEditor(props: Props) {
       <div className="bg-white p-8 rounded shadow w-full">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Edit Form</h1>
-          <button
-            type="button"
-            onClick={props.onBack}
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-          >
+          <Button variant="outline" onClick={props.onBack}>
             Back
-          </button>
+          </Button>
         </div>
         <div className="text-red-700">Invalid form id.</div>
       </div>
@@ -578,20 +579,12 @@ export default function AdminFormEditor(props: Props) {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">{props.mode === "add" ? "Add New Form" : "Edit Form"}</h1>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={props.onBack}
-              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-            >
+            <Button variant="outline" onClick={props.onBack}>
               Back
-            </button>
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 disabled:opacity-50"
-              onClick={() => void handleSave()}
-              disabled={!canSave}
-            >
+            </Button>
+            <Button onClick={() => void handleSave()} disabled={!canSave}>
               {savingLabel}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -606,31 +599,29 @@ export default function AdminFormEditor(props: Props) {
         ) : (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Form name</label>
-              <input
-                className="w-full rounded border border-gray-300 px-3 py-2"
+              <Label htmlFor="adminFormName">Form name</Label>
+              <Input
+                id="adminFormName"
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
                 placeholder="e.g. Forklift Prestart"
               />
             </div>
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Form description</label>
-        <textarea
-          className="w-full rounded border border-gray-300 px-3 py-2"
-          rows={3}
-          value={typeof appSettings.publicDescription === "string" ? appSettings.publicDescription : ""}
-          onChange={(e) => {
-            const value = e.target.value;
-            setAppSettings((prevSettings) => ({
-              ...prevSettings,
-              publicDescription: value,
-            }));
-          }}
-          placeholder="Shown to users on the public Forms page"
-        />
-      </div>
+            <div className="mb-4">
+              <Label htmlFor="adminFormPublicDescription">Form description</Label>
+              <TextArea
+                rows={3}
+                value={typeof appSettings.publicDescription === "string" ? appSettings.publicDescription : ""}
+                onChange={(value) => {
+                  setAppSettings((prevSettings) => ({
+                    ...prevSettings,
+                    publicDescription: value,
+                  }));
+                }}
+                placeholder="Shown to users on the public Forms page"
+              />
+            </div>
 
             <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
               <div className="mb-3 text-sm font-semibold text-gray-900">Form settings</div>
@@ -732,15 +723,16 @@ export default function AdminFormEditor(props: Props) {
                     <div className="shrink-0">{getFormListIconNode(appSettings)}</div>
 
                     <div className="min-w-0 flex-1">
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Icon</label>
+                      <Label className="text-xs">Icon</Label>
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setIconPickerOpen(true)}
+                          className="shrink-0"
                         >
                           Choose icon
-                        </button>
+                        </Button>
                         {typeof appSettings.formsListIconKey === "string" && appSettings.formsListIconKey ? (
                           <span className="text-xs text-gray-500">{appSettings.formsListIconKey}</span>
                         ) : (
@@ -750,9 +742,10 @@ export default function AdminFormEditor(props: Props) {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Image (optional)</label>
+                      <Label className="text-xs">Image (optional)</Label>
                       <div className="flex items-center gap-2">
                         <input
+                          id="adminFormImageUpload"
                           type="file"
                           accept="image/*"
                           className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border file:border-gray-200 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-50"
@@ -772,9 +765,10 @@ export default function AdminFormEditor(props: Props) {
                           }}
                         />
                         {typeof appSettings.formsListImageDataUrl === "string" && appSettings.formsListImageDataUrl ? (
-                          <button
-                            type="button"
-                            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
                             onClick={() => {
                               setAppSettings((prevSettings) => ({
                                 ...prevSettings,
@@ -783,7 +777,7 @@ export default function AdminFormEditor(props: Props) {
                             }}
                           >
                             Clear
-                          </button>
+                          </Button>
                         ) : null}
                       </div>
                       <div className="mt-1 text-xs text-gray-500">If an image is uploaded, it will be used instead of the icon.</div>
@@ -808,27 +802,24 @@ export default function AdminFormEditor(props: Props) {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Form layout</label>
-              <select
-                className={
-                  props.mode === "edit"
-                    ? "w-full rounded border border-gray-200 bg-gray-100 px-3 py-2 text-gray-700 cursor-not-allowed"
-                    : "w-full rounded border border-gray-300 px-3 py-2"
-                }
+              <Label>Form layout</Label>
+              <Select
                 value={display}
                 disabled={props.mode === "edit"}
-                onChange={(e) => {
-                  const nextDisplay = (e.target.value === "wizard" ? "wizard" : "form") as FormDisplay;
+                onChange={(value) => {
+                  const nextDisplay = (value === "wizard" ? "wizard" : "form") as FormDisplay;
                   setDraftSchema((prev) => {
                     const next = { ...prev, display: nextDisplay } as FormSchema;
                     return nextDisplay === "wizard" ? ensureWizardHasPage(next) : next;
                   });
                   setActiveWizardPageKey(null);
                 }}
-              >
-                <option value="form">Single page</option>
-                <option value="wizard">Multi-step (wizard)</option>
-              </select>
+                options={[
+                  { value: "form", label: "Single page" },
+                  { value: "wizard", label: "Multi-step (wizard)" },
+                ]}
+                className={props.mode === "edit" ? "opacity-60" : ""}
+              />
               <div className="mt-1 text-xs text-gray-500">
                 {props.mode === "edit"
                   ? "Form layout is locked after creation. Create a new form to change layout."
@@ -884,9 +875,8 @@ export default function AdminFormEditor(props: Props) {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      className="shrink-0 rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                    <Button
+                      size="xsm"
                       onClick={() => {
                         setDraftSchema((prev) => {
                           const next = ensureWizardHasPage({ ...prev, display: "wizard" } as FormSchema);
@@ -916,7 +906,7 @@ export default function AdminFormEditor(props: Props) {
                       }}
                     >
                       + Add Page
-                    </button>
+                    </Button>
                   </div>
 
                   <div className="px-3 py-2">
@@ -993,20 +983,12 @@ export default function AdminFormEditor(props: Props) {
               )}
 
               <div className="mb-3 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                  onClick={() => setPaletteCollapsed((v) => !v)}
-                >
+                <Button size="xsm" variant="outline" onClick={() => setPaletteCollapsed((v) => !v)}>
                   {paletteCollapsed ? "Show Components" : "Hide Components"}
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                  onClick={() => setPreviewOpen((v) => !v)}
-                >
+                </Button>
+                <Button size="xsm" variant="outline" onClick={() => setPreviewOpen((v) => !v)}>
                   {previewOpen ? "Hide Preview" : "Show Preview"}
-                </button>
+                </Button>
               </div>
 
               <div className="flex flex-nowrap items-start gap-4 overflow-x-auto">

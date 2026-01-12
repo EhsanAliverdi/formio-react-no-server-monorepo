@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Formio } from "formiojs";
 import { installImageUploadComponent } from "./components/installImageUploadComponent";
 import SubmissionPreview, { type PreviewItem } from "./SubmissionPreview";
+import Button from "../../../template/tailAdmin/components/ui/button/Button";
 
 type AnyRecord = Record<string, unknown>;
 
@@ -323,7 +324,10 @@ export default function StepFormRenderer({ form, onSubmit }: Props) {
 						const isDone = idx < clampedStep;
 						const isFutureLocked = idx > maxAccessibleStep;
 
-						const bubbleClass = isDone || active ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-800";
+						const bubbleClass =
+							isDone || active
+								? "bg-brand-500 text-white"
+								: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
 						const titleClass = active || isDone ? "text-blue-600" : "text-gray-800";
 
 						return (
@@ -368,23 +372,14 @@ export default function StepFormRenderer({ form, onSubmit }: Props) {
 			</div>
 
 			<div className="flex gap-2 justify-between">
-				<button
-					type="button"
-					className="px-4 py-2 rounded bg-gray-200 disabled:opacity-50"
-					onClick={goPrev}
-					disabled={clampedStep === 0}
-				>
+				<Button variant="outline" onClick={goPrev} disabled={clampedStep === 0}>
 					Previous
-				</button>
+				</Button>
 
 				{clampedStep < panels.length - 1 ? (
-					<button type="button" className="px-4 py-2 rounded bg-blue-600 text-white" onClick={goNext}>
-						Next
-					</button>
+					<Button onClick={goNext}>Next</Button>
 				) : (
-					<button type="button" className="px-4 py-2 rounded bg-green-600 text-white" onClick={goSubmit}>
-						{appSettings.previewBeforeSubmit ? "Review and Submit" : "Submit"}
-					</button>
+					<Button onClick={goSubmit}>{appSettings.previewBeforeSubmit ? "Review and Submit" : "Submit"}</Button>
 				)}
 			</div>
 
