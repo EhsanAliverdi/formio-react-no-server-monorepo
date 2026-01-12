@@ -1,0 +1,10 @@
+@import "/src/template/tailAdmin/index.css";
+
+@source "../../../index.html";
+@source "../../**/*.js";
+@source "../../**/*.ts";
+@source "../../**/*.jsx";
+@source "../../**/*.tsx";
+
+/* Plugins */
+@plugin "@tailwindcss/forms";

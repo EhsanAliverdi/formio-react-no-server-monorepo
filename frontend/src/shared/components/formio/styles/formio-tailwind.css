@@ -1,0 +1,565 @@
+@reference "tailwindcss";
+
+/*
+  Tailwind-first styling for Form.io (no Bootstrap).
+  Form.io Builder/Renderer emits Bootstrap-ish classnames like .btn/.form-control/.row/.col-*
+  This file provides a minimal, modern look using Tailwind utilities.
+*/
+
+/* Layout helpers (Bootstrap-ish grid) */
+.row {
+  @apply flex flex-wrap -mx-2;
+}
+
+/* -----------------------------
+   Custom wizard stepper shell
+   -----------------------------
+   StepFormRenderer renders the full Form.io wizard so all component
+   types work, but we hide Form.io's own wizard header/nav to use our
+   Flowbite-style stepper.
+*/
+.flowbite-stepper-wizard .formio-wizard-nav-container,
+.flowbite-stepper-wizard .formio-wizard-nav,
+.flowbite-stepper-wizard .formio-wizard-navigation,
+.flowbite-stepper-wizard .formio-wizard-buttons,
+.flowbite-stepper-wizard .formio-wizard-nav-content {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+/* Some templates use generic list-inline containers and button classes. */
+.flowbite-stepper-wizard .btn-wizard-nav-cancel,
+.flowbite-stepper-wizard .btn-wizard-nav-previous,
+.flowbite-stepper-wizard .btn-wizard-nav-next,
+.flowbite-stepper-wizard .btn-wizard-nav-submit,
+.flowbite-stepper-wizard ul.list-inline[id$="-nav"],
+.flowbite-stepper-wizard div[id$="-nav"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+/* Form.io also renders a wizard header with Bootstrap-like pagination markup. */
+.flowbite-stepper-wizard nav[aria-label="Wizard navigation"],
+.flowbite-stepper-wizard nav[aria-label="Wizard navigation"] .pagination,
+.flowbite-stepper-wizard .pagination {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+/* Form.io commonly assigns ids like "wizard-<instance>-header" and "wizard-<instance>-nav" */
+.flowbite-stepper-wizard [id^="wizard-"][id$="-header"],
+.flowbite-stepper-wizard [id^="wizard-"][id$="-nav"],
+.flowbite-stepper-wizard .wizard-header {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+[class*="col-"] {
+  @apply px-2;
+}
+
+.col-xs-12,
+.col-sm-12,
+.col-md-12,
+.col-lg-12 {
+  @apply w-full;
+}
+
+.col-xs-6,
+.col-sm-6,
+.col-md-6,
+.col-lg-6 {
+  @apply w-full md:w-1/2;
+}
+
+.col-xs-4,
+.col-sm-4,
+.col-md-4,
+.col-lg-4 {
+  @apply w-full md:w-1/3;
+}
+
+.col-xs-3,
+.col-sm-3,
+.col-md-3,
+.col-lg-3 {
+  @apply w-full md:w-1/4;
+}
+
+/* Additional grid widths used heavily by the Form.io builder layout */
+.col-xs-1,
+.col-sm-1,
+.col-md-1,
+.col-lg-1 {
+  @apply w-full md:w-1/12;
+}
+
+.col-xs-2,
+.col-sm-2,
+.col-md-2,
+.col-lg-2 {
+  @apply w-full md:w-1/6;
+}
+
+.col-xs-5,
+.col-sm-5,
+.col-md-5,
+.col-lg-5 {
+  @apply w-full md:w-5/12;
+}
+
+.col-xs-7,
+.col-sm-7,
+.col-md-7,
+.col-lg-7 {
+  @apply w-full md:w-7/12;
+}
+
+.col-xs-8,
+.col-sm-8,
+.col-md-8,
+.col-lg-8 {
+  @apply w-full md:w-2/3;
+}
+
+.col-xs-9,
+.col-sm-9,
+.col-md-9,
+.col-lg-9 {
+  @apply w-full md:w-3/4;
+}
+
+.col-xs-10,
+.col-sm-10,
+.col-md-10,
+.col-lg-10 {
+  @apply w-full md:w-5/6;
+}
+
+.col-xs-11,
+.col-sm-11,
+.col-md-11,
+.col-lg-11 {
+  @apply w-full md:w-11/12;
+}
+
+/* Forms */
+.form-group {
+  @apply mb-4;
+}
+
+.control-label,
+label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.help-block {
+  @apply mt-1 text-xs text-gray-500;
+}
+
+.form-control,
+input.form-control,
+select.form-control,
+textarea.form-control {
+  @apply w-full rounded border border-gray-300 px-3 py-2 text-gray-900;
+}
+
+.form-control:focus,
+input.form-control:focus,
+select.form-control:focus,
+textarea.form-control:focus {
+  @apply outline-none ring-2 ring-blue-500 border-blue-500;
+}
+
+/* Buttons */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded px-3 py-2 text-sm font-medium;
+}
+
+.btn:disabled,
+.btn.disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.btn-default,
+.btn-secondary {
+  @apply bg-gray-200 text-gray-900 hover:bg-gray-300;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.btn-success {
+  @apply bg-green-600 text-white hover:bg-green-700;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700;
+}
+
+.btn-link {
+  @apply bg-transparent text-blue-600 hover:underline px-0;
+}
+
+/* Alerts */
+.alert {
+  @apply rounded border p-3;
+}
+
+.alert-danger {
+  @apply border-red-200 bg-red-50 text-red-700;
+}
+
+.alert-warning {
+  @apply border-yellow-200 bg-yellow-50 text-yellow-800;
+}
+
+.alert-success {
+  @apply border-green-200 bg-green-50 text-green-800;
+}
+
+/* Panels / cards */
+.panel {
+  @apply rounded border border-gray-200 bg-white;
+}
+
+/* Bootstrap-ish cards (used heavily in builder component edit) */
+.card {
+  @apply rounded border border-gray-200 bg-white;
+}
+
+.card-header {
+  @apply border-b border-gray-200 px-4 py-3 font-semibold text-gray-900 bg-gray-50;
+}
+
+.card-body {
+  @apply px-4 py-4;
+}
+
+.card-title {
+  @apply text-base font-semibold text-gray-900;
+}
+
+.panel-heading {
+  @apply border-b border-gray-200 px-4 py-3 font-semibold text-gray-900;
+}
+
+.panel-body {
+  @apply px-4 py-4;
+}
+
+/* Tables */
+.table {
+  @apply w-full border-collapse;
+}
+
+.table-bordered {
+  @apply border border-gray-200;
+}
+
+.table-bordered th,
+.table-bordered td {
+  @apply border border-gray-200;
+}
+
+.table th {
+  @apply text-left text-sm font-semibold text-gray-900 border-b border-gray-200 px-3 py-2;
+}
+
+.table td {
+  @apply text-sm text-gray-900 border-b border-gray-100 px-3 py-2;
+}
+
+/* List groups (used in Logic tab etc) */
+.list-group {
+  @apply overflow-hidden rounded border border-gray-200 bg-white;
+}
+
+.list-group-item {
+  @apply border-b border-gray-200 px-4 py-3 text-sm text-gray-900;
+}
+
+.list-group-item:last-child {
+  border-bottom: 0;
+}
+
+.list-group-header {
+  @apply bg-gray-50 font-semibold;
+}
+
+/* Checkbox/Radio helpers */
+.form-check {
+  @apply flex items-start gap-2;
+}
+
+.form-check-inline {
+  @apply inline-flex items-start gap-2;
+}
+
+.form-check-label {
+  @apply inline-flex items-start gap-2 text-sm text-gray-900;
+}
+
+.form-check-input {
+  @apply mt-1 h-4 w-4 rounded border border-gray-300;
+  @apply text-blue-600;
+}
+
+.form-check-input:focus {
+  @apply outline-none ring-2 ring-blue-500 border-blue-500;
+}
+
+/* Reduce visual noise from legacy icon placeholders */
+.fa {
+  @apply inline-block;
+}
+
+/* Dialog / modal (Builder component edit) */
+.formio-dialog {
+  @apply text-gray-900;
+}
+
+.formio-dialog.formio-dialog-theme-default {
+  /* Keep Form.io’s layout/animation, but match our typography */
+  font-family: inherit;
+}
+
+.formio-dialog.formio-dialog-theme-default .formio-dialog-content {
+  @apply bg-white rounded-lg border border-gray-200 shadow-xl;
+  font-family: inherit;
+}
+
+.formio-dialog.formio-dialog-theme-default .formio-dialog-close {
+  @apply rounded-md p-1;
+}
+
+.formio-dialog.formio-dialog-theme-default .formio-dialog-close:before {
+  @apply text-gray-500;
+}
+
+.formio-dialog.formio-dialog-theme-default .formio-dialog-close:hover:before {
+  @apply text-gray-700;
+}
+
+/* Tabs inside the component edit UI */
+.formio-dialog .tab-content {
+  @apply pt-3;
+}
+
+.formio-dialog .card-vertical {
+  @apply gap-4;
+}
+
+.formio-dialog .nav-tabs {
+  @apply border-b border-gray-200;
+}
+
+.formio-dialog .nav-tabs > li {
+  @apply -mb-px;
+}
+
+.formio-dialog .nav-tabs > li > a,
+.formio-dialog .nav-tabs .nav-link {
+  @apply inline-flex items-center rounded-t px-3 py-2 text-sm font-medium text-gray-600;
+}
+
+.formio-dialog .nav-tabs > li > a:hover,
+.formio-dialog .nav-tabs .nav-link:hover {
+  @apply text-gray-900;
+}
+
+/* ------------------------------
+   Component edit (builder panel)
+   ------------------------------
+   Form.io's component edit tabs are rendered as:
+   <ul class="nav nav-tabs card-header-tabs"> <li class="nav-item"> <a class="nav-link">...
+   We cannot change the markup, so we restyle it to match the Flowbite v4 example.
+*/
+
+.component-edit-container {
+  /* Slightly smaller overall type, per request */
+  @apply text-sm;
+}
+
+.component-edit-container .lead {
+  @apply text-base;
+}
+
+.component-edit-container .card {
+  @apply w-full overflow-hidden rounded-lg border border-gray-200 bg-white;
+}
+
+.component-edit-container .card-header {
+  /* Flowbite-like tab header container */
+  @apply border-b border-gray-200 bg-gray-50 p-0;
+}
+
+.component-edit-container .nav.nav-tabs {
+  /* Force horizontal layout even if a global .nav makes it vertical */
+  display: flex !important;
+  flex-direction: row !important;
+  @apply flex-wrap items-center;
+  @apply text-center text-sm font-medium;
+  @apply bg-gray-50 border-b border-gray-200;
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.component-edit-container .nav.nav-tabs .nav-item {
+  @apply mr-2;
+  width: auto !important;
+}
+
+.component-edit-container .nav.nav-tabs .nav-item:last-child {
+  @apply mr-0;
+}
+
+.component-edit-container .nav.nav-tabs .nav-link {
+  @apply inline-block;
+  @apply px-4 py-3;
+  @apply border-b-2 border-transparent;
+  @apply text-gray-600;
+  @apply hover:text-gray-900 hover:bg-gray-100;
+}
+
+.component-edit-container .nav.nav-tabs .nav-item:first-child .nav-link {
+  @apply rounded-tl-lg;
+}
+
+.component-edit-container .nav.nav-tabs .nav-item:last-child .nav-link {
+  @apply rounded-tr-lg;
+}
+
+.component-edit-container .nav.nav-tabs .nav-link.active {
+  @apply font-semibold;
+  @apply text-blue-600;
+  @apply border-blue-600;
+  @apply bg-white;
+}
+
+.formio-dialog .nav-tabs > li > a.active,
+.formio-dialog .nav-tabs .nav-link.active {
+  @apply bg-white text-gray-900 border border-gray-200 border-b-white;
+}
+
+/* Vertical nav used by the component edit dialog */
+.formio-dialog .nav-tabs-vertical {
+  @apply border-r border-gray-200 pr-2 mr-4;
+}
+
+.formio-dialog .nav-tabs-vertical > li {
+  @apply mb-1;
+}
+
+.formio-dialog .nav-tabs-vertical > li > a,
+.formio-dialog .nav-link-vertical {
+  @apply block rounded px-3 py-2 text-sm font-medium text-gray-600;
+}
+
+.formio-dialog .nav-tabs-vertical > li > a:hover,
+.formio-dialog .nav-link-vertical:hover {
+  @apply bg-gray-100 text-gray-900;
+}
+
+.formio-dialog .nav-tabs-vertical > li > a.active,
+.formio-dialog .nav-link-vertical.active {
+  @apply bg-gray-100 text-gray-900;
+}
+
+/* Some Form.io edit layouts wrap tab content in a generic .tab or .tab-content */
+.formio-dialog .tab,
+.formio-dialog .tab-content {
+  @apply min-w-0;
+}
+
+/* ------------------------------
+   File/ImageUpload component
+   ------------------------------
+   Form.io uses a generic .loader/.loader-wrapper that can appear oddly positioned
+   with our Tailwind-first layout. Keep it contained to the file drop zone.
+*/
+.formio-component-file {
+  position: relative;
+}
+
+.formio-component-file .fileSelector {
+  position: relative;
+  @apply rounded border-2 border-dashed border-gray-300 p-4;
+}
+
+.formio-component-file .fileSelector.fileDragOver {
+  @apply border-blue-500 bg-blue-50;
+}
+
+/*
+  Form.io's generic `.loader-wrapper` defaults to `position:absolute` in its CSS.
+  That can escape the file drop zone and overlap other form elements.
+  Keep it in-flow/relative for the file component, and only show it while uploading.
+*/
+.formio-component-file .loader-wrapper {
+  display: none;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* When Form.io toggles the loader on, it sets `style="display: block"` */
+.formio-component-file .loader-wrapper[style*="display: block"],
+.formio-component-file .loader-wrapper[style*="display:block"] {
+  display: block;
+}
+
+.formio-component-file .loader-wrapper .loader {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  border-width: 4px;
+}
+
+/*
+  Some custom components reuse Form.io's File template but don't carry the
+  `.formio-component-file` wrapper class. In that case, the generic
+  `.loader-wrapper` rule (position:absolute) can escape and overlay the page.
+  Target the template ref attribute directly and keep it contained.
+*/
+.fileSelector {
+  position: relative;
+  @apply rounded border-2 border-dashed border-gray-300 p-4;
+}
+
+.fileSelector.fileDragOver {
+  @apply border-blue-500 bg-blue-50;
+}
+
+.fileSelector .loader-wrapper[ref="fileProcessingLoader"] {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.fileSelector .loader-wrapper[ref="fileProcessingLoader"][style*="display: block"],
+.fileSelector .loader-wrapper[ref="fileProcessingLoader"][style*="display:block"] {
+  display: block;
+}
+
+.fileSelector .loader-wrapper[ref="fileProcessingLoader"] .loader {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  border-width: 4px;
+}

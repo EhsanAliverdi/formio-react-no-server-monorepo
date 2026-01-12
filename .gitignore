@@ -1,0 +1,20 @@
+# Root ignores (monorepo)
+
+# Reference materials (not part of repo)
+_reference/
+
+# Environment files
+.env
+.env.*
+
+# Docker / local artifacts
+docker-pdf-test.pdf
+
+# Local databases
+backend/data/*.db
+backend/var/*.db
+
+# Node / build outputs
+node_modules/
+backend/.next/
+frontend/dist/

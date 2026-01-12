@@ -1,0 +1,75 @@
+services:
+  minio:
+    image: minio/minio:latest
+    pull_policy: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      # Host port 9000 is often already taken; default to 9002/9003 on the host.
+      - "${MINIO_PORT:-9002}:9000"
+      - "${MINIO_CONSOLE_PORT:-9003}:9001"
+    volumes:
+      - minio_data:/data
+
+  backend:
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      pull: true
+      args:
+        INSECURE_TLS: ${INSECURE_TLS:-false}
+        APP_VERSION: ${BACKEND_APP_VERSION:-}
+        BUILD_TIME: ${BUILD_TIME:-}
+        APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
+    environment:
+      # Used by `npm run seed` (optional override)
+      SUPERUSER_EMAIL: ${SUPERUSER_EMAIL:-admin@example.com}
+      SUPERUSER_PASSWORD: ${SUPERUSER_PASSWORD:-admin12345}
+
+      # MinIO (S3-compatible) storage for image uploads
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-minioadmin}}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-minioadmin}}
+
+      # Version metadata for /api/version
+      APP_VERSION: ${BACKEND_APP_VERSION:-}
+      BUILD_TIME: ${BUILD_TIME:-}
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
+
+      # Store SQLite DB on a Linux volume (avoid Windows bind-mount mmap/SIGBUS issues)
+      SQLITE_DB_PATH: /app/backend/var/forms.db
+
+      # Force SWC WASM bindings (native SWC can SIGBUS under Docker Desktop/WSL)
+      NEXT_TEST_WASM: "1"
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      # Persist SQLite database (Linux volume)
+      - backend_db:/app/backend/var
+    depends_on:
+      - minio
+
+  frontend:
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      pull: true
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+        VITE_APP_VERSION: ${FRONTEND_APP_VERSION:-}
+        VITE_BUILD_TIME: ${BUILD_TIME:-}
+        VITE_APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - backend
+
+volumes:
+  minio_data:
+  backend_db:

@@ -1,0 +1,77 @@
+# Backend (Next.js) with server-side PDF export via Playwright/Chromium.
+# We intentionally run on Node 20 to keep native deps like `sqlite3` on a
+# well-supported ABI and avoid rebuild issues.
+FROM node:20-bookworm-slim AS backend
+
+WORKDIR /app/backend
+
+# Ensure CA roots exist (some environments otherwise fail HTTPS downloads)
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		ca-certificates \
+		python3 \
+		make \
+		g++ \
+	&& update-ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Make Node use the container's system CA store (important behind TLS interception)
+ENV NODE_OPTIONS=--use-openssl-ca
+
+# Optional: add corporate root CA certs for Docker builds.
+# Place one or more *.crt files in backend/certs/ and rebuild.
+COPY backend/certs/ /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+# Some networks (corporate TLS interception) cause Node HTTPS downloads to fail with
+# "unable to get local issuer certificate" during `npm ci`.
+#
+# Preferred fix: add your corporate root CA to the image and set NODE_EXTRA_CA_CERTS.
+# Temporary workaround: set INSECURE_TLS=true for the build.
+ARG INSECURE_TLS=false
+
+# Version metadata (optional). If unset, the app reports "dev".
+ARG APP_VERSION
+ARG BUILD_TIME
+ARG APP_ENVIRONMENT
+
+# Install dependencies first for better caching
+COPY backend/package.json backend/package-lock.json ./
+RUN if [ "$INSECURE_TLS" = "true" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi \
+	&& npm ci
+
+# Install Chromium + runtime deps for Playwright.
+# PLAYWRIGHT_BROWSERS_PATH=0 keeps browsers inside the project for Docker caching.
+ENV PLAYWRIGHT_BROWSERS_PATH=0
+RUN if [ "$INSECURE_TLS" = "true" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi \
+	&& npx playwright install --with-deps chromium
+
+# Copy backend source
+COPY backend/ ./
+
+# Build for production
+RUN npm run build
+
+# Bake build metadata into a file for runtime visibility.
+# If BUILD_TIME isn't provided, use the current UTC time.
+RUN set -eu; \
+	BUILD_TIME_VALUE="${BUILD_TIME:-}"; \
+	if [ -z "$BUILD_TIME_VALUE" ]; then BUILD_TIME_VALUE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; fi; \
+	APP_VERSION_VALUE="${APP_VERSION:-}"; \
+	if [ -z "$APP_VERSION_VALUE" ]; then APP_VERSION_VALUE="$(node -p "require('./package.json').version")"; fi; \
+	APP_ENV_VALUE="${APP_ENVIRONMENT:-}"; \
+	if [ -z "$APP_ENV_VALUE" ]; then APP_ENV_VALUE="development"; fi; \
+	APP_VERSION_VALUE="$APP_VERSION_VALUE" BUILD_TIME_VALUE="$BUILD_TIME_VALUE" APP_ENV_VALUE="$APP_ENV_VALUE" \
+		node -e "const fs=require('fs'); fs.writeFileSync('.buildinfo.json', JSON.stringify({ version: process.env.APP_VERSION_VALUE, buildTime: process.env.BUILD_TIME_VALUE, environment: process.env.APP_ENV_VALUE }));"
+
+ENV NODE_ENV=production
+ENV APP_VERSION=$APP_VERSION
+ENV BUILD_TIME=$BUILD_TIME
+ENV APP_ENVIRONMENT=$APP_ENVIRONMENT
+
+# Force WASM SWC bindings (native SWC crashes with SIGBUS on some Docker Desktop/WSL setups)
+ENV NEXT_TEST_WASM=1
+EXPOSE 3000
+
+# Bind on all interfaces inside the container
+CMD ["npx", "next", "start", "-H", "0.0.0.0", "-p", "3000"]

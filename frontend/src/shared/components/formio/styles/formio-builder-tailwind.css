@@ -1,0 +1,255 @@
+@reference "tailwindcss";
+
+/*
+  Tailwind-first styling overrides for the Form.io *Builder* UI.
+
+  Important constraints:
+  - We cannot "rewrite Form.io's classes" (they are emitted by formiojs).
+    Instead, we restyle Form.io's existing builder selectors using Tailwind's @apply.
+  - Form.io's builder templates use Bootstrap collapse markup (data-toggle="collapse").
+    In a Tailwind/Preline app with no Bootstrap JS, those panels can stay collapsed.
+    We force the sidebar groups to be visible so the palette is usable.
+*/
+
+/* Ensure the builder layout looks like our app shell */
+/*
+  We wrap the builder with .formio-builder-shell in React.
+  Use it to scope layout overrides so we don't accidentally affect
+  Form.io renderer instances.
+*/
+.formio-builder-shell .formbuilder {
+  @apply w-full;
+}
+
+/* Layout: add a clear gap between palette and canvas */
+.formio-builder-shell .formbuilder.row {
+  @apply flex flex-nowrap gap-4;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.formio-builder-shell .formbuilder.row > [class*="col-"] {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.formio-builder-shell .formbuilder .formcomponents {
+  @apply w-72 shrink-0;
+  @apply rounded-lg border border-gray-200 bg-white p-4;
+}
+
+.formio-builder-shell .formbuilder .formarea {
+  @apply flex-1 min-w-0;
+  @apply rounded-lg border border-gray-200 bg-white p-4;
+}
+
+/* Palette collapsible (hide the left column) */
+.formio-builder-shell.palette-collapsed .formbuilder .formcomponents {
+  display: none !important;
+}
+
+/* Sidebar */
+.builder-sidebar {
+  @apply w-full;
+}
+
+/* The element you pointed out: add real inner padding so headers/content
+   don't sit on the palette border (do not rely on Bootstrap's .p-2). */
+.formio-builder-shell .builder-sidebar {
+  @apply p-3;
+}
+
+/* -----------------------------
+   Component edit (right-side UI)
+   -----------------------------
+   When you click a component in the builder, Form.io renders an in-page
+   component edit UI (NOT always inside .formio-dialog). That UI uses
+   Bootstrap-ish classes (.card/.nav-tabs/etc). We restyle it here.
+*/
+
+.formio-builder-shell .component-edit-container {
+  @apply w-full text-gray-900;
+}
+
+.formio-builder-shell .component-edit-container .lead {
+  @apply m-0 text-lg font-semibold text-gray-900;
+}
+
+/* Form.io still emits float helpers; neutralize and use flex instead. */
+.formio-builder-shell .component-edit-container .float-right {
+  float: none !important;
+  @apply flex justify-end;
+}
+
+.formio-builder-shell .component-edit-container a {
+  @apply text-blue-600 hover:underline;
+}
+
+.formio-builder-shell .component-edit-container .card {
+  @apply overflow-hidden rounded-lg border border-gray-200 bg-white;
+}
+
+.formio-builder-shell .component-edit-container .card-header {
+  @apply border-b border-gray-200 bg-gray-50 px-4 py-3;
+}
+
+.formio-builder-shell .component-edit-container .card-body {
+  @apply px-4 py-4;
+}
+
+.formio-builder-shell .component-edit-container .card-title {
+  @apply text-base font-semibold text-gray-900;
+}
+
+.formio-builder-shell .component-edit-container .nav-tabs {
+  /* Force horizontal tabs even if Form.io builder CSS overrides nav styles. */
+  display: flex !important;
+  flex-direction: row !important;
+  @apply flex-nowrap items-end gap-1 overflow-x-auto border-b border-gray-200;
+}
+
+.formio-builder-shell .component-edit-container .card-header-tabs {
+  /* Some Form.io templates rely on bootstrap card-header-tabs; normalize spacing. */
+  @apply -mb-px;
+}
+
+.formio-builder-shell .component-edit-container .nav-tabs .nav-item {
+  @apply -mb-px shrink-0;
+}
+
+.formio-builder-shell .component-edit-container .nav-tabs > li {
+  /* Ensure <li> doesn't become full-width blocks */
+  @apply list-none;
+}
+
+.formio-builder-shell .component-edit-container .nav-tabs .nav-link {
+  @apply inline-flex items-center whitespace-nowrap rounded-t px-3 py-2 text-sm font-medium text-gray-600;
+}
+
+.formio-builder-shell .component-edit-container .nav-tabs .nav-link:hover {
+  @apply bg-gray-50 text-gray-900;
+}
+
+.formio-builder-shell .component-edit-container .nav-tabs .nav-link.active {
+  @apply border border-b-transparent border-gray-200 bg-white text-gray-900;
+}
+
+.formio-builder-shell .component-edit-container .tab-pane {
+  @apply pt-3;
+}
+
+/* Preview panel spacing */
+.formio-builder-shell .component-edit-container .preview-panel {
+  @apply mt-0;
+}
+
+/* Give the sidebar content some internal rhythm */
+.builder-sidebar [ref="sidebar-groups"] {
+  @apply mt-3;
+}
+
+.builder-sidebar_scroll {
+  @apply sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto;
+}
+
+.builder-sidebar_search {
+  @apply w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900;
+  @apply mb-3;
+}
+
+.builder-sidebar_search:focus {
+  @apply outline-none ring-2 ring-blue-500 border-blue-500;
+}
+
+/* Builder groups (accordion cards) */
+.form-builder-panel {
+  @apply mb-2 overflow-hidden rounded-lg border border-gray-200 bg-white;
+}
+
+.form-builder-group-header {
+  @apply border-b border-gray-200 bg-gray-50 px-4 py-3;
+}
+
+.builder-group-button {
+  @apply w-full text-left text-sm font-semibold text-gray-900;
+}
+
+.builder-group-button:hover {
+  @apply text-gray-900;
+}
+
+/* Make the palette usable without Bootstrap collapse JS */
+/* Preserve collapse behavior without relying on Bootstrap styles */
+.builder-sidebar .collapse:not(.show) {
+  display: none !important;
+}
+.builder-sidebar .collapse.show {
+  display: block !important;
+  height: auto !important;
+  visibility: visible !important;
+}
+
+/* Component items in palette */
+.formcomponents .formcomponent {
+  @apply mt-1 w-full cursor-grab select-none rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-50;
+}
+
+.builder-sidebar.disabled .formcomponent {
+  @apply cursor-not-allowed opacity-60;
+}
+
+/* Builder canvas components */
+.drag-container {
+  @apply border-0 p-0;
+}
+
+.builder-components {
+  @apply w-full;
+}
+
+.builder-component {
+  @apply relative mb-4 rounded-lg border border-dashed border-gray-300 bg-white p-3;
+}
+
+.builder-component-selected {
+  @apply border-blue-500 ring-2 ring-blue-500;
+}
+
+/* Component action buttons (edit/copy/paste/delete) */
+.component-btn-group {
+  @apply right-2 top-2 m-0;
+}
+
+.component-btn-group .btn,
+.component-btn-group .component-settings-button {
+  @apply inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50;
+}
+
+/* Wizard breadcrumb (multi-page wizard inside builder) */
+.wizard-pages {
+  @apply mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2;
+}
+
+.wizard-page-label {
+  @apply cursor-pointer rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50;
+}
+
+.badge {
+  @apply inline-flex items-center;
+}
+
+.badge-primary,
+.bg-primary {
+  @apply border-blue-200 bg-blue-50 text-blue-700;
+}
+
+.badge-info,
+.bg-info {
+  @apply border-gray-200 bg-gray-50 text-gray-700;
+}
+
+/* Tame some legacy bootstrap-ish spacing helpers used in templates */
+.mr-2,
+.me-2 {
+  margin-right: 0.5rem;
+}

@@ -1,0 +1,20 @@
+# Root
+node_modules
+npm-debug.log
+.DS_Store
+.vscode
+
+# Backend
+backend/node_modules
+backend/.next
+backend/npm-debug.log
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/npm-debug.log
+
+# Git
+.git
+.gitignore
