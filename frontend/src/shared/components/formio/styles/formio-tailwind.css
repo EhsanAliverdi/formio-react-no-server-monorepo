@@ -151,8 +151,8 @@
   @apply mb-4;
 }
 
-.control-label,
-label {
+.formio-scope .control-label,
+.formio-scope label {
   @apply block text-sm font-medium text-gray-700 mb-1;
 }
 

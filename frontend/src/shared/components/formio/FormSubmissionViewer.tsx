@@ -95,5 +95,9 @@ export default function FormSubmissionViewer({ form, data }: Props) {
     };
   }, [form, data]);
 
-  return <div ref={containerRef} />;
+  return (
+    <div className="formio-scope">
+      <div ref={containerRef} />
+    </div>
+  );
 }

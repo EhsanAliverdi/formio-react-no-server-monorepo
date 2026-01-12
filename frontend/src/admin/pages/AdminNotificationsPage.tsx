@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "../../template/tailAdmin/components/ui/button/Button";
 import Badge from "../../template/tailAdmin/components/ui/badge/Badge";
+import Label from "../../template/tailAdmin/components/form/Label";
+import Input from "../../template/tailAdmin/components/form/input/InputField";
+import Select from "../../template/tailAdmin/components/form/Select";
+import TextArea from "../../template/tailAdmin/components/form/input/TextArea";
+import Checkbox from "../../template/tailAdmin/components/form/input/Checkbox";
+import Radio from "../../template/tailAdmin/components/form/input/Radio";
 import { me, type AuthUser } from "../../shared/services/authService";
 import { listUsers, type UserRow } from "../../shared/services/userService";
 import {
@@ -166,9 +172,9 @@ export default function AdminNotificationsPage() {
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Title</label>
-              <input
-                className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-hidden focus:ring-2 focus:ring-blue-500/40 dark:border-gray-800 dark:bg-transparent dark:text-white/90"
+              <Label htmlFor="adminNotifTitle">Title</Label>
+              <Input
+                id="adminNotifTitle"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Password reset required"
@@ -176,52 +182,50 @@ export default function AdminNotificationsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Importance</label>
-              <select
-                className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-hidden focus:ring-2 focus:ring-blue-500/40 dark:border-gray-800 dark:bg-transparent dark:text-white/90"
-                value={level}
-                onChange={(e) => setLevel(e.target.value as NotificationLevel)}
-              >
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
+              <Label htmlFor="adminNotifLevel">Importance</Label>
+              <Select
+                defaultValue={level}
+                onChange={(value) => setLevel(value as NotificationLevel)}
+                options={[
+                  { value: "low", label: "Low" },
+                  { value: "normal", label: "Normal" },
+                  { value: "high", label: "High" },
+                  { value: "critical", label: "Critical" },
+                ]}
+              />
             </div>
 
             <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Message</label>
-              <textarea
-                className="mt-1 w-full min-h-30 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-hidden focus:ring-2 focus:ring-blue-500/40 dark:border-gray-800 dark:bg-transparent dark:text-white/90"
+              <Label htmlFor="adminNotifBody">Message</Label>
+              <TextArea
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
+                onChange={(value) => setBody(value)}
+                rows={6}
                 placeholder="Describe the notification…"
               />
             </div>
 
             <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Recipients</label>
+              <Label>Recipients</Label>
 
               <div className="mt-2 flex flex-wrap items-center gap-4">
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                  <input
-                    type="radio"
-                    name="recipientMode"
-                    checked={targetMode === "custom"}
-                    onChange={() => setTargetMode("custom")}
-                  />
-                  Roles and/or selected users
-                </label>
+                <Radio
+                  id="recipientModeCustom"
+                  name="recipientMode"
+                  value="custom"
+                  checked={targetMode === "custom"}
+                  label="Roles and/or selected users"
+                  onChange={() => setTargetMode("custom")}
+                />
 
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                  <input
-                    type="radio"
-                    name="recipientMode"
-                    checked={targetMode === "all"}
-                    onChange={() => setTargetMode("all")}
-                  />
-                  All active users
-                </label>
+                <Radio
+                  id="recipientModeAll"
+                  name="recipientMode"
+                  value="all"
+                  checked={targetMode === "all"}
+                  label="All active users"
+                  onChange={() => setTargetMode("all")}
+                />
               </div>
 
               {targetMode === "custom" && (
@@ -231,19 +235,17 @@ export default function AdminNotificationsPage() {
                       <div className="text-sm font-medium text-gray-700 dark:text-gray-200">By role</div>
                       <div className="mt-2 flex flex-wrap items-center gap-4">
                         {(["admin", "editor", "viewer"] as const).map((r) => (
-                          <label key={r} className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                            <input
-                              type="checkbox"
-                              checked={selectedRoles.includes(r)}
-                              onChange={() => {
-                                setSelectedRoles((cur) => {
-                                  if (cur.includes(r)) return cur.filter((x) => x !== r);
-                                  return [...cur, r];
-                                });
-                              }}
-                            />
-                            <span className="capitalize">{r}</span>
-                          </label>
+                          <Checkbox
+                            key={r}
+                            checked={selectedRoles.includes(r)}
+                            label={r.charAt(0).toUpperCase() + r.slice(1)}
+                            onChange={() => {
+                              setSelectedRoles((cur) => {
+                                if (cur.includes(r)) return cur.filter((x) => x !== r);
+                                return [...cur, r];
+                              });
+                            }}
+                          />
                         ))}
                       </div>
                       <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">Selected roles: {selectedRoleCount}</div>
@@ -252,12 +254,13 @@ export default function AdminNotificationsPage() {
                     <div>
                       <div className="text-sm font-medium text-gray-700 dark:text-gray-200">By user</div>
 
-                      <input
-                        className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-hidden focus:ring-2 focus:ring-blue-500/40 dark:border-gray-800 dark:bg-transparent dark:text-white/90"
-                        value={userSearch}
-                        onChange={(e) => setUserSearch(e.target.value)}
-                        placeholder="Search users (email/name)…"
-                      />
+                      <div className="mt-2">
+                        <Input
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          placeholder="Search users (email/name)…"
+                        />
+                      </div>
 
                       <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                         Selected users: {selectedUserCount}
@@ -275,17 +278,13 @@ export default function AdminNotificationsPage() {
                         {sortedUsers.map((u) => {
                           const checked = selectedUserIds.includes(u.id);
                           const inactive = u.is_active === 0;
+                          const label = `${u.email} (${u.role})`;
                           return (
-                            <label
-                              key={u.id}
-                              className={`inline-flex items-center gap-2 text-sm ${
-                                inactive ? "text-gray-400" : "text-gray-700 dark:text-gray-200"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
+                            <div key={u.id} className={inactive ? "opacity-70" : ""}>
+                              <Checkbox
                                 checked={checked}
                                 disabled={inactive}
+                                label={label}
                                 onChange={() => {
                                   setSelectedUserIds((cur) => {
                                     if (cur.includes(u.id)) return cur.filter((x) => x !== u.id);
@@ -293,9 +292,7 @@ export default function AdminNotificationsPage() {
                                   });
                                 }}
                               />
-                              <span className="truncate">{u.email}</span>
-                              <span className="text-xs text-gray-500">({u.role})</span>
-                            </label>
+                            </div>
                           );
                         })}
                       </div>

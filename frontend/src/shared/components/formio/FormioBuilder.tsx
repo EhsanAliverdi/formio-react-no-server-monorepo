@@ -335,5 +335,9 @@ export default function FormioBuilder({ form, onChange }: Props) {
     builder.setForm(schema);
   }, [form]);
 
-  return <div ref={containerRef} />;
+  return (
+    <div className="formio-scope">
+      <div ref={containerRef} />
+    </div>
+  );
 }

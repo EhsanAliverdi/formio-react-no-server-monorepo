@@ -362,7 +362,9 @@ export default function StepFormRenderer({ form, onSubmit }: Props) {
 			</div>
 
 			<div className={previewOpen ? "hidden" : "mb-6"}>
-				<div ref={containerRef} />
+				<div className="formio-scope">
+					<div ref={containerRef} />
+				</div>
 			</div>
 
 			<div className="flex gap-2 justify-between">

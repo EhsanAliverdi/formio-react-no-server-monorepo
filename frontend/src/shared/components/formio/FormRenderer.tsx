@@ -195,7 +195,9 @@ export default function FormRenderer({ form, onSubmit }: FormRendererProps) {
       )}
 
       <div className={previewOpen ? "hidden" : "block"}>
-        <div ref={containerRef} />
+        <div className="formio-scope">
+          <div ref={containerRef} />
+        </div>
       </div>
     </div>
   );

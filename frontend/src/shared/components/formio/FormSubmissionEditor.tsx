@@ -99,5 +99,9 @@ export default function FormSubmissionEditor({ form, data, onSubmit, submitLabel
     };
   }, [form, data, onSubmit, submitLabel]);
 
-  return <div ref={containerRef} />;
+  return (
+    <div className="formio-scope">
+      <div ref={containerRef} />
+    </div>
+  );
 }
