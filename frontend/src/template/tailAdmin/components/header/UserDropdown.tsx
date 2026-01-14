@@ -52,6 +52,8 @@ export default function UserDropdown({
   const isAdminArea = location.pathname.startsWith("/admin");
   const isAdminUser = user?.role === "admin";
 
+  const signInHref = isAdminArea ? "/admin/login" : "/login";
+
   function toggleDropdown() {
     setIsOpen(!isOpen);
   }
@@ -83,7 +85,7 @@ export default function UserDropdown({
       <div className="relative">
         <button
           type="button"
-          onClick={() => navigate("/admin/login")}
+          onClick={() => navigate(signInHref)}
           className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
           Sign in
@@ -150,10 +152,10 @@ export default function UserDropdown({
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
-              to="/admin/profile"
+              to={isAdminArea ? "/admin/profile" : "/myProfile"}
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              Account settings
+              My profile
             </DropdownItem>
           </li>
 

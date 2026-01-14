@@ -5,9 +5,17 @@ import { FiChevronLeft, FiEye, FiEyeOff } from "react-icons/fi";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
-import { login } from "../../../../shared/services/authService";
+import { login, type AuthUser } from "../../../../shared/services/authService";
 
-export default function SignInForm() {
+export type SignInFormProps = {
+  backToHref?: string;
+  postLoginRedirectTo?: (user: AuthUser) => string;
+};
+
+export default function SignInForm({
+  backToHref = "/",
+  postLoginRedirectTo,
+}: SignInFormProps) {
   const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +31,14 @@ export default function SignInForm() {
     try {
       const user = await login(email, password);
       toast.success("Logged in");
-      navigate(user.role === "admin" ? "/admin" : "/", { replace: true });
+
+      const destination = postLoginRedirectTo
+        ? postLoginRedirectTo(user)
+        : user.role === "admin"
+          ? "/admin"
+          : "/";
+
+      navigate(destination, { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -35,7 +50,7 @@ export default function SignInForm() {
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
         <Link
-          to="/"
+          to={backToHref}
           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         >
           <FiChevronLeft className="size-5" />

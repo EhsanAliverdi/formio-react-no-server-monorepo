@@ -16,6 +16,7 @@ import SignIn from "./template/tailAdmin/pages/AuthPages/SignIn";
 import { ThemeProvider } from "./template/tailAdmin/context/ThemeContext";
 import NotificationsPage from "./public/pages/NotificationsPage";
 import NoAccessPage from "./public/pages/NoAccessPage";
+import MyProfilePage from "./public/pages/MyProfilePage";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'forms', element: <FormsPage /> },
       { path: 'notifications', element: <NotificationsPage /> },
+      { path: 'myProfile', element: <MyProfilePage /> },
       { path: 'no-access', element: <NoAccessPage /> },
     ],
   },
@@ -48,6 +50,14 @@ const router = createBrowserRouter([
     element: (
       <ThemeProvider>
         <SignIn />
+      </ThemeProvider>
+    ),
+  },
+  {
+    path: 'login',
+    element: (
+      <ThemeProvider>
+        <SignIn mode="public" />
       </ThemeProvider>
     ),
   },
