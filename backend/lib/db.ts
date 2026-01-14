@@ -11,6 +11,7 @@ async function ensureFormsColumns(database: Database) {
 
   const columns: Array<{ name: string; def: string }> = [
     { name: "allow_anonymous_submit", def: "INTEGER NOT NULL DEFAULT 1" },
+    { name: "visibility", def: "TEXT NOT NULL DEFAULT 'public'" },
   ];
 
   for (const col of columns) {
@@ -18,6 +19,39 @@ async function ensureFormsColumns(database: Database) {
     await database.exec(`ALTER TABLE forms ADD COLUMN ${col.name} ${col.def};`);
     existing.add(col.name);
   }
+
+  if (existing.has("visibility")) {
+    await database.exec("UPDATE forms SET visibility = 'public' WHERE visibility IS NULL OR TRIM(COALESCE(visibility, '')) = '';");
+  }
+}
+
+async function ensureFormAccessTables(database: Database) {
+  await database.exec(`
+    CREATE TABLE IF NOT EXISTS form_allowed_roles (
+      form_id INTEGER NOT NULL,
+      role TEXT NOT NULL,
+      PRIMARY KEY(form_id, role),
+      FOREIGN KEY(form_id) REFERENCES forms(id) ON DELETE CASCADE
+    );
+  `);
+
+  await database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_form_allowed_roles_role ON form_allowed_roles(role);
+  `);
+
+  await database.exec(`
+    CREATE TABLE IF NOT EXISTS form_allowed_users (
+      form_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      PRIMARY KEY(form_id, user_id),
+      FOREIGN KEY(form_id) REFERENCES forms(id) ON DELETE CASCADE,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  `);
+
+  await database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_form_allowed_users_user_id ON form_allowed_users(user_id);
+  `);
 }
 
 async function ensureUserProfileColumns(database: Database) {
@@ -164,7 +198,8 @@ export async function getDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       json TEXT NOT NULL,
-      allow_anonymous_submit INTEGER NOT NULL DEFAULT 1
+      allow_anonymous_submit INTEGER NOT NULL DEFAULT 1,
+      visibility TEXT NOT NULL DEFAULT 'public'
     );
   `);
 
@@ -181,6 +216,8 @@ export async function getDb() {
   `);
 
   await ensureUserProfileColumns(db);
+
+  await ensureFormAccessTables(db);
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS sessions (

@@ -16,7 +16,7 @@ export default function AdminFormNewPage() {
       loadForms={loadForms}
       EMPTY_FORM={EMPTY_FORM}
       safeSchema={safeSchema}
-      onCreate={({ name, schema }) => createForm({ name, schema })}
+      onCreate={({ name, schema, access }) => createForm({ name, schema, access })}
       onBack={() => navigate("/admin/forms")}
     />
   );

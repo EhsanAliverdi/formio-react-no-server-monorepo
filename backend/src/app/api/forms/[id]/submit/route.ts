@@ -1,5 +1,6 @@
 import { corsHeaders, getUserFromRequest, jsonResponse } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { canUserAccessForm } from "@/lib/formsAccess";
 
 export const runtime = "nodejs";
 
@@ -20,16 +21,32 @@ export async function POST(req: Request, context: RouteContext) {
   }
 
   const db = await getDb();
-  const formRow = await db.get("SELECT id, allow_anonymous_submit FROM forms WHERE id = ?", formId);
+  const formRow = await db.get(
+    "SELECT id, allow_anonymous_submit, visibility FROM forms WHERE id = ?",
+    formId
+  );
   if (!formRow) {
     return jsonResponse({ error: "Not found" }, { status: 404 });
   }
 
   const allowAnonymous = Number(formRow.allow_anonymous_submit ?? 1) ? 1 : 0;
+  const visibility =
+    (formRow as Record<string, unknown>).visibility === "restricted" ? "restricted" : "public";
 
   const user = await getUserFromRequest(req);
-  if (!allowAnonymous && !user) {
-    return jsonResponse({ error: "Unauthorized" }, { status: 401 });
+
+  if (visibility === "restricted") {
+    if (!user) {
+      return jsonResponse({ error: "Unauthorized" }, { status: 401 });
+    }
+    const allowed = await canUserAccessForm(db, formId, { id: user.id, role: user.role });
+    if (!allowed) {
+      return jsonResponse({ error: "Forbidden" }, { status: 403 });
+    }
+  } else {
+    if (!allowAnonymous && !user) {
+      return jsonResponse({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const body: unknown = await req.json().catch(() => null);

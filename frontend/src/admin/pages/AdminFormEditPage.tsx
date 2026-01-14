@@ -19,7 +19,7 @@ export default function AdminFormEditPage() {
       loadForms={loadForms}
       EMPTY_FORM={EMPTY_FORM}
       safeSchema={safeSchema}
-      onUpdate={(formId, { name, schema }) => updateForm(formId, { name, schema })}
+      onUpdate={(formId, { name, schema, access }) => updateForm(formId, { name, schema, access })}
       onBack={() => navigate("/admin/forms")}
     />
   );

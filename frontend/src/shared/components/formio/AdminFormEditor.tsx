@@ -8,6 +8,9 @@ import Label from "../../../template/tailAdmin/components/form/Label";
 import Input from "../../../template/tailAdmin/components/form/input/InputField";
 import TextArea from "../../../template/tailAdmin/components/form/input/TextArea";
 import Select from "../../../template/tailAdmin/components/form/Select";
+import Checkbox from "../../../template/tailAdmin/components/form/input/Checkbox";
+import { getFormById, type FormVisibility } from "../../services/formService";
+import { getMyProfile, listUsers, type UserRow } from "../../services/userService";
 import {
   FaRegFileAlt,
   FaClipboardList,
@@ -102,6 +105,12 @@ type FormSummary = {
   schema: unknown;
 };
 
+type FormAccessSettings = {
+  visibility: FormVisibility;
+  allowed_roles: Array<"admin" | "editor" | "viewer">;
+  allowed_user_ids: number[];
+};
+
 type CommonProps = {
   forms: FormSummary[];
   loading: boolean;
@@ -116,12 +125,12 @@ type Props =
   | (CommonProps & {
       mode: "add";
       formId?: never;
-      onCreate: (payload: { name: string; schema: FormSchema }) => Promise<void> | void;
+      onCreate: (payload: { name: string; schema: FormSchema; access: FormAccessSettings }) => Promise<void> | void;
     })
   | (CommonProps & {
       mode: "edit";
       formId: number | null;
-      onUpdate: (id: number, payload: { name: string; schema: FormSchema }) => Promise<void> | void;
+      onUpdate: (id: number, payload: { name: string; schema: FormSchema; access: FormAccessSettings }) => Promise<void> | void;
     });
 
 function getDisplay(schema: FormSchema): FormDisplay {
@@ -283,6 +292,18 @@ export default function AdminFormEditor(props: Props) {
   const [renameDraft, setRenameDraft] = useState("");
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
 
+  const [visibility, setVisibility] = useState<FormVisibility>("public");
+  const [allowedRoles, setAllowedRoles] = useState<Array<"admin" | "editor" | "viewer">>([]);
+  const [allowedUserIds, setAllowedUserIds] = useState<number[]>([]);
+  const [accessLoadedForId, setAccessLoadedForId] = useState<number | null>(null);
+
+  const [currentUserRole, setCurrentUserRole] = useState<"admin" | "editor" | "viewer" | null>(null);
+  const canAssignUsers = currentUserRole === "admin";
+
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+
   const activeForm = useMemo(() => {
     if (props.mode !== "edit") return null;
     if (formId === null) return null;
@@ -290,11 +311,38 @@ export default function AdminFormEditor(props: Props) {
   }, [props.forms, formId, props.mode]);
 
   useEffect(() => {
+    if (currentUserRole !== null) return;
+    getMyProfile()
+      .then((me) => {
+        setCurrentUserRole(me.role);
+      })
+      .catch(() => {
+        setCurrentUserRole(null);
+      });
+  }, [currentUserRole]);
+
+  useEffect(() => {
+    if (!canAssignUsers) return;
+    if (usersLoading) return;
+    if (users.length > 0) return;
+
+    setUsersLoading(true);
+    listUsers({ activeOnly: true, limit: 500 })
+      .then((rows) => setUsers(rows))
+      .catch(() => setUsers([]))
+      .finally(() => setUsersLoading(false));
+  }, [canAssignUsers, users.length, usersLoading]);
+
+  useEffect(() => {
     if (props.mode === "add") {
       if (initializedFor === "add") return;
       setDraftName("");
       setDraftSchema(props.EMPTY_FORM);
       setActiveWizardPageKey(null);
+      setVisibility("public");
+      setAllowedRoles([]);
+      setAllowedUserIds([]);
+      setAccessLoadedForId(null);
       setInitializedFor("add");
       return;
     }
@@ -311,6 +359,39 @@ export default function AdminFormEditor(props: Props) {
       setInitializedFor("edit");
     }
   }, [activeForm, formId, initializedFor, props, props.EMPTY_FORM]);
+
+  useEffect(() => {
+    if (props.mode !== "edit") return;
+    if (formId === null) return;
+    if (accessLoadedForId === formId) return;
+
+    (async () => {
+      const data: unknown = await getFormById(formId);
+      if (!data || typeof data !== "object") return;
+      const obj = data as Record<string, unknown>;
+
+      const vis = obj.visibility === "restricted" ? "restricted" : "public";
+      setVisibility(vis);
+
+      const rolesRaw = Array.isArray(obj.allowed_roles) ? (obj.allowed_roles as unknown[]) : [];
+      const roles = rolesRaw.filter(
+        (r): r is "admin" | "editor" | "viewer" => r === "admin" || r === "editor" || r === "viewer"
+      );
+      setAllowedRoles(roles);
+
+      const idsRaw = Array.isArray(obj.allowed_user_ids) ? (obj.allowed_user_ids as unknown[]) : [];
+      const ids = idsRaw
+        .map((v) => Number(v))
+        .filter((n) => Number.isFinite(n) && n > 0);
+      setAllowedUserIds(ids);
+    })()
+      .catch(() => {
+        // Ignore; access settings are optional.
+      })
+      .finally(() => {
+        setAccessLoadedForId(formId);
+      });
+  }, [accessLoadedForId, formId, props.mode]);
 
   const display = getDisplay(draftSchema);
 
@@ -483,6 +564,24 @@ export default function AdminFormEditor(props: Props) {
 
   const savingLabel = props.mode === "add" ? "Save" : "Save Changes";
 
+  const toggleRole = (role: "admin" | "editor" | "viewer", checked: boolean) => {
+    setAllowedRoles((prev) => {
+      const has = prev.includes(role);
+      if (checked && !has) return [...prev, role];
+      if (!checked && has) return prev.filter((r) => r !== role);
+      return prev;
+    });
+  };
+
+  const toggleUser = (userId: number, checked: boolean) => {
+    setAllowedUserIds((prev) => {
+      const has = prev.includes(userId);
+      if (checked && !has) return [...prev, userId];
+      if (!checked && has) return prev.filter((id) => id !== userId);
+      return prev;
+    });
+  };
+
   const handleSave = async () => {
     const name = draftName.trim();
     if (!name) {
@@ -508,16 +607,22 @@ export default function AdminFormEditor(props: Props) {
       },
     }) as FormSchema;
 
+    const accessToSave: FormAccessSettings = {
+      visibility,
+      allowed_roles: visibility === "restricted" ? allowedRoles : [],
+      allowed_user_ids: visibility === "restricted" && canAssignUsers ? allowedUserIds : [],
+    };
+
     try {
       if (props.mode === "add") {
-        await props.onCreate({ name, schema: schemaToSave });
+        await props.onCreate({ name, schema: schemaToSave, access: accessToSave });
         toast.success("Form added successfully!");
       } else {
         if (formId === null) {
           alert("Invalid form id.");
           return;
         }
-        await props.onUpdate(formId, { name, schema: schemaToSave });
+        await props.onUpdate(formId, { name, schema: schemaToSave, access: accessToSave });
         toast.success("Form updated successfully!");
       }
 
@@ -606,6 +711,92 @@ export default function AdminFormEditor(props: Props) {
                 onChange={(e) => setDraftName(e.target.value)}
                 placeholder="e.g. Forklift Prestart"
               />
+            </div>
+
+            <div className="mb-6">
+              <div className="mb-2 text-sm font-semibold text-gray-900">Form access</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Visibility</Label>
+                  <Select
+                    value={visibility}
+                    options={[
+                      { value: "public", label: "Public (anyone can see)" },
+                      { value: "restricted", label: "Restricted (assigned only)" },
+                    ]}
+                    onChange={(v) => setVisibility(v === "restricted" ? "restricted" : "public")}
+                  />
+                </div>
+
+                <div>
+                  <Label>Allowed roles</Label>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <Checkbox
+                      label="Viewer"
+                      checked={allowedRoles.includes("viewer")}
+                      onChange={(checked) => toggleRole("viewer", checked)}
+                      disabled={visibility !== "restricted"}
+                    />
+                    <Checkbox
+                      label="Editor"
+                      checked={allowedRoles.includes("editor")}
+                      onChange={(checked) => toggleRole("editor", checked)}
+                      disabled={visibility !== "restricted"}
+                    />
+                    <Checkbox
+                      label="Admin"
+                      checked={allowedRoles.includes("admin")}
+                      onChange={(checked) => toggleRole("admin", checked)}
+                      disabled={visibility !== "restricted"}
+                    />
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    If restricted, users can access if their role is checked or they are explicitly assigned.
+                  </div>
+                </div>
+              </div>
+
+              {visibility === "restricted" ? (
+                <div className="mt-4">
+                  <Label>Specific users (admin only)</Label>
+                  {!canAssignUsers ? (
+                    <div className="mt-2 text-sm text-gray-500">Only admins can assign specific users.</div>
+                  ) : (
+                    <>
+                      <Input
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        placeholder="Search users by email…"
+                      />
+                      <div className="mt-2 max-h-48 overflow-auto rounded-lg border border-gray-200 p-3">
+                        {usersLoading ? (
+                          <div className="text-sm text-gray-600">Loading users…</div>
+                        ) : (
+                          (users
+                            .filter((u) => {
+                              const q = userSearch.trim().toLowerCase();
+                              if (!q) return true;
+                              return String(u.email).toLowerCase().includes(q);
+                            })
+                            .slice(0, 200)
+                          ).map((u) => (
+                            <div key={u.id} className="py-1">
+                              <Checkbox
+                                label={`${u.email} (${u.role})`}
+                                checked={allowedUserIds.includes(u.id)}
+                                onChange={(checked) => toggleUser(u.id, checked)}
+                              />
+                            </div>
+                          ))
+                        )}
+                        {!usersLoading && users.length === 0 ? (
+                          <div className="text-sm text-gray-600">No users found.</div>
+                        ) : null}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : null}
             </div>
 
             <div className="mb-4">
