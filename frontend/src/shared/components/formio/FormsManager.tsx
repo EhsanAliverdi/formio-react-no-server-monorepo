@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { FaRegFileAlt } from "react-icons/fa";
 
 import Button from "../../../template/tailAdmin/components/ui/button/Button";
+import { Modal } from "../../../template/tailAdmin/components/ui/modal";
 import { ReactIconFromKey } from "../ui/ReactIconFromKey";
 
 type AnyRecord = Record<string, unknown>;
@@ -290,6 +291,12 @@ export default function FormsManager({
   const [deleteName, setDeleteName] = useState<string>("");
   const [deleting, setDeleting] = useState(false);
 
+  const closeDeleteModal = () => {
+    if (deleting) return;
+    setDeleteId(null);
+    setDeleteName("");
+  };
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -566,6 +573,7 @@ export default function FormsManager({
                           onClick={() => {
                             setDeleteId(form.id);
                             setDeleteName(form.name);
+                            setDeleting(false);
                           }}
                         >
                           Delete
@@ -608,50 +616,48 @@ export default function FormsManager({
         </div>
       )}
 
-      {deleteId !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm relative">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-              onClick={() => setDeleteId(null)}
-              aria-label="Close"
-              type="button"
-            >
-              ✕
-            </button>
-            <h2 className="text-lg font-semibold mb-4 text-red-600">Delete Form</h2>
-            <p className="mb-6">
-              Are you sure you want to delete <span className="font-semibold">{deleteName}</span>?
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={() => setDeleteId(null)} disabled={deleting}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                className="bg-red-600 hover:bg-red-700 disabled:bg-red-300"
-                onClick={async () => {
-                  setDeleting(true);
-                  try {
-                    await onDelete(deleteId);
-                    toast.success("Form deleted successfully!");
-                    await onRefresh();
-                    setDeleteId(null);
-                  } catch {
-                    toast.error("Failed to delete form.");
-                  } finally {
-                    setDeleting(false);
-                  }
-                }}
-                disabled={deleting}
-              >
-                {deleting ? "Deleting..." : "Delete"}
-              </Button>
-            </div>
-          </div>
+      <Modal isOpen={deleteId !== null} onClose={closeDeleteModal} className="w-[92vw] max-w-md p-6">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-lg font-semibold text-red-600">Delete Form</h3>
         </div>
-      )}
+
+        <div className="pt-4">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            Are you sure you want to delete <span className="font-semibold">{deleteName || "this form"}</span>?
+          </p>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">This action cannot be undone.</p>
+        </div>
+
+        <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={closeDeleteModal} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            className="bg-red-600 hover:bg-red-700 disabled:bg-red-300"
+            onClick={async () => {
+              if (deleteId == null) return;
+              const id = deleteId;
+
+              setDeleting(true);
+              try {
+                await onDelete(id);
+                toast.success("Form deleted successfully!");
+                await onRefresh();
+                closeDeleteModal();
+              } catch {
+                toast.error("Failed to delete form.");
+              } finally {
+                setDeleting(false);
+              }
+            }}
+            disabled={deleting}
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
