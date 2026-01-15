@@ -47,6 +47,7 @@ Services (default):
 
 - Frontend (nginx): http://localhost
 - Backend API: http://localhost:3000
+- PostgreSQL: localhost:5432
 - MinIO Console: http://localhost:9001
 - MinIO S3 API: http://localhost:9000
 
@@ -75,7 +76,7 @@ Default admin credentials (from seed):
 - Email: `admin@example.com`
 - Password: `admin12345`
 
-If you changed the DB location, the seed script uses the same DB as the backend via `SQLITE_DB_PATH`.
+The seed script uses the PostgreSQL database configured via `DATABASE_URL`.
 
 ## VS Code Tasks
 
@@ -99,9 +100,10 @@ This repo expects environment variables to be supplied via Docker Compose or you
 
 Common variables:
 
-- `SQLITE_DB_PATH`
-	- Path to the SQLite file used by the backend.
-	- In Docker this is typically set to something like `/app/backend/var/forms.db` and backed by a named volume.
+- `DATABASE_URL`
+	- PostgreSQL connection string.
+	- Format: `postgresql://username:password@host:port/database`
+	- In Docker this is automatically configured to connect to the postgres service.
 
 - `SUPERUSER_EMAIL`, `SUPERUSER_PASSWORD`
 	- Used by the seed script to create/update the admin account.

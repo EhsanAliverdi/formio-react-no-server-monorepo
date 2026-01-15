@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    pull_policy: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-formio}
+      POSTGRES_USER: ${POSTGRES_USER:-formio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-formio123}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-formio}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   minio:
     image: minio/minio:latest
     pull_policy: always
@@ -41,18 +58,18 @@ services:
       BUILD_TIME: ${BUILD_TIME:-}
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
 
-      # Store SQLite DB on a Linux volume (avoid Windows bind-mount mmap/SIGBUS issues)
-      SQLITE_DB_PATH: /app/backend/var/forms.db
+      # PostgreSQL connection
+      DATABASE_URL: postgresql://${POSTGRES_USER:-formio}:${POSTGRES_PASSWORD:-formio123}@postgres:5432/${POSTGRES_DB:-formio}
 
       # Force SWC WASM bindings (native SWC can SIGBUS under Docker Desktop/WSL)
       NEXT_TEST_WASM: "1"
     ports:
       - "${BACKEND_PORT:-3000}:3000"
-    volumes:
-      # Persist SQLite database (Linux volume)
-      - backend_db:/app/backend/var
     depends_on:
-      - minio
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
   frontend:
     pull_policy: build
@@ -71,5 +88,5 @@ services:
       - backend
 
 volumes:
+  postgres_data:
   minio_data:
-  backend_db:

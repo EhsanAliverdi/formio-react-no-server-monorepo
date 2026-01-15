@@ -1,6 +1,4 @@
 # Backend (Next.js) with server-side PDF export via Playwright/Chromium.
-# We intentionally run on Node 20 to keep native deps like `sqlite3` on a
-# well-supported ABI and avoid rebuild issues.
 FROM node:20-bookworm-slim AS backend
 
 WORKDIR /app/backend
