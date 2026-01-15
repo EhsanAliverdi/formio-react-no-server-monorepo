@@ -76,6 +76,21 @@
       ],
       "isBackground": true,
       "problemMatcher": []
+    },
+    {
+      "label": "Docker: Seed Database",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "exec",
+        "backend",
+        "npm",
+        "run",
+        "seed"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
     }
   ]
 }

@@ -77,6 +77,20 @@ Default admin credentials (from seed):
 
 If you changed the DB location, the seed script uses the same DB as the backend via `SQLITE_DB_PATH`.
 
+## VS Code Tasks
+
+This project includes VS Code tasks for common Docker operations. Press `Ctrl+Shift+P` → "Tasks: Run Task" to access them:
+
+- **Docker: Compose Up Frontend** — Start the frontend service only
+- **Docker: Compose Up Backend** — Start the backend service (includes MinIO dependency)
+- **Docker: Compose Up Both** — Start all services
+- **Docker: Recreate & Compose Up Frontend** — Force recreate and rebuild the frontend service
+- **Docker: Recreate & Compose Up Backend** — Force recreate and rebuild the backend service
+- **Docker: Recreate & Compose Up Both** — Force recreate and rebuild all services
+- **Docker: Seed Database** — Run the database seed script in the running backend container
+
+All tasks run in the background except for the seed task, which will show output when complete.
+
 ## Environment configuration
 
 This repo expects environment variables to be supplied via Docker Compose or your shell.
