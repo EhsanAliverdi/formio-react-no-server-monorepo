@@ -1,0 +1,81 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Docker: Compose Up Frontend",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "up",
+        "frontend"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Compose Up Backend",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "up",
+        "backend"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Compose Up Both",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "up"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Recreate & Compose Up Frontend",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "up",
+        "--force-recreate",
+        "--build",
+        "frontend"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Recreate & Compose Up Backend",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "up",
+        "--force-recreate",
+        "--build",
+        "backend"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Recreate & Compose Up Both",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "up",
+        "--force-recreate",
+        "--build"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

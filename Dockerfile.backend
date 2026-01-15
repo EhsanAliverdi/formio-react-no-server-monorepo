@@ -37,7 +37,10 @@ ARG APP_ENVIRONMENT
 
 # Install dependencies first for better caching
 COPY backend/package.json backend/package-lock.json ./
-RUN if [ "$INSECURE_TLS" = "true" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi \
+RUN if [ "$INSECURE_TLS" = "true" ]; then \
+		export NODE_TLS_REJECT_UNAUTHORIZED=0; \
+		export npm_config_strict_ssl=false; \
+	fi \
 	&& npm ci
 
 # Install Chromium + runtime deps for Playwright.
