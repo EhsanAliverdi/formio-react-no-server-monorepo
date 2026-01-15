@@ -3,10 +3,10 @@ import { Navigate, useLocation } from "react-router-dom";
 import { clearAuthToken, getAuthToken } from "../../shared/services/apiClient";
 import { logout, me, type AuthUser } from "../../shared/services/authService";
 import {
+  emitNotificationsChanged,
   getMyNotifications,
   markNotificationRead,
   onNotificationsChanged,
-  emitNotificationsChanged,
   type NotificationRow,
 } from "../../shared/services/notificationsService";
 import AppLayout from "../../template/tailAdmin/layout/AppLayout";
@@ -60,7 +60,7 @@ function deriveHeaderName(user: AuthUser): string {
   return user.email.includes("@") ? (user.email.split("@")[0] ?? user.email) : user.email;
 }
 
-export default function AdminProtectedLayout() {
+export default function AdminLayout() {
   const [loading, setLoading] = useState(() => Boolean(getAuthToken()));
   const [user, setUser] = useState<AuthUser | null>(null);
   const [headerNotifications, setHeaderNotifications] = useState<HeaderNotification[]>([]);

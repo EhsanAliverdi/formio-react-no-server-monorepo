@@ -1,5 +1,5 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
-import AdminProtectedLayout from "./admin/layout/AdminProtectedLayout";
+import AdminLayout from "./admin/layout/AdminLayout";
 import HomePage from "./public/pages/HomePage";
 import FormsPage from "./public/pages/FormsPage";
 import FormsLayoutPage from "./public/pages/FormsLayoutPage";
@@ -42,7 +42,7 @@ const router = createBrowserRouter([
   },
   {
     path: 'admin',
-    element: <AdminProtectedLayout />,
+    element: <AdminLayout />,
     children: [
       { index: true, element: <AdminPage /> },
       { path: 'forms', element: <AdminFormsPage /> },
