@@ -4,6 +4,7 @@ import { useForms } from "../../shared/components/formio";
 import { getAdminStats, type AdminStats } from "../../shared/services/adminService";
 import { FiClipboard, FiFileText, FiLayers, FiTrendingUp } from "react-icons/fi";
 import ComponentCard from "../../template/tailAdmin/components/common/ComponentCard";
+import RecentActivityCard from "../components/RecentActivityCard";
 
 
 function formatDateYmd(d: Date): string {
@@ -158,16 +159,7 @@ export default function AdminPage() {
             <div className="mt-3 h-40 rounded-lg border border-dashed border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900" />
           </ComponentCard>
 
-          <ComponentCard title="Recent activity" desc="Placeholder for TailAdmin-style activity feed">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Activity feed isn’t implemented in this app yet.
-            </div>
-            <div className="mt-3 space-y-2">
-              <div className="h-8 rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900" />
-              <div className="h-8 rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900" />
-              <div className="h-8 rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900" />
-            </div>
-          </ComponentCard>
+          <RecentActivityCard />
         </div>
       </div>
     </div>
