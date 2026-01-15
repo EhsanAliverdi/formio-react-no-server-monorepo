@@ -3,23 +3,10 @@ FROM node:20-bookworm-slim AS backend
 
 WORKDIR /app/backend
 
-# Ensure CA roots exist (some environments otherwise fail HTTPS downloads)
-RUN apt-get update \
-	&& apt-get install -y --no-install-recommends \
-		ca-certificates \
-		python3 \
-		make \
-		g++ \
-	&& update-ca-certificates \
-	&& rm -rf /var/lib/apt/lists/*
-
-# Make Node use the container's system CA store (important behind TLS interception)
-ENV NODE_OPTIONS=--use-openssl-ca
-
 # Optional: add corporate root CA certs for Docker builds.
 # Place one or more *.crt files in backend/certs/ and rebuild.
 COPY backend/certs/ /usr/local/share/ca-certificates/
-RUN update-ca-certificates
+RUN update-ca-certificates || true
 
 # Some networks (corporate TLS interception) cause Node HTTPS downloads to fail with
 # "unable to get local issuer certificate" during `npm ci`.
@@ -41,11 +28,11 @@ RUN if [ "$INSECURE_TLS" = "true" ]; then \
 	fi \
 	&& npm ci
 
-# Install Chromium + runtime deps for Playwright.
+# Install Chromium for Playwright.
 # PLAYWRIGHT_BROWSERS_PATH=0 keeps browsers inside the project for Docker caching.
 ENV PLAYWRIGHT_BROWSERS_PATH=0
 RUN if [ "$INSECURE_TLS" = "true" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi \
-	&& npx playwright install --with-deps chromium
+	&& npx playwright install chromium
 
 # Copy backend source
 COPY backend/ ./
