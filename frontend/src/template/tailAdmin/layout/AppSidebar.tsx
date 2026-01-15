@@ -5,6 +5,7 @@ import { FiChevronDown,  FiMoreHorizontal} from "react-icons/fi";
 
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
+import AppVersion from "../../../shared/components/AppVersion";
 
 export type NavItem = {
   name: string;
@@ -291,7 +292,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           )}
         </Link>
       </div>
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+      <div className="flex flex-1 flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
@@ -333,6 +334,71 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           </div>
         </nav>
         {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
+      </div>
+
+      <div className="pb-6">
+        <AppVersion>
+          {(info) => {
+            const isOpen = isExpanded || isHovered || isMobileOpen;
+
+            if (isOpen) {
+              return (
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500">
+                  <div className="flex flex-col gap-1">
+                    <div>
+                      <span className="font-medium">App Version :</span> {info.appVersion}
+                    </div>
+                    {info.showDetailed && (
+                      <>
+                        <div>
+                          <span className="font-medium">Frontend:</span> {info.frontend.version}
+                          <span> ({info.frontend.buildTime})</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">Backend:</span> {info.backend.version}
+                          <span> ({info.backend.buildTime})</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">environment</span> {info.environment.label}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div className="relative mt-3 pt-3 border-t border-gray-200 dark:border-gray-800 flex justify-center">
+                <div className="group relative">
+                  <div className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold select-none cursor-default">
+                    i
+                  </div>
+                  <div className="pointer-events-none absolute left-full ml-3 bottom-0 hidden group-hover:block z-50">
+                    <div className="min-w-[240px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 shadow-lg">
+                      <div className="text-xs text-gray-500">
+                        <div>
+                          <span className="font-medium">App Version :</span> {info.appVersion}
+                        </div>
+                        <div>
+                          <span className="font-medium">Frontend:</span> {info.frontend.version}
+                          <span> ({info.frontend.buildTime})</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">Backend:</span> {info.backend.version}
+                          <span> ({info.backend.buildTime})</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">environment</span> {info.environment.label}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }}
+        </AppVersion>
       </div>
     </aside>
   );
