@@ -16,7 +16,7 @@ A Docker-first monorepo for building and running Form.io forms with a React admi
 - Role-based access control (admin-only sections)
 - React Icons picker (search icons across packs; icons served as SVG from backend)
 - File uploads backed by MinIO (S3-compatible storage)
-- SQLite persistence (path configurable via `SQLITE_DB_PATH`)
+- PostgreSQL database for persistence
 - Optional PDF draft export endpoints (admin)
 
 ## Quick start (Docker)
@@ -202,7 +202,6 @@ Note: if you run without Docker, you still need an S3-compatible endpoint for up
 ## Repository notes
 
 - `_reference/` is intentionally ignored and not part of the repo history.
-- SQLite database files are ignored (runtime data).
 
 ## Troubleshooting
 
