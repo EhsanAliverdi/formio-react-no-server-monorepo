@@ -212,7 +212,7 @@ function formatNormalAnswer(value: unknown): string {
 	}
 }
 
-function buildSubmissionPdfBodyFromDetail(detail: AnyRecord): string {
+export function buildSubmissionPdfBodyFromDetail(detail: AnyRecord): string {
 	const formName = typeof detail.form_name === "string" ? detail.form_name : "Submission";
 	const id = typeof detail.id === "number" ? detail.id : typeof detail.id === "string" ? detail.id : "";
 	const submittedAt = formatWhen(detail.submitted_at);
@@ -352,7 +352,7 @@ function ensurePdfExt(name: string): string {
 	return trimmed.toLowerCase().endsWith(".pdf") ? trimmed : `${trimmed}.pdf`;
 }
 
-function createHtmlDocument(bodyHtml: string): string {
+export function createHtmlDocument(bodyHtml: string): string {
 	return `<!doctype html>
 <html>
 	<head>

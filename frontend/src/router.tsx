@@ -1,7 +1,8 @@
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 import AdminProtectedLayout from "./admin/layout/AdminProtectedLayout";
 import HomePage from "./public/pages/HomePage";
 import FormsPage from "./public/pages/FormsPage";
+import FormsLayoutPage from "./public/pages/FormsLayoutPage";
 import PublicLayout from "./public/layout/PublicLayout";
 import AdminPage from "./admin/pages/AdminPage";
 import AdminFormsPage from "./admin/pages/AdminFormsPage";
@@ -17,6 +18,7 @@ import { ThemeProvider } from "./template/tailAdmin/context/ThemeContext";
 import NotificationsPage from "./public/pages/NotificationsPage";
 import NoAccessPage from "./public/pages/NoAccessPage";
 import MyProfilePage from "./public/pages/MyProfilePage";
+import MySubmissionsPage from "./public/pages/MySubmissionsPage";
 
 const router = createBrowserRouter([
   {
@@ -24,9 +26,17 @@ const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'forms', element: <FormsPage /> },
+      {
+        path: 'forms',
+        element: <FormsLayoutPage />,
+        children: [
+          { index: true, element: <FormsPage /> },
+          { path: 'mysubmissions', element: <MySubmissionsPage /> },
+        ],
+      },
       { path: 'notifications', element: <NotificationsPage /> },
       { path: 'myProfile', element: <MyProfilePage /> },
+      { path: 'mysubmissions', element: <Navigate to="/forms/mysubmissions" replace /> },
       { path: 'no-access', element: <NoAccessPage /> },
     ],
   },

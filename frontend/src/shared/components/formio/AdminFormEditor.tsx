@@ -48,6 +48,7 @@ type FormSchema = {
 type FormAppSettings = {
   previewBeforeSubmit?: boolean;
   allowDraftPdfBeforeSubmit?: boolean;
+  allowSubmissionPdfExport?: boolean;
   showIconInFormsList?: boolean;
   formsListIconKey?: string;
   formsListImageDataUrl?: string;
@@ -872,6 +873,36 @@ export default function AdminFormEditor(props: Props) {
                     setAppSettings((prevSettings) => ({
                       ...prevSettings,
                       allowDraftPdfBeforeSubmit: checked,
+                    }));
+                  }}
+                />
+              </div>
+
+              <div className="h-px bg-gray-100" />
+
+              <div className="flex items-start justify-between gap-4 py-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-medium text-gray-900">Allow PDF export from My Submissions</div>
+                    <div className="relative group">
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 group-hover:text-gray-700">
+                        i
+                      </span>
+                      <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 hidden w-72 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-(--shadow-tooltip) group-hover:block">
+                        If enabled, users can export their submitted forms to PDF from the public My Submissions page.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Switch
+                  label=""
+                  checked={!!appSettings.allowSubmissionPdfExport}
+                  color="gray"
+                  onChange={(checked) => {
+                    setAppSettings((prevSettings) => ({
+                      ...prevSettings,
+                      allowSubmissionPdfExport: checked,
                     }));
                   }}
                 />
