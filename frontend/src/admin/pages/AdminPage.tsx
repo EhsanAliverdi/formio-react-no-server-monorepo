@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForms } from "../../shared/components/formio";
 import { getAdminStats, type AdminStats } from "../../shared/services/adminService";
 import { FiClipboard, FiFileText, FiLayers, FiTrendingUp } from "react-icons/fi";
-import ComponentCard from "../../template/tailAdmin/components/common/ComponentCard";
+import AdminChartsCard from "../components/AdminChartsCard";
 import RecentActivityCard from "../components/RecentActivityCard";
 
 
@@ -152,12 +152,7 @@ export default function AdminPage() {
         )}
 
         <div className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <ComponentCard title="Charts" desc="Placeholder for TailAdmin-style charts">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Chart widgets aren’t implemented in this app yet.
-            </div>
-            <div className="mt-3 h-40 rounded-lg border border-dashed border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900" />
-          </ComponentCard>
+          <AdminChartsCard stats={stats} loading={statsLoading} error={statsError} />
 
           <RecentActivityCard />
         </div>

@@ -86,7 +86,7 @@ export default function RecentActivityCard() {
 
   return (
     <>
-      <ComponentCard title="Recent activity" desc="TailAdmin-style activity feed">
+      <ComponentCard title="Recent activity" desc="Latest submissions, users, and notifications">
         {loading ? (
           skeleton
         ) : error ? (
