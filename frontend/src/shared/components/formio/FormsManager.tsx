@@ -415,7 +415,8 @@ export default function FormsManager({
               setPage(1);
             }}
             placeholder="Search forms…"
-            className="hidden sm:block w-72 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400"
+            aria-label="Search forms"
+            className="w-full max-w-[18rem] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400"
             type="search"
           />
 
