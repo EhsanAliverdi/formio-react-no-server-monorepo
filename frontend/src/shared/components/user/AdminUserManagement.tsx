@@ -25,9 +25,10 @@ export type AdminUserManagementProps = {
   loading: boolean;
   error: string | null;
   onRefresh: () => Promise<void> | void;
-  onCreate: (payload: UserCreatePayload) => Promise<void> | void;
+  onCreate: (payload: UserCreatePayload, avatarFile?: File | null) => Promise<void> | void;
   onUpdate: (id: number, payload: UserUpdatePayload) => Promise<void> | void;
   onDelete: (id: number) => Promise<void> | void;
+  onUploadAvatar?: (id: number, file: File) => Promise<{ avatar_url?: string } | UserRow | void> | void;
   roles?: UserRole[];
 };
 
@@ -40,6 +41,7 @@ export default function AdminUserManagement({
   onCreate,
   onUpdate,
   onDelete,
+  onUploadAvatar,
   roles = USER_ROLES,
 }: AdminUserManagementProps) {
   const deriveDisplayName = (u: UserRow): string => {
@@ -103,9 +105,9 @@ export default function AdminUserManagement({
     return users.find((u) => u.id === editingUserId) ?? null;
   }, [editingUserId, users]);
 
-  const create = async (payload: UserCreatePayload) => {
+  const create = async (payload: UserCreatePayload, avatarFile?: File | null) => {
     try {
-      await onCreate(payload);
+      await onCreate(payload, avatarFile);
       toast.success("User created");
       await onRefresh();
     } catch (err) {
@@ -258,10 +260,10 @@ export default function AdminUserManagement({
             formId="create-user-form"
             disabled={loading || createSaving}
             roles={roles}
-            onCreate={async (payload) => {
+            onCreate={async (payload, avatarFile) => {
               setCreateSaving(true);
               try {
-                await create(payload);
+                await create(payload, avatarFile);
                 setCreateOpen(false);
               } finally {
                 setCreateSaving(false);
@@ -304,6 +306,21 @@ export default function AdminUserManagement({
               formId={`edit-user-form-${editingUser.id}`}
               user={editingUser}
               saving={editSaving}
+              onUploadAvatar={
+                onUploadAvatar
+                  ? async (file) => {
+                      try {
+                        const out = await onUploadAvatar(editingUser.id, file);
+                        await onRefresh();
+                        toast.success("Avatar updated");
+                        return out;
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : "Failed to upload avatar");
+                        throw err;
+                      }
+                    }
+                  : undefined
+              }
               onSave={async (payload) => {
                 setEditSaving(true);
                 try {

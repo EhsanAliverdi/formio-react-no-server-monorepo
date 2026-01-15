@@ -10,7 +10,6 @@ type FormState = {
   phone: string;
   job_title: string;
   department: string;
-  avatar_url: string;
 };
 
 function toFormState(user: UserRow): FormState {
@@ -21,7 +20,6 @@ function toFormState(user: UserRow): FormState {
     phone: user.phone ?? "",
     job_title: user.job_title ?? "",
     department: user.department ?? "",
-    avatar_url: user.avatar_url ?? "",
   };
 }
 
@@ -49,6 +47,7 @@ export default function UserProfileEditor({
 }: UserProfileEditorProps) {
   const [savingLocal, setSavingLocal] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrlOverride, setAvatarUrlOverride] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({
     display_name: "",
     first_name: "",
@@ -56,25 +55,30 @@ export default function UserProfileEditor({
     phone: "",
     job_title: "",
     department: "",
-    avatar_url: "",
   });
 
   useEffect(() => {
     if (!user) return;
     setForm(toFormState(user));
+    setAvatarUrlOverride(null);
   }, [user]);
 
-  const avatarUrl = (form.avatar_url || user?.avatar_url || "").trim();
+  const avatarUrl = (avatarUrlOverride ?? user?.avatar_url ?? "").trim();
 
   const handleAvatarUpload = async (file: File) => {
     if (!onUploadAvatar) return;
     setUploadingAvatar(true);
     try {
       const updated = await onUploadAvatar(file);
-      if (updated && typeof updated === "object") {
-        const nextUrl = (updated as UserRow).avatar_url ?? "";
-        setForm((s) => ({ ...s, avatar_url: nextUrl || "" }));
-      }
+      const updatedAny = updated as any;
+      const nextUrl =
+        typeof updatedAny?.user?.avatar_url === "string"
+          ? String(updatedAny.user.avatar_url)
+          : typeof updatedAny?.avatar_url === "string"
+            ? String(updatedAny.avatar_url)
+            : null;
+
+      if (nextUrl) setAvatarUrlOverride(nextUrl);
       toast.success("Avatar uploaded");
       await onReload?.();
     } catch (err) {
@@ -208,16 +212,6 @@ export default function UserProfileEditor({
             className="w-full rounded border border-gray-300 px-3 py-2"
             value={form.department}
             onChange={(e) => setForm((s) => ({ ...s, department: e.target.value }))}
-          />
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
-          <input
-            className="w-full rounded border border-gray-300 px-3 py-2"
-            value={form.avatar_url}
-            onChange={(e) => setForm((s) => ({ ...s, avatar_url: e.target.value }))}
-            placeholder="https://…"
           />
         </div>
 

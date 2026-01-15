@@ -75,7 +75,7 @@ export async function listUsers(opts?: {
 
 export async function createUser(
   payload: { email: string; password: string; role: UserRow["role"]; is_active?: 0 | 1 } & UserProfileUpdate
-) {
+): Promise<{ success: true; id: number }> {
   const res = await apiFetch("/api/users", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -124,6 +124,20 @@ export async function uploadMyAvatar(file: File): Promise<{ success: true; user:
   form.append("file", file);
 
   const res = await apiFetch("/api/users/me/avatar", {
+    method: "POST",
+    body: form,
+  });
+  return res.json();
+}
+
+export async function uploadUserAvatar(
+  userId: number,
+  file: File
+): Promise<{ success: true; user: UserRow; avatar_url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await apiFetch(`/api/users/${userId}/avatar`, {
     method: "POST",
     body: form,
   });

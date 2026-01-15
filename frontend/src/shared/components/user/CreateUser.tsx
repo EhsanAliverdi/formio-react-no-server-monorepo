@@ -25,7 +25,6 @@ type ProfileState = {
   country: string;
   timezone: string;
   locale: string;
-  avatar_url: string;
 };
 
 const EMPTY_PROFILE: ProfileState = {
@@ -50,13 +49,12 @@ const EMPTY_PROFILE: ProfileState = {
   country: "",
   timezone: "",
   locale: "",
-  avatar_url: "",
 };
 
 export type CreateUserProps = {
   disabled?: boolean;
   roles?: UserRole[];
-  onCreate: (payload: UserCreatePayload) => Promise<void> | void;
+  onCreate: (payload: UserCreatePayload, avatarFile?: File | null) => Promise<void> | void;
   formId?: string;
 };
 
@@ -68,6 +66,13 @@ export default function CreateUser({ disabled, roles = USER_ROLES, onCreate, for
   const [creating, setCreating] = useState(false);
 
   const [profile, setProfile] = useState<ProfileState>(EMPTY_PROFILE);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>("");
+
+  const clearAvatarPreview = () => {
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarPreviewUrl("");
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,12 +86,14 @@ export default function CreateUser({ disabled, roles = USER_ROLES, onCreate, for
         ...profile,
       };
 
-      await onCreate(payload);
+      await onCreate(payload, avatarFile);
       setEmail("");
       setPassword("");
       setRole("viewer");
       setIsActive(1);
       setProfile(EMPTY_PROFILE);
+      setAvatarFile(null);
+      clearAvatarPreview();
     } finally {
       setCreating(false);
     }
@@ -122,13 +129,31 @@ export default function CreateUser({ disabled, roles = USER_ROLES, onCreate, for
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
             <div className="flex flex-col items-center text-center">
               <div className="h-24 w-24 overflow-hidden rounded-full border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="User avatar" className="h-full w-full object-cover" />
+                {avatarPreviewUrl ? (
+                  <img src={avatarPreviewUrl} alt="User avatar" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-gray-600 dark:text-gray-200">
                     {(String(displayTitle).trim()[0] ?? "U").toUpperCase()}
                   </div>
                 )}
+              </div>
+
+              <div className="mt-3 w-full">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Profile photo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm"
+                  disabled={disabled || creating}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    setAvatarFile(f);
+                    clearAvatarPreview();
+                    if (f) setAvatarPreviewUrl(URL.createObjectURL(f));
+                    e.currentTarget.value = "";
+                  }}
+                />
+                <div className="mt-1 text-xs text-gray-500">Optional (uploads to MinIO after user is created).</div>
               </div>
 
               <div className="mt-3 text-base font-semibold text-gray-900 dark:text-white truncate w-full">
@@ -325,19 +350,6 @@ export default function CreateUser({ disabled, roles = USER_ROLES, onCreate, for
                     value={profile.phone}
                     onChange={(e) => setProfile((s) => ({ ...s, phone: e.target.value }))}
                     disabled={disabled || creating}
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
-                  <input
-                    className="w-full rounded border border-gray-300 px-3 py-2"
-                    name="create_user_avatar_url"
-                    autoComplete="off"
-                    value={profile.avatar_url}
-                    onChange={(e) => setProfile((s) => ({ ...s, avatar_url: e.target.value }))}
-                    disabled={disabled || creating}
-                    placeholder="https://…"
                   />
                 </div>
               </div>

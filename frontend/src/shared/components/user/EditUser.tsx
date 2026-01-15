@@ -25,7 +25,6 @@ type EditProfileState = {
   country: string;
   timezone: string;
   locale: string;
-  avatar_url: string;
 };
 
 function toEditProfileState(u: UserRow): EditProfileState {
@@ -51,7 +50,6 @@ function toEditProfileState(u: UserRow): EditProfileState {
     country: u.country ?? "",
     timezone: u.timezone ?? "",
     locale: u.locale ?? "",
-    avatar_url: u.avatar_url ?? "",
   };
 }
 
@@ -59,14 +57,17 @@ export type EditUserProps = {
   user: UserRow;
   saving?: boolean;
   onSave: (payload: UserUpdatePayload) => Promise<void> | void;
+  onUploadAvatar?: (file: File) => Promise<{ avatar_url?: string } | UserRow | void> | void;
   formId?: string;
 };
 
-export default function EditUser({ user, saving = false, onSave, formId }: EditUserProps) {
+export default function EditUser({ user, saving = false, onSave, onUploadAvatar, formId }: EditUserProps) {
   const [role, setRole] = useState<UserRow["role"]>(() => user.role);
   const [isActive, setIsActive] = useState<0 | 1>(() => ((user.is_active ?? 1) ? 1 : 0));
   const [password, setPassword] = useState("");
   const [profile, setProfile] = useState<EditProfileState>(() => toEditProfileState(user));
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrlOverride, setAvatarUrlOverride] = useState<string | null>(null);
 
   type TabId = "personal" | "work" | "address" | "bio" | "password";
   const tabs = useMemo(
@@ -84,6 +85,27 @@ export default function EditUser({ user, saving = false, onSave, formId }: EditU
 
   const displayTitle = profile.display_name || profile.preferred_name || profile.first_name || user.email;
   const displaySubtitle = profile.job_title || role;
+
+  const avatarUrl = (avatarUrlOverride ?? user.avatar_url ?? "").trim();
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!onUploadAvatar) return;
+    setUploadingAvatar(true);
+    try {
+      const out = await onUploadAvatar(file);
+
+      const nextUrl =
+        typeof (out as any)?.avatar_url === "string"
+          ? String((out as any).avatar_url)
+          : typeof (out as any)?.user?.avatar_url === "string"
+            ? String((out as any).user.avatar_url)
+            : null;
+
+      if (nextUrl) setAvatarUrlOverride(nextUrl);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const submit = async () => {
     const payload: UserUpdatePayload = {
@@ -113,14 +135,33 @@ export default function EditUser({ user, saving = false, onSave, formId }: EditU
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
             <div className="flex flex-col items-center text-center">
               <div className="h-24 w-24 overflow-hidden rounded-full border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="User avatar" className="h-full w-full object-cover" />
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="User avatar" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-gray-600 dark:text-gray-200">
                     {(String(displayTitle).trim()[0] ?? "U").toUpperCase()}
                   </div>
                 )}
               </div>
+
+              {onUploadAvatar ? (
+                <div className="mt-3 w-full">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Profile photo</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="block w-full text-sm"
+                    disabled={saving || uploadingAvatar}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      void handleAvatarUpload(f);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                  {uploadingAvatar ? <div className="mt-1 text-xs text-gray-500">Uploading…</div> : null}
+                </div>
+              ) : null}
 
               <div className="mt-3 text-base font-semibold text-gray-900 dark:text-white truncate w-full">
                 {displayTitle}
@@ -289,19 +330,6 @@ export default function EditUser({ user, saving = false, onSave, formId }: EditU
                     value={profile.date_of_birth}
                     onChange={(e) => setProfile((s) => ({ ...s, date_of_birth: e.target.value }))}
                     disabled={saving}
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
-                  <input
-                    className="w-full rounded border border-gray-300 px-3 py-2"
-                    name="edit_user_avatar_url"
-                    autoComplete="off"
-                    value={profile.avatar_url}
-                    onChange={(e) => setProfile((s) => ({ ...s, avatar_url: e.target.value }))}
-                    disabled={saving}
-                    placeholder="https://…"
                   />
                 </div>
               </div>

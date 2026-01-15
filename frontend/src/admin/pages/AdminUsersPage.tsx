@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { me, type AuthUser } from "../../shared/services/authService";
-import { createUser, deleteUser, listUsers, updateUser, type UserRow } from "../../shared/services/userService";
+import {
+  createUser,
+  deleteUser,
+  listUsers,
+  updateUser,
+  uploadUserAvatar,
+  type UserRow,
+} from "../../shared/services/userService";
 import { AdminUserManagement } from "../../shared/components/user";
 
 export default function AdminUsersPage() {
@@ -63,14 +71,24 @@ export default function AdminUsersPage() {
         loading={loading}
         error={error}
         onRefresh={load}
-        onCreate={async (payload) => {
-          await createUser(payload);
+        onCreate={async (payload, avatarFile) => {
+          const created = await createUser(payload);
+          if (avatarFile && created?.id) {
+            try {
+              await uploadUserAvatar(created.id, avatarFile);
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "User created, but avatar upload failed");
+            }
+          }
         }}
         onUpdate={async (id, payload) => {
           await updateUser(id, payload);
         }}
         onDelete={async (id) => {
           await deleteUser(id);
+        }}
+        onUploadAvatar={async (id, file) => {
+          return uploadUserAvatar(id, file);
         }}
       />
     </div>
