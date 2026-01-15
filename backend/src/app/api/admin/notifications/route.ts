@@ -49,6 +49,7 @@ export async function GET(req: Request) {
         n.created_at as created_at,
         n.created_by as created_by,
         cu.email as created_by_email,
+        cu.avatar_url as created_by_avatar_url,
         (
           SELECT COUNT(*)
           FROM notification_recipients r

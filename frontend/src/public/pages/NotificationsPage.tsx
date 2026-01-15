@@ -24,6 +24,17 @@ function badgeColor(level: NotificationLevel): "info" | "success" | "warning" | 
   return "success";
 }
 
+function deriveSenderInitials(email: string | null | undefined): string {
+  const e = (email ?? "").trim();
+  if (!e) return "S";
+  const local = e.includes("@") ? (e.split("@")[0] ?? e) : e;
+  const parts = local.split(/[._\-\s]+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? local[0] ?? "S";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
+  const initials = `${first}${last}`.toUpperCase();
+  return initials.trim() || "S";
+}
+
 export default function NotificationsPage() {
   const [viewer, setViewer] = useState<AuthUser | null>(null);
   const [loadingViewer, setLoadingViewer] = useState(true);
@@ -125,23 +136,38 @@ export default function NotificationsPage() {
           <div className="mt-4 space-y-3">
             {items.map((n) => {
               const unread = !n.read_at;
+              const avatarUrl = typeof n.created_by_avatar_url === "string" ? n.created_by_avatar_url.trim() : "";
+              const hasAvatar = Boolean(avatarUrl);
+              const senderInitials = deriveSenderInitials(n.created_by_email);
               return (
                 <div
                   key={n.id}
                   className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-transparent"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="mt-0.5 h-10 w-10 overflow-hidden rounded-full border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 shrink-0">
+                        {hasAvatar ? (
+                          <img src={avatarUrl} alt={n.created_by_email ?? "Sender"} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-700 text-xs font-semibold dark:bg-gray-800 dark:text-gray-200">
+                            {senderInitials}
+                          </span>
+                        )}
+                      </span>
+
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
                         <Badge color={badgeColor(n.level)} variant={unread ? "solid" : "light"} size="sm">
                           {n.level}
                         </Badge>
                         <div className="font-medium text-gray-800 dark:text-white/90 truncate">{n.title}</div>
-                      </div>
+                        </div>
 
-                      <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        {formatWhen(n.created_at)}
-                        {n.created_by_email ? ` • From: ${n.created_by_email}` : ""}
+                        <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                          {formatWhen(n.created_at)}
+                          {n.created_by_email ? ` • From: ${n.created_by_email}` : ""}
+                        </div>
                       </div>
                     </div>
 

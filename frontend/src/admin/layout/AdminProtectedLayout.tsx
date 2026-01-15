@@ -41,6 +41,7 @@ function mapHeaderNotification(n: NotificationRow): HeaderNotification {
     href: "/notifications",
     read: Boolean(n.read_at),
     unread: !n.read_at,
+    avatarUrl: typeof n.created_by_avatar_url === "string" ? n.created_by_avatar_url : undefined,
   };
 }
 

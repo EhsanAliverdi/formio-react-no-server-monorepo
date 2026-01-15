@@ -10,6 +10,7 @@ export type NotificationRow = {
   created_at: string;
   created_by: number | null;
   created_by_email: string | null;
+  created_by_avatar_url?: string | null;
   delivered_at: string;
   read_at: string | null;
 };
@@ -47,6 +48,7 @@ export type AdminNotificationListItem = {
   created_at: string;
   created_by: number | null;
   created_by_email: string | null;
+  created_by_avatar_url?: string | null;
   recipient_count: number;
   read_count: number;
 };
