@@ -88,7 +88,7 @@ export async function GET(req: Request) {
   // Admin/editor can see all forms (management UI).
   if (!isPublicMode && user && (user.role === "admin" || user.role === "editor")) {
     const forms = await db.all(
-      "SELECT id, name, json, allow_anonymous_submit FROM forms ORDER BY id DESC"
+      "SELECT id, name, json, allow_anonymous_submit, visibility FROM forms ORDER BY id DESC"
     );
     return jsonResponse(forms);
   }

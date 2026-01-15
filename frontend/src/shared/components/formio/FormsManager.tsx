@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import toast from "react-hot-toast";
+import { FaRegFileAlt } from "react-icons/fa";
 
 import Button from "../../../template/tailAdmin/components/ui/button/Button";
+import { ReactIconFromKey } from "../ui/ReactIconFromKey";
 
 type AnyRecord = Record<string, unknown>;
 
@@ -22,6 +24,7 @@ export type ManagedForm = {
   id: number;
   name: string;
   schema: unknown;
+  visibility?: "public" | "restricted";
 };
 
 type ImportedForm = {
@@ -82,6 +85,130 @@ function downloadJson(filename: string, data: unknown) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+type FormListIconSettings = {
+  show?: boolean;
+  iconKey?: string;
+  imageDataUrl?: string;
+};
+
+function getIconSettings(schema: unknown): FormListIconSettings {
+  const obj = schema && typeof schema === "object" ? (schema as Record<string, unknown>) : null;
+  const appSettings =
+    obj && typeof obj.appSettings === "object" && obj.appSettings
+      ? (obj.appSettings as Record<string, unknown>)
+      : null;
+
+  return {
+    show: appSettings?.showIconInFormsList === false ? false : true,
+    iconKey: typeof appSettings?.formsListIconKey === "string" ? (appSettings.formsListIconKey as string) : undefined,
+    imageDataUrl:
+      typeof appSettings?.formsListImageDataUrl === "string"
+        ? (appSettings.formsListImageDataUrl as string)
+        : undefined,
+  };
+}
+
+function getPublicDescription(schema: unknown): string | undefined {
+  const obj = schema && typeof schema === "object" ? (schema as Record<string, unknown>) : null;
+  const appSettings =
+    obj && typeof obj.appSettings === "object" && obj.appSettings
+      ? (obj.appSettings as Record<string, unknown>)
+      : null;
+  const description = typeof appSettings?.publicDescription === "string" ? (appSettings.publicDescription as string) : "";
+  const trimmed = description.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function summarizeWords(text: string, maxWords: number): string {
+  const words = text
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+  if (words.length <= maxWords) return words.join(" ");
+  return `${words.slice(0, maxWords).join(" ")}...`;
+}
+
+type FormioComponent = Record<string, unknown>;
+
+function countQuestions(schema: unknown): number {
+  const root = schema && typeof schema === "object" ? (schema as FormioComponent) : null;
+  const seen = new Set<unknown>();
+
+  const walk = (node: unknown): number => {
+    if (!node || typeof node !== "object") return 0;
+    if (seen.has(node)) return 0;
+    seen.add(node);
+
+    const obj = node as FormioComponent;
+    let count = 0;
+
+    const type = typeof obj.type === "string" ? (obj.type as string) : "";
+    const input = typeof obj.input === "boolean" ? (obj.input as boolean) : undefined;
+
+    const isQuestion = input === true && type !== "button";
+    if (isQuestion) count += 1;
+
+    const components = Array.isArray(obj.components) ? obj.components : null;
+    if (components) for (const c of components) count += walk(c);
+
+    const columns = Array.isArray(obj.columns) ? obj.columns : null;
+    if (columns) {
+      for (const col of columns) {
+        const colObj = col && typeof col === "object" ? (col as FormioComponent) : null;
+        const colComponents = colObj && Array.isArray(colObj.components) ? colObj.components : null;
+        if (colComponents) for (const c of colComponents) count += walk(c);
+      }
+    }
+
+    const rows = Array.isArray(obj.rows) ? obj.rows : null;
+    if (rows) {
+      for (const row of rows) {
+        if (!Array.isArray(row)) continue;
+        for (const cell of row) {
+          const cellObj = cell && typeof cell === "object" ? (cell as FormioComponent) : null;
+          const cellComponents = cellObj && Array.isArray(cellObj.components) ? cellObj.components : null;
+          if (cellComponents) for (const c of cellComponents) count += walk(c);
+        }
+      }
+    }
+
+    const tabs = Array.isArray(obj.tabs) ? obj.tabs : null;
+    if (tabs) {
+      for (const tab of tabs) {
+        const tabObj = tab && typeof tab === "object" ? (tab as FormioComponent) : null;
+        const tabComponents = tabObj && Array.isArray(tabObj.components) ? tabObj.components : null;
+        if (tabComponents) for (const c of tabComponents) count += walk(c);
+      }
+    }
+
+    return count;
+  };
+
+  return root ? walk(root) : 0;
+}
+
+function FormIcon({ schema }: { schema: unknown }) {
+  const settings = getIconSettings(schema);
+  if (settings.show === false) return null;
+
+  if (settings.imageDataUrl) {
+    return (
+      <img
+        src={settings.imageDataUrl}
+        alt="Form"
+        className="h-8 w-8 rounded-lg object-cover border border-gray-200"
+      />
+    );
+  }
+
+  return (
+    <div className="h-8 w-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center">
+      <ReactIconFromKey iconKey={settings.iconKey} fallback={FaRegFileAlt} className="h-4 w-4 text-gray-700" />
+    </div>
+  );
 }
 
 export type FormsManagerProps = {
@@ -249,9 +376,10 @@ export default function FormsManager({
             <table className="min-w-full">
               <thead className="border-b border-gray-100 dark:border-white/[0.05]">
                 <tr>
-                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                    Name
-                  </th>
+                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Form</th>
+                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Visibility</th>
+                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Questions</th>
+                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Description</th>
                   <th className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400">
                     Actions
                   </th>
@@ -262,9 +390,46 @@ export default function FormsManager({
                 {sortedForms.map((form) => (
                   <tr key={form.id}>
                     <td className="px-5 py-4 text-start">
-                      <span className="text-sm font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
-                        {form.name}
+                      <div className="flex items-center gap-3 min-w-[220px]">
+                        <FormIcon schema={form.schema} />
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-800 dark:text-white/90 truncate">
+                            {form.name}
+                          </div>
+                          <div className="text-xs text-gray-500">ID: {form.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-start">
+                      {form.visibility ? (
+                        <span
+                          className={
+                            form.visibility === "public"
+                              ? "inline-flex items-center rounded-md border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700"
+                              : "inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700"
+                          }
+                        >
+                          {form.visibility === "public" ? "Public" : "Restricted"}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-500">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-start">
+                      <span className="text-sm text-gray-800 dark:text-white/90">
+                        {countQuestions(form.schema)}
                       </span>
+                    </td>
+                    <td className="px-5 py-4 text-start">
+                      {(() => {
+                        const desc = getPublicDescription(form.schema);
+                        if (!desc) return <span className="text-sm text-gray-500">—</span>;
+                        return (
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {summarizeWords(desc, 30)}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-4 text-end">
                       <div className="flex justify-end gap-2 whitespace-nowrap">

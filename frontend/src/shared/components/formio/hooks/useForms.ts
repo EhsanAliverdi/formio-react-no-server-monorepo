@@ -9,6 +9,7 @@ export type FormSummary = {
   id: number;
   name: string;
   schema: FormSchema;
+  visibility?: "public" | "restricted";
 };
 
 export const EMPTY_FORM: FormSchema = {
@@ -46,13 +47,19 @@ export function useForms() {
     setLoading(true);
     setError(null);
     try {
-      const data = (await getForms()) as Array<{ id: number; name: string; json: unknown }>;
-      const mapped = data.map((f) => {
+      const data = (await getForms()) as Array<{ id: number; name: string; json: unknown; visibility?: unknown }>;
+      const mapped: FormSummary[] = data.map((f): FormSummary => {
         const parsed = parseMaybeJson(f.json);
         return {
           id: f.id,
           name: f.name,
           schema: safeSchema(parsed ?? f.json),
+          visibility:
+            f.visibility === "restricted"
+              ? "restricted"
+              : f.visibility === "public"
+                ? "public"
+                : undefined,
         };
       });
       setForms(mapped);
