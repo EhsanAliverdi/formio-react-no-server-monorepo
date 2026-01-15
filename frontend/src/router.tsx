@@ -5,7 +5,7 @@ import FormsPage from "./public/pages/FormsPage";
 import FormsLayoutPage from "./public/pages/FormsLayoutPage";
 import FillFormPage from "./public/pages/FillFormPage";
 import PublicLayout from "./public/layout/PublicLayout";
-import AdminPage from "./admin/pages/AdminPage";
+import AdminOverviewPage from "./admin/pages/AdminOverviewPage";
 import AdminFormsPage from "./admin/pages/AdminFormsPage";
 import AdminFormNewPage from "./admin/pages/AdminFormNewPage";
 import AdminFormEditPage from "./admin/pages/AdminFormEditPage";
@@ -46,7 +46,7 @@ const router = createBrowserRouter([
     path: 'admin',
     element: <AdminLayout />,
     children: [
-      { index: true, element: <AdminPage /> },
+      { index: true, element: <AdminOverviewPage /> },
       { path: 'forms', element: <AdminFormsPage /> },
       { path: 'forms/new', element: <AdminFormNewPage /> },
       { path: 'forms/:id/edit', element: <AdminFormEditPage /> },
