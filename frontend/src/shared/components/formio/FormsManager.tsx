@@ -133,6 +133,42 @@ function summarizeWords(text: string, maxWords: number): string {
 
 type FormioComponent = Record<string, unknown>;
 
+const NON_QUESTION_TYPES = new Set([
+  "button",
+  "content",
+  "htmlelement",
+  "well",
+  "panel",
+  "fieldset",
+  "columns",
+  "table",
+  "tabs",
+  "container",
+  "row",
+]);
+
+function isWizardForm(schema: unknown): boolean {
+  const obj = schema && typeof schema === "object" ? (schema as FormioComponent) : null;
+  return !!obj && obj.display === "wizard";
+}
+
+function countWizardSteps(schema: unknown): number {
+  const obj = schema && typeof schema === "object" ? (schema as FormioComponent) : null;
+  const rootComponents = obj && Array.isArray(obj.components) ? obj.components : [];
+
+  // In Form.io, wizard steps are typically represented as top-level panels.
+  const panels = rootComponents.filter((c) => {
+    if (!c || typeof c !== "object") return false;
+    const co = c as FormioComponent;
+    return co.type === "panel";
+  });
+
+  if (panels.length > 0) return panels.length;
+
+  // Fallback: if it is a wizard but panels aren't present, treat as single step.
+  return isWizardForm(schema) ? 1 : 0;
+}
+
 function countQuestions(schema: unknown): number {
   const root = schema && typeof schema === "object" ? (schema as FormioComponent) : null;
   const seen = new Set<unknown>();
@@ -145,10 +181,19 @@ function countQuestions(schema: unknown): number {
     const obj = node as FormioComponent;
     let count = 0;
 
-    const type = typeof obj.type === "string" ? (obj.type as string) : "";
-    const input = typeof obj.input === "boolean" ? (obj.input as boolean) : undefined;
+    const type = typeof obj.type === "string" ? String(obj.type) : "";
+    const key = typeof obj.key === "string" ? obj.key.trim() : "";
 
-    const isQuestion = input === true && type !== "button";
+    // Treat leaf-like input components as questions.
+    // Many Form.io inputs have input=true, but it is not always present; key is a good proxy.
+    const isContainer =
+      NON_QUESTION_TYPES.has(type) ||
+      Array.isArray(obj.components) ||
+      Array.isArray(obj.columns) ||
+      Array.isArray(obj.rows) ||
+      Array.isArray(obj.tabs);
+
+    const isQuestion = !!key && !isContainer && type !== "button";
     if (isQuestion) count += 1;
 
     const components = Array.isArray(obj.components) ? obj.components : null;
@@ -245,9 +290,52 @@ export default function FormsManager({
   const [deleteName, setDeleteName] = useState<string>("");
   const [deleting, setDeleting] = useState(false);
 
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const sortedForms = useMemo(() => {
     return [...forms].sort((a, b) => a.name.localeCompare(b.name));
   }, [forms]);
+
+  const formsWithMeta = useMemo(() => {
+    return sortedForms.map((form) => {
+      const description = getPublicDescription(form.schema);
+      const questionsTotal = countQuestions(form.schema);
+      const wizard = isWizardForm(form.schema);
+      const steps = wizard ? Math.max(1, countWizardSteps(form.schema)) : 0;
+      return {
+        ...form,
+        description,
+        descriptionSummary: description ? summarizeWords(description, 15) : undefined,
+        questionsTotal,
+        isWizard: wizard,
+        steps,
+      };
+    });
+  }, [sortedForms]);
+
+  const filteredForms = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return formsWithMeta;
+    return formsWithMeta.filter((f) => {
+      const name = (f.name || "").toLowerCase();
+      const desc = (f.description || "").toLowerCase();
+      return name.includes(q) || desc.includes(q);
+    });
+  }, [formsWithMeta, search]);
+
+  const totalPages = useMemo(() => {
+    const t = Math.ceil(filteredForms.length / Math.max(1, pageSize));
+    return Math.max(1, t);
+  }, [filteredForms.length, pageSize]);
+
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+
+  const pagedForms = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredForms.slice(start, start + pageSize);
+  }, [filteredForms, currentPage, pageSize]);
 
   const onImportClick = () => {
     setImportErrors([]);
@@ -321,6 +409,32 @@ export default function FormsManager({
 
         <div className="flex items-center gap-2">
           <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search forms…"
+            className="hidden sm:block w-72 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400"
+            type="search"
+          />
+
+          <select
+            value={String(pageSize)}
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              setPageSize(Number.isFinite(next) && next > 0 ? next : 10);
+              setPage(1);
+            }}
+            className="hidden sm:block rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm text-gray-800"
+            aria-label="Rows per page"
+          >
+            <option value="10">10 / page</option>
+            <option value="25">25 / page</option>
+            <option value="50">50 / page</option>
+          </select>
+
+          <input
             ref={fileInputRef}
             type="file"
             accept="application/json,.json"
@@ -368,7 +482,7 @@ export default function FormsManager({
 
       {loading ? (
         <p>Loading forms…</p>
-      ) : forms.length === 0 ? (
+      ) : filteredForms.length === 0 ? (
         <p className="text-gray-500">No forms created yet.</p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -387,7 +501,7 @@ export default function FormsManager({
               </thead>
 
               <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                {sortedForms.map((form) => (
+                {pagedForms.map((form) => (
                   <tr key={form.id}>
                     <td className="px-5 py-4 text-start">
                       <div className="flex items-center gap-3 min-w-[220px]">
@@ -396,7 +510,6 @@ export default function FormsManager({
                           <div className="text-sm font-medium text-gray-800 dark:text-white/90 truncate">
                             {form.name}
                           </div>
-                          <div className="text-xs text-gray-500">ID: {form.id}</div>
                         </div>
                       </div>
                     </td>
@@ -416,20 +529,21 @@ export default function FormsManager({
                       )}
                     </td>
                     <td className="px-5 py-4 text-start">
-                      <span className="text-sm text-gray-800 dark:text-white/90">
-                        {countQuestions(form.schema)}
-                      </span>
+                      {form.isWizard ? (
+                        <div className="text-sm text-gray-800 dark:text-white/90">
+                          <div>Steps: {form.steps}</div>
+                          <div>Questions: {form.questionsTotal}</div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-800 dark:text-white/90">{form.questionsTotal}</span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-start">
-                      {(() => {
-                        const desc = getPublicDescription(form.schema);
-                        if (!desc) return <span className="text-sm text-gray-500">—</span>;
-                        return (
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            {summarizeWords(desc, 30)}
-                          </span>
-                        );
-                      })()}
+                      {form.descriptionSummary ? (
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{form.descriptionSummary}</span>
+                      ) : (
+                        <span className="text-sm text-gray-500">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-end">
                       <div className="flex justify-end gap-2 whitespace-nowrap">
@@ -459,6 +573,34 @@ export default function FormsManager({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-5 py-3 text-sm text-gray-600">
+            <div>
+              Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredForms.length)} of {filteredForms.length}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-50"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+              >
+                Prev
+              </button>
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <button
+                type="button"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-50"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       )}
