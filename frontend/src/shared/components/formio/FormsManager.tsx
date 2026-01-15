@@ -492,8 +492,8 @@ export default function FormsManager({
                 <tr>
                   <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Form</th>
                   <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Visibility</th>
-                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Questions</th>
-                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Description</th>
+                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-44">Questions</th>
+                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-64">Description</th>
                   <th className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400">
                     Actions
                   </th>
@@ -504,7 +504,7 @@ export default function FormsManager({
                 {pagedForms.map((form) => (
                   <tr key={form.id}>
                     <td className="px-5 py-4 text-start">
-                      <div className="flex items-center gap-3 min-w-[220px]">
+                      <div className="flex items-center gap-3 min-w-56">
                         <FormIcon schema={form.schema} />
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-gray-800 dark:text-white/90 truncate">
@@ -528,19 +528,23 @@ export default function FormsManager({
                         <span className="text-sm text-gray-500">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-start">
+                    <td className="px-5 py-4 text-start w-44">
                       {form.isWizard ? (
-                        <div className="text-sm text-gray-800 dark:text-white/90">
-                          <div>Steps: {form.steps}</div>
-                          <div>Questions: {form.questionsTotal}</div>
+                        <div className="text-sm text-gray-800 dark:text-white/90 whitespace-nowrap">
+                          <div className="text-xs font-semibold text-sky-700 dark:text-sky-300">Steps: {form.steps}</div>
+                          <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                            Questions: {form.questionsTotal}
+                          </div>
                         </div>
                       ) : (
                         <span className="text-sm text-gray-800 dark:text-white/90">{form.questionsTotal}</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-start">
+                    <td className="px-5 py-4 text-start w-64">
                       {form.descriptionSummary ? (
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{form.descriptionSummary}</span>
+                        <span className="block max-w-64 text-sm text-gray-700 dark:text-gray-300 truncate" title={form.description ?? ""}>
+                          {form.descriptionSummary}
+                        </span>
                       ) : (
                         <span className="text-sm text-gray-500">—</span>
                       )}
