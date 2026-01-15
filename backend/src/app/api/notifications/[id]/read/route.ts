@@ -20,7 +20,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   const db = await getDb();
 
   const result = await db.run(
-    "UPDATE notification_recipients SET read_at = datetime('now') WHERE notification_id = ? AND user_id = ? AND read_at IS NULL",
+    "UPDATE notification_recipients SET read_at = NOW() WHERE notification_id = ? AND user_id = ? AND read_at IS NULL",
     notificationId,
     auth.user.id
   );

@@ -83,7 +83,7 @@ export async function GET(req: Request) {
       ORDER BY s.submitted_at DESC
       LIMIT ?
     `,
-    [perSource]
+    perSource
   )) as unknown as Array<{
     submission_id: number;
     form_id: number;
@@ -114,11 +114,11 @@ export async function GET(req: Request) {
       LEFT JOIN forms f ON f.id = s.form_id
       LEFT JOIN users u ON u.id = s.user_id
       LEFT JOIN users ub ON ub.id = s.updated_by
-      WHERE s.updated_at IS NOT NULL AND TRIM(s.updated_at) <> ''
+      WHERE s.updated_at IS NOT NULL
       ORDER BY s.updated_at DESC
       LIMIT ?
     `,
-    [perSource]
+    perSource
   )) as unknown as Array<{
     submission_id: number;
     form_id: number;
@@ -148,7 +148,7 @@ export async function GET(req: Request) {
       ORDER BY created_at DESC
       LIMIT ?
     `,
-    [perSource]
+    perSource
   )) as unknown as Array<{
     id: number;
     email: string;
@@ -177,7 +177,7 @@ export async function GET(req: Request) {
       ORDER BY n.created_at DESC
       LIMIT ?
     `,
-    [perSource]
+    perSource
   )) as unknown as Array<{
     id: number;
     title: string;

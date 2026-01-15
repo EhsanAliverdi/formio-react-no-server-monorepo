@@ -1,5 +1,4 @@
-import type { Database } from "sqlite";
-
+import type { Db } from "./db";
 import type { Role } from "./auth";
 
 type FormVisibility = "public" | "restricted";
@@ -9,7 +8,7 @@ export type CurrentUser = {
   role: Role;
 };
 
-export async function getFormVisibility(db: Database, formId: number): Promise<FormVisibility | null> {
+export async function getFormVisibility(db: Db, formId: number): Promise<FormVisibility | null> {
   const row = (await db.get(
     "SELECT visibility FROM forms WHERE id = ?",
     formId,
@@ -20,7 +19,7 @@ export async function getFormVisibility(db: Database, formId: number): Promise<F
   return row.visibility === "restricted" ? "restricted" : "public";
 }
 
-export async function canUserAccessForm(db: Database, formId: number, user: CurrentUser | null): Promise<boolean> {
+export async function canUserAccessForm(db: Db, formId: number, user: CurrentUser | null): Promise<boolean> {
   const visibility = await getFormVisibility(db, formId);
   if (visibility === null) return false;
   if (visibility === "public") return true;
@@ -45,7 +44,7 @@ export async function canUserAccessForm(db: Database, formId: number, user: Curr
   return false;
 }
 
-export async function listAccessibleForms(db: Database, user: CurrentUser | null) {
+export async function listAccessibleForms(db: Db, user: CurrentUser | null) {
   if (!user) {
     return (await db.all(
       `

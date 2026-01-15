@@ -50,14 +50,14 @@ export async function GET(req: Request) {
 	}
 
 	// Optional date filtering (inclusive), expected YYYY-MM-DD.
-	// Uses SQLite date() to compare against submitted_at timestamps.
+	// Uses PostgreSQL date casting to compare against submitted_at timestamps.
 	const ymd = /^\d{4}-\d{2}-\d{2}$/;
 	if (from && ymd.test(from)) {
-		whereParts.push("date(s.submitted_at) >= date(?)");
+		whereParts.push("s.submitted_at::date >= ?::date");
 		params.push(from);
 	}
 	if (to && ymd.test(to)) {
-		whereParts.push("date(s.submitted_at) <= date(?)");
+		whereParts.push("s.submitted_at::date <= ?::date");
 		params.push(to);
 	}
 

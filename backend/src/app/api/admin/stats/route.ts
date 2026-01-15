@@ -19,13 +19,13 @@ export async function GET(req: Request) {
   const totalFormsRow = await db.get<{ c: number }>("SELECT COUNT(*) as c FROM forms");
   const totalSubmissionsRow = await db.get<{ c: number }>("SELECT COUNT(*) as c FROM form_submissions");
   const submittedFormsRow = await db.get<{ c: number }>(
-    "SELECT COUNT(DISTINCT form_id) as c FROM form_submissions"
+      "SELECT COUNT(DISTINCT form_id) as c FROM form_submissions"
   );
-  const submissionsTodayRow = await db.get<{ c: number }>(
-    "SELECT COUNT(*) as c FROM form_submissions WHERE date(submitted_at) = date('now')"
+    const submissionsTodayRow = await db.get<{ c: number }>(
+      "SELECT COUNT(*) as c FROM form_submissions WHERE submitted_at::date = CURRENT_DATE"
   );
-  const submissionsLast7DaysRow = await db.get<{ c: number }>(
-    "SELECT COUNT(*) as c FROM form_submissions WHERE submitted_at >= datetime('now', '-7 days')"
+    const submissionsLast7DaysRow = await db.get<{ c: number }>(
+      "SELECT COUNT(*) as c FROM form_submissions WHERE submitted_at >= NOW() - INTERVAL '7 days'"
   );
 
   return jsonResponse({

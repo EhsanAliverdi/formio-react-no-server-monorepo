@@ -2,6 +2,18 @@ import { Pool, PoolClient } from "pg";
 
 let pool: Pool | null = null;
 
+// Lightweight wrapper interface to mimic the old sqlite Database API
+// so the rest of the codebase can keep using db.get/db.all/db.run/db.exec.
+export type Db = {
+  query: (text: string, params?: any[]) => Promise<import("pg").QueryResult>;
+  get: <T = any>(text: string, ...params: any[]) => Promise<T | null>;
+  all: <T = any>(text: string, ...params: any[]) => Promise<T[]>;
+  run: (text: string, ...params: any[]) => Promise<{ changes: number; lastID: number | null }>;
+  exec: (text: string) => Promise<void>;
+};
+
+let dbInstance: Db | null = null;
+
 async function ensureFormsColumns(client: PoolClient) {
   const result = await client.query(`
     SELECT column_name FROM information_schema.columns 
@@ -170,9 +182,9 @@ async function ensureNotificationsTables(client: PoolClient) {
   `);
 }
 
-export async function getDb() {
-  // Return existing pool if available
-  if (pool) return pool;
+
+async function initPoolAndMigrate() {
+  if (pool && dbInstance) return;
 
   // Get DATABASE_URL from environment
   const databaseUrl = process.env.DATABASE_URL;
@@ -268,37 +280,56 @@ export async function getDb() {
     client.release();
   }
 
-  return pool;
+  // Expose a Db-like wrapper on top of the pool
+  dbInstance = {
+    query: query,
+    get,
+    all,
+    run,
+    exec,
+  };
 }
 
-// Helper methods to provide SQLite-like interface for compatibility
+export async function getDb(): Promise<Db> {
+  if (!dbInstance) {
+    await initPoolAndMigrate();
+  }
+  // dbInstance is guaranteed after init
+  return dbInstance as Db;
+}
+
+// Helper methods to provide a SQLite-like interface for compatibility
 export async function query(text: string, params?: any[]) {
-  const pool = await getDb();
+  if (!pool) {
+    await initPoolAndMigrate();
+  }
+  if (!pool) {
+    throw new Error("Database pool not initialized");
+  }
   // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
   let paramIndex = 1;
   const convertedText = text.replace(/\?/g, () => `$${paramIndex++}`);
   return pool.query(convertedText, params);
 }
 
-export async function get(text: string, ...params: any[]) {
+export async function get<T = any>(text: string, ...params: any[]): Promise<T | null> {
   const result = await query(text, params);
-  return result.rows[0] || null;
+  return (result.rows[0] as T) ?? null;
 }
 
-export async function all(text: string, ...params: any[]) {
+export async function all<T = any>(text: string, ...params: any[]): Promise<T[]> {
   const result = await query(text, params);
-  return result.rows;
+  return result.rows as T[];
 }
 
-export async function run(text: string, ...params: any[]) {
+export async function run(text: string, ...params: any[]): Promise<{ changes: number; lastID: number | null }> {
   const result = await query(text, params);
   return {
     changes: result.rowCount || 0,
-    lastID: result.rows[0]?.id || null,
+    lastID: (result.rows[0] as any)?.id ?? null,
   };
 }
 
-export async function exec(text: string) {
-  const pool = await getDb();
-  return pool.query(text);
+export async function exec(text: string): Promise<void> {
+  await query(text);
 }
