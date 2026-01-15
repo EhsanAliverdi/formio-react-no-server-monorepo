@@ -70,6 +70,19 @@ const publicSidebarBranding = {
   collapsedSize: 32,
 };
 
+function deriveHeaderName(user: AuthUser): string {
+  const display = (user.display_name ?? "").trim();
+  if (display) return display;
+  const preferred = (user.preferred_name ?? "").trim();
+  if (preferred) return preferred;
+  const first = (user.first_name ?? "").trim();
+  const last = (user.last_name ?? "").trim();
+  const full = [first, last].filter(Boolean).join(" ").trim();
+  if (full) return full;
+
+  return user.email.includes("@") ? (user.email.split("@")[0] ?? user.email) : user.email;
+}
+
 export default function PublicLayout() {
   const [loading, setLoading] = useState(() => Boolean(getAuthToken()));
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -157,9 +170,8 @@ export default function PublicLayout() {
         user
           ? {
               email: user.email,
-              name: user.email.includes("@")
-                ? user.email.split("@")[0]
-                : user.email,
+              name: deriveHeaderName(user),
+              avatarUrl: typeof user.avatar_url === "string" ? user.avatar_url : undefined,
               role: user.role,
             }
           : undefined

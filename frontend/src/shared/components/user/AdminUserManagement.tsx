@@ -42,6 +42,27 @@ export default function AdminUserManagement({
   onDelete,
   roles = USER_ROLES,
 }: AdminUserManagementProps) {
+  const deriveDisplayName = (u: UserRow): string => {
+    const full = [u.first_name, u.middle_name, u.last_name].filter(Boolean).join(" ").trim();
+    if (full) return full;
+    const display = (u.display_name ?? "").trim();
+    if (display) return display;
+    const preferred = (u.preferred_name ?? "").trim();
+    if (preferred) return preferred;
+    if (u.email && u.email.includes("@")) return u.email.split("@")[0] ?? u.email;
+    return u.email || "—";
+  };
+
+  const deriveInitials = (u: UserRow): string => {
+    const name = deriveDisplayName(u);
+    const parts = name.split(/\s+/).filter(Boolean);
+    const first = parts[0]?.[0] ?? "";
+    const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
+    const initials = `${first}${last}`.trim().toUpperCase();
+    if (initials) return initials;
+    return (u.email?.[0] ?? "U").toUpperCase();
+  };
+
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => b.id - a.id);
   }, [users]);
@@ -177,10 +198,26 @@ export default function AdminUserManagement({
                 </TableRow>
               ) : (
                 filteredUsers.map((u) => {
-                  const fullName = [u.first_name, u.middle_name, u.last_name].filter(Boolean).join(" ").trim();
+                  const displayName = deriveDisplayName(u);
+                  const avatarUrl = typeof u.avatar_url === "string" ? u.avatar_url.trim() : "";
+                  const hasAvatar = Boolean(avatarUrl);
+                  const initials = deriveInitials(u);
                   return (
                     <TableRow key={u.id}>
-                      <TableCell className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">{fullName || "—"}</TableCell>
+                      <TableCell className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
+                        <div className="flex items-center gap-3">
+                          <span className="h-9 w-9 overflow-hidden rounded-full border border-gray-200 bg-white dark:border-gray-800">
+                            {hasAvatar ? (
+                              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-700 text-xs font-semibold dark:bg-gray-800 dark:text-gray-200">
+                                {initials}
+                              </span>
+                            )}
+                          </span>
+                          <span className="min-w-0 truncate">{displayName || "—"}</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">{u.email}</TableCell>
                       <TableCell className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">{u.department ?? "—"}</TableCell>
                       <TableCell className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">{u.role}</TableCell>

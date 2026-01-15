@@ -4,6 +4,11 @@ export type AuthUser = {
   id: number;
   email: string;
   role: string;
+  display_name?: string | null;
+  preferred_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar_url?: string | null;
 };
 
 export async function login(email: string, password: string): Promise<AuthUser> {

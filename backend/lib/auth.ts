@@ -5,6 +5,11 @@ type AuthedUser = {
   id: number;
   email: string;
   role: Role;
+  display_name?: string | null;
+  preferred_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar_url?: string | null;
 };
 
 export type Role = "admin" | "editor" | "viewer";
@@ -99,6 +104,11 @@ export async function getUserFromRequest(req: Request): Promise<AuthedUser | nul
         u.id as id,
         u.email as email,
         u.role as role,
+        u.display_name as display_name,
+        u.preferred_name as preferred_name,
+        u.first_name as first_name,
+        u.last_name as last_name,
+        u.avatar_url as avatar_url,
         s.expires_at as expires_at
       FROM sessions s
       JOIN users u ON u.id = s.user_id
@@ -120,6 +130,11 @@ export async function getUserFromRequest(req: Request): Promise<AuthedUser | nul
     id: Number(row.id),
     email: String(row.email),
     role: (String(row.role) as Role) || "viewer",
+    display_name: (row.display_name as any) ?? null,
+    preferred_name: (row.preferred_name as any) ?? null,
+    first_name: (row.first_name as any) ?? null,
+    last_name: (row.last_name as any) ?? null,
+    avatar_url: (row.avatar_url as any) ?? null,
   };
 }
 

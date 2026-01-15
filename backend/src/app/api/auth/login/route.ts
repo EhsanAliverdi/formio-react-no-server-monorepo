@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
   const db = await getDb();
   const userRow = await db.get(
-    "SELECT id, email, role, password_hash FROM users WHERE email = ? LIMIT 1",
+    "SELECT id, email, role, password_hash, display_name, preferred_name, first_name, last_name, avatar_url FROM users WHERE email = ? LIMIT 1",
     email
   );
 
@@ -40,6 +40,11 @@ export async function POST(req: Request) {
       id: Number(userRow.id),
       email: String(userRow.email),
       role: String(userRow.role),
+      display_name: (userRow.display_name as any) ?? null,
+      preferred_name: (userRow.preferred_name as any) ?? null,
+      first_name: (userRow.first_name as any) ?? null,
+      last_name: (userRow.last_name as any) ?? null,
+      avatar_url: (userRow.avatar_url as any) ?? null,
     },
   });
 }
