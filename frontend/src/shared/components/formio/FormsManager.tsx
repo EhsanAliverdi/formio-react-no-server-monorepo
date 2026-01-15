@@ -443,12 +443,12 @@ export default function FormsManager({
             onChange={(e) => void onImportFileChange(e)}
           />
 
-          <Button variant="outline" size="md" onClick={onImportClick} disabled={importing}>
+          <Button variant="outline" size="xsm" onClick={onImportClick} disabled={importing}>
             {importing ? "Importing…" : "Import"}
           </Button>
 
-          <Button variant="primary" size="md" onClick={onAdd}>
-            + Add New Form
+          <Button variant="primary" size="xsm" onClick={onAdd}>
+            New
           </Button>
         </div>
       </div>
