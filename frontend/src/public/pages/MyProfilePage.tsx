@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 
 import { clearAuthToken, getAuthToken } from "../../shared/services/apiClient";
 import { UserProfileEditor } from "../../shared/components/user";
-import { getMyProfile, updateMyProfile, type UserRow } from "../../shared/services/userService";
+import { getMyProfile, updateMyProfile, uploadMyAvatar, type UserRow } from "../../shared/services/userService";
 
 function isAuthError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
@@ -64,6 +64,21 @@ export default function MyProfilePage() {
         saving={saving}
         error={error}
         onReload={load}
+        onUploadAvatar={async (file) => {
+          try {
+            const result = await uploadMyAvatar(file);
+            const updated = (result?.user ?? null) as UserRow | null;
+            if (updated) setUser(updated);
+            return updated ?? undefined;
+          } catch (err) {
+            if (isAuthError(err)) {
+              clearAuthToken();
+              setUnauthorized(true);
+              return;
+            }
+            throw err;
+          }
+        }}
         onSave={async (payload) => {
           setSaving(true);
           try {

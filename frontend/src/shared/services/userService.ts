@@ -118,3 +118,14 @@ export async function updateMyProfile(payload: UserProfileUpdate) {
   });
   return res.json();
 }
+
+export async function uploadMyAvatar(file: File): Promise<{ success: true; user: UserRow; avatar_url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await apiFetch("/api/users/me/avatar", {
+    method: "POST",
+    body: form,
+  });
+  return res.json();
+}

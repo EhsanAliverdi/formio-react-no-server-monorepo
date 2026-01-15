@@ -34,6 +34,7 @@ export type UserProfileEditorProps = {
   error?: string | null;
   onSave: (payload: UserProfileUpdate) => Promise<UserRow | void> | void;
   onReload?: () => Promise<void> | void;
+  onUploadAvatar?: (file: File) => Promise<UserRow | void> | void;
 };
 
 export default function UserProfileEditor({
@@ -44,8 +45,10 @@ export default function UserProfileEditor({
   error,
   onSave,
   onReload,
+  onUploadAvatar,
 }: UserProfileEditorProps) {
   const [savingLocal, setSavingLocal] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [form, setForm] = useState<FormState>({
     display_name: "",
     first_name: "",
@@ -60,6 +63,26 @@ export default function UserProfileEditor({
     if (!user) return;
     setForm(toFormState(user));
   }, [user]);
+
+  const avatarUrl = (form.avatar_url || user?.avatar_url || "").trim();
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!onUploadAvatar) return;
+    setUploadingAvatar(true);
+    try {
+      const updated = await onUploadAvatar(file);
+      if (updated && typeof updated === "object") {
+        const nextUrl = (updated as UserRow).avatar_url ?? "";
+        setForm((s) => ({ ...s, avatar_url: nextUrl || "" }));
+      }
+      toast.success("Avatar uploaded");
+      await onReload?.();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload avatar");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +119,42 @@ export default function UserProfileEditor({
       </div>
 
       <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={onSubmit}>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-full overflow-hidden border border-gray-200 bg-white">
+              <img
+                src={avatarUrl || "/images/user/user-02.jpg"}
+                alt="Avatar"
+                className="h-full w-full object-cover"
+              />
+            </div>
+
+            {onUploadAvatar ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block text-sm"
+                  disabled={uploadingAvatar}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    void handleAvatarUpload(f);
+                    e.currentTarget.value = "";
+                  }}
+                />
+                {uploadingAvatar ? (
+                  <div className="text-sm text-gray-600">Uploading…</div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+          <div className="mt-2 text-xs text-gray-500">
+            Uploaded avatars are stored in MinIO under a user-specific prefix.
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Display name</label>
           <input

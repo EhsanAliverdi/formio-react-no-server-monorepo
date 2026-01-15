@@ -27,6 +27,22 @@ Build and run everything:
 docker compose up -d --build
 ```
 
+If you see a Docker build error like `failed to receive status: rpc error: ... EOF` on Windows/WSL2,
+disable Compose Bake and retry:
+
+PowerShell:
+
+```powershell
+$env:COMPOSE_BAKE = "false"
+docker compose up -d --build
+```
+
+Or run the helper script:
+
+```powershell
+./scripts/docker-up.ps1
+```
+
 Services (default):
 
 - Frontend (nginx): http://localhost
@@ -173,6 +189,11 @@ Note: if you run without Docker, you still need an S3-compatible endpoint for up
 - SQLite database files are ignored (runtime data).
 
 ## Troubleshooting
+
+- Docker build fails with `failed to receive status: rpc error: ... EOF`:
+	- This is usually a Docker Desktop/BuildKit+Compose Bake issue (not a TypeScript/Vite error).
+	- Workaround: set `COMPOSE_BAKE=false` and rebuild (see Quick start section above).
+	- If it keeps happening, update Docker Desktop / Compose plugin and increase Docker resources.
 
 - Icons not showing in the picker:
 	- Ensure backend is reachable at `VITE_API_BASE_URL`.
