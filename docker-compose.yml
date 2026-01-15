@@ -3,15 +3,15 @@ services:
     image: postgres:16-alpine
     pull_policy: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-formio}
-      POSTGRES_USER: ${POSTGRES_USER:-formio}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-formio123}
+      POSTGRES_DB: formio
+      POSTGRES_USER: formio
+      POSTGRES_PASSWORD: formio123
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-formio}"]
+      test: ["CMD-SHELL", "pg_isready -U formio"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -59,7 +59,7 @@ services:
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
 
       # PostgreSQL connection
-      DATABASE_URL: postgresql://${POSTGRES_USER:-formio}:${POSTGRES_PASSWORD:-formio123}@postgres:5432/${POSTGRES_DB:-formio}
+      DATABASE_URL: postgresql://formio:formio123@postgres:5432/formio
 
       # Force SWC WASM bindings (native SWC can SIGBUS under Docker Desktop/WSL)
       NEXT_TEST_WASM: "1"
