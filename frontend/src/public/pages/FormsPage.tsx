@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { getForms, getFormById, submitForm } from "../../shared/services/formService";
-import type { FormJson } from "../../shared/types/form";
-import SmartFormRenderer from "../../shared/components/formio/SmartFormRenderer";
+import { useNavigate } from "react-router-dom";
+import { getForms } from "../../shared/services/formService";
 import {
   FaRegFileAlt,
   FaClipboardList,
@@ -106,16 +105,12 @@ function countQuestions(schema: unknown): number {
 }
 
 export default function FormsPage() {
+  const navigate = useNavigate();
   const [forms, setForms] = useState<FormListItem[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [selectedForm, setSelectedForm] = useState<FormJson | null>(null);
-  const [selectedFormName, setSelectedFormName] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const data: unknown = await getForms();
+      const data: unknown = await getForms({ mode: "public" });
       if (!Array.isArray(data)) {
         setForms([]);
         return;
@@ -142,86 +137,12 @@ export default function FormsPage() {
     });
   }, [forms]);
 
-  const handleSubmit = async (data: Record<string, unknown>) => {
-    if (!selectedId) return;
-    setSubmitStatus(null);
-    try {
-      await submitForm(selectedId, data);
-      setSubmitStatus("Form submitted successfully!");
-      // Reset form after submission
-      setSelectedForm(null);
-      setSelectedId(null);
-      setSelectedFormName(null);
-    } catch {
-      setSubmitStatus("Submission failed. Please try again.");
-    }
-  };
-
-  const startForm = async (id: number, name?: string) => {
-    setLoading(true);
-    setSubmitStatus(null);
-    try {
-      const data: unknown = await getFormById(id);
-      if (!data || typeof data !== "object") throw new Error("Invalid form response");
-      const json = (data as Record<string, unknown>).json;
-      if (!json || typeof json !== "object") throw new Error("Invalid form schema");
-      setSelectedId(id);
-      setSelectedForm(json as FormJson);
-      setSelectedFormName(typeof name === "string" && name.trim() ? name : null);
-    } catch {
-      setSelectedId(null);
-      setSelectedForm(null);
-      setSelectedFormName(null);
-      setSubmitStatus("Failed to load form. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // If a form is selected, show the fill experience.
-  if (selectedForm) {
-    const formTitle = (selectedForm.title || selectedForm.name || selectedFormName || "Fill Form").trim();
-	const publicDescription = getPublicMeta(selectedForm).description;
-    return (
-      <div className="w-full">
-        <div className="flex items-center justify-between mb-4">
-			<div className="min-w-0">
-				<h1 className="text-2xl font-bold">{formTitle}</h1>
-				{publicDescription ? <div className="mt-1 text-sm text-gray-600">{publicDescription}</div> : null}
-			</div>
-          <button
-            className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            onClick={() => {
-              setSelectedForm(null);
-              setSelectedId(null);
-              setSelectedFormName(null);
-              setSubmitStatus(null);
-            }}
-          >
-            Back to Forms
-          </button>
-        </div>
-
-        {loading && <div>Loading form...</div>}
-        {!loading && <SmartFormRenderer form={selectedForm} onSubmit={handleSubmit} />}
-
-        {submitStatus && (
-          <div className="mt-4 p-2 bg-green-100 text-green-800 rounded">{submitStatus}</div>
-        )}
-      </div>
-    );
-  }
-
   // Otherwise show paginated cards.
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="text-sm text-gray-600">{cards.length} total</div>
       </div>
-
-      {submitStatus && (
-        <div className="mb-4 p-2 bg-red-100 text-red-800 rounded">{submitStatus}</div>
-      )}
 
       {cards.length === 0 ? (
         <div className="text-gray-500">No forms available.</div>
@@ -252,7 +173,7 @@ export default function FormsPage() {
 							type="button"
 							className="inline-flex items-center text-white bg-brand-500 hover:bg-brand-600 shadow-theme-xs font-medium rounded-lg text-sm px-3 py-2"
 							onClick={() => {
-								void startForm(c.id, c.name);
+                navigate(`/forms/${c.id}/fill`);
 							}}
 						>
 							Start Form

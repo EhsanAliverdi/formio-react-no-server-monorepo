@@ -3,6 +3,7 @@ import AdminLayout from "./admin/layout/AdminLayout";
 import HomePage from "./public/pages/HomePage";
 import FormsPage from "./public/pages/FormsPage";
 import FormsLayoutPage from "./public/pages/FormsLayoutPage";
+import FillFormPage from "./public/pages/FillFormPage";
 import PublicLayout from "./public/layout/PublicLayout";
 import AdminPage from "./admin/pages/AdminPage";
 import AdminFormsPage from "./admin/pages/AdminFormsPage";
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: 'forms/:id/fill', element: <FillFormPage /> },
       {
         path: 'forms',
         element: <FormsLayoutPage />,

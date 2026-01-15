@@ -55,13 +55,19 @@ export async function submitForm(formId: number, data: unknown) {
   });
   return res.json();
 }
-// src/services/formService.ts
-export async function getForms() {
-  const res = await apiFetch("/api/forms");
+
+export type FormsFetchMode = "admin" | "public";
+
+export async function getForms(options?: { mode?: FormsFetchMode }) {
+  const mode = options?.mode;
+  const url = mode === "public" ? "/api/forms?mode=public" : "/api/forms";
+  const res = await apiFetch(url);
   return res.json();
 }
 
-export async function getFormById(id: number) {
-  const res = await apiFetch(`/api/forms/${id}`);
+export async function getFormById(id: number, options?: { mode?: FormsFetchMode }) {
+  const mode = options?.mode;
+  const url = mode === "public" ? `/api/forms/${id}?mode=public` : `/api/forms/${id}`;
+  const res = await apiFetch(url);
   return res.json();
 }

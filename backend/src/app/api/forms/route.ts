@@ -80,10 +80,13 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const db = await getDb();
 
+  const mode = new URL(req.url).searchParams.get("mode");
+  const isPublicMode = mode === "public";
+
   const user = await getUserFromRequest(req);
 
   // Admin/editor can see all forms (management UI).
-  if (user && (user.role === "admin" || user.role === "editor")) {
+  if (!isPublicMode && user && (user.role === "admin" || user.role === "editor")) {
     const forms = await db.all(
       "SELECT id, name, json, allow_anonymous_submit FROM forms ORDER BY id DESC"
     );

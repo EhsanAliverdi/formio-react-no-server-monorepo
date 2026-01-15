@@ -15,8 +15,11 @@ export async function GET(_req: Request, context: RouteContext) {
   const db = await getDb();
   const { id } = await context.params;
 
+  const mode = new URL(_req.url).searchParams.get("mode");
+  const isPublicMode = mode === "public";
+
   const user = await getUserFromRequest(_req);
-  const isPrivileged = user && (user.role === "admin" || user.role === "editor");
+  const isPrivileged = !isPublicMode && user && (user.role === "admin" || user.role === "editor");
 
   const row = await db.get("SELECT * FROM forms WHERE id=?", id);
 
