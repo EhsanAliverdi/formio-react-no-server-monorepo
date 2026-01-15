@@ -492,7 +492,7 @@ export default function FormsManager({
                 <tr>
                   <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Form</th>
                   <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Visibility</th>
-                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-44">Questions</th>
+                  <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-44">Structure</th>
                   <th className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-64">Description</th>
                   <th className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400">
                     Actions
@@ -529,16 +529,14 @@ export default function FormsManager({
                       )}
                     </td>
                     <td className="px-5 py-4 text-start w-44">
-                      {form.isWizard ? (
-                        <div className="text-sm text-gray-800 dark:text-white/90 whitespace-nowrap">
-                          <div className="text-xs font-semibold text-sky-700 dark:text-sky-300">Steps: {form.steps}</div>
-                          <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                            Questions: {form.questionsTotal}
-                          </div>
+                      <div className="text-sm text-gray-800 dark:text-white/90 whitespace-nowrap">
+                        <div className="text-xs font-semibold text-sky-700 dark:text-sky-300">
+                          Steps: {form.isWizard ? form.steps : "-"}
                         </div>
-                      ) : (
-                        <span className="text-sm text-gray-800 dark:text-white/90">{form.questionsTotal}</span>
-                      )}
+                        <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                          Questions: {form.questionsTotal}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-5 py-4 text-start w-64">
                       {form.descriptionSummary ? (
