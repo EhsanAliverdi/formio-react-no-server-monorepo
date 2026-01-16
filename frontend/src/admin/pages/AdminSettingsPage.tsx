@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Button from "../../template/tailAdmin/components/ui/button/Button";
 import Label from "../../template/tailAdmin/components/form/Label";
 import Input from "../../template/tailAdmin/components/form/input/InputField";
+import FileUpload from "../../shared/components/ui/FileUpload";
 import { apiFetch } from "../../shared/services/apiClient";
 import {
   getAdminSiteSettings,
@@ -214,12 +215,14 @@ export default function AdminSettingsPage() {
 
               <div className="flex-1">
                 <Label htmlFor="siteFaviconUpload">Upload favicon</Label>
-                <Input
+                <FileUpload
                   id="siteFaviconUpload"
-                  type="file"
+                  multiple={false}
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
+                  showPreview={false}
+                  description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
+                  onFilesSelected={(files) => {
+                    const file = files[0] ?? null;
                     void handleUpload(file, "faviconUrl");
                   }}
                 />
@@ -245,11 +248,13 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                 </div>
-                <Input
-                  type="file"
+                <FileUpload
+                  multiple={false}
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
+                  showPreview={false}
+                  description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
+                  onFilesSelected={(files) => {
+                    const file = files[0] ?? null;
                     void handleUpload(file, "logoExpandedLightUrl");
                   }}
                 />
@@ -266,11 +271,13 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                 </div>
-                <Input
-                  type="file"
+                <FileUpload
+                  multiple={false}
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
+                  showPreview={false}
+                  description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
+                  onFilesSelected={(files) => {
+                    const file = files[0] ?? null;
                     void handleUpload(file, "logoExpandedDarkUrl");
                   }}
                 />
@@ -287,11 +294,13 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                 </div>
-                <Input
-                  type="file"
+                <FileUpload
+                  multiple={false}
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
+                  showPreview={false}
+                  description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
+                  onFilesSelected={(files) => {
+                    const file = files[0] ?? null;
                     void handleUpload(file, "logoCollapsedUrl");
                   }}
                 />
