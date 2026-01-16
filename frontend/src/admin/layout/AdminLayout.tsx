@@ -12,6 +12,7 @@ import {
 import AppLayout from "../../template/tailAdmin/layout/AppLayout";
 import { adminNavItems, adminOthersItems } from "../adminNav";
 import { adminSidebarBranding } from "../adminBranding";
+import { getAdminSiteSettings, type AdminSiteSettings } from "../../shared/services/adminSettingsService";
 
 type HeaderNotification = {
   id: string | number;
@@ -64,6 +65,7 @@ export default function AdminLayout() {
   const [loading, setLoading] = useState(() => Boolean(getAuthToken()));
   const [user, setUser] = useState<AuthUser | null>(null);
   const [headerNotifications, setHeaderNotifications] = useState<HeaderNotification[]>([]);
+  const [siteSettings, setSiteSettings] = useState<AdminSiteSettings | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -71,7 +73,6 @@ export default function AdminLayout() {
     if (!token) return;
 
     let cancelled = false;
-
     me()
       .then((u) => {
         if (cancelled) return;
@@ -91,6 +92,54 @@ export default function AdminLayout() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    // Load site settings (favicon and admin logos) for branding; admin-only API.
+    let cancelled = false;
+
+    const loadSettings = async () => {
+      try {
+        const s = await getAdminSiteSettings();
+        if (cancelled) return;
+        setSiteSettings(s);
+      } catch {
+        if (cancelled) return;
+        setSiteSettings(null);
+      }
+    };
+
+    void loadSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Update favicon based on settings, falling back to the default icon links.
+    const faviconUrl = (siteSettings?.faviconUrl ?? "").trim();
+    const href = faviconUrl || "/favicon.ico";
+
+    if (typeof document === "undefined") return;
+
+    const links = Array.from(
+      document.querySelectorAll<HTMLLinkElement>(
+        "link[rel='icon'], link[rel='shortcut icon']",
+      ),
+    );
+
+    if (links.length === 0) {
+      const link = document.createElement("link");
+      link.rel = "icon";
+      link.href = href;
+      document.head.appendChild(link);
+      return;
+    }
+
+    for (const link of links) {
+      link.href = href;
+    }
+  }, [siteSettings?.faviconUrl]);
 
   useEffect(() => {
     if (!user) return;
@@ -149,12 +198,34 @@ export default function AdminLayout() {
     return <Navigate to="/no-access" replace state={{ from: location.pathname }} />;
   }
 
+  const effectiveBranding = {
+    ...adminSidebarBranding,
+    expandedLightSrc:
+      (siteSettings?.logoExpandedLightUrl ?? "").trim() || adminSidebarBranding.expandedLightSrc,
+    expandedDarkSrc:
+      (siteSettings?.logoExpandedDarkUrl ?? "").trim() || adminSidebarBranding.expandedDarkSrc,
+    collapsedSrc:
+      (siteSettings?.logoCollapsedUrl ?? "").trim() || adminSidebarBranding.collapsedSrc,
+    expandedWidth:
+      siteSettings?.logoExpandedWidth != null
+        ? siteSettings.logoExpandedWidth
+        : adminSidebarBranding.expandedWidth,
+    expandedHeight:
+      siteSettings?.logoExpandedHeight != null
+        ? siteSettings.logoExpandedHeight
+        : adminSidebarBranding.expandedHeight,
+    collapsedSize:
+      siteSettings?.logoCollapsedSize != null
+        ? siteSettings.logoCollapsedSize
+        : adminSidebarBranding.collapsedSize,
+  };
+
   return (
     <>
       <AppLayout
         sidebarNavItems={adminNavItems}
         sidebarOtherItems={adminOthersItems}
-        sidebarBranding={adminSidebarBranding}
+        sidebarBranding={effectiveBranding}
         headerUser={{
           email: user.email,
           name: deriveHeaderName(user),

@@ -12,6 +12,7 @@ import {
 import AppLayout from "../../template/tailAdmin/layout/AppLayout";
 import type { NavItem } from "../../template/tailAdmin/layout/AppSidebar";
 import { FiFileText, FiHome } from "react-icons/fi";
+import { getAdminSiteSettings, type AdminSiteSettings } from "../../shared/services/adminSettingsService";
 
 type HeaderNotification = {
   id: string | number;
@@ -60,7 +61,7 @@ const publicNavItems: NavItem[] = [
   },
 ];
 
-const publicSidebarBranding = {
+const publicSidebarBrandingDefaults = {
   href: "/",
   expandedLightSrc: "/images/logo/logo.svg",
   expandedDarkSrc: "/images/logo/logo-dark.svg",
@@ -88,6 +89,7 @@ export default function PublicLayout() {
   const [loading, setLoading] = useState(() => Boolean(getAuthToken()));
   const [user, setUser] = useState<AuthUser | null>(null);
   const [headerNotifications, setHeaderNotifications] = useState<HeaderNotification[]>([]);
+  const [siteSettings, setSiteSettings] = useState<AdminSiteSettings | null>(null);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -114,6 +116,54 @@ export default function PublicLayout() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    // Load site settings for shared branding (public + admin).
+    let cancelled = false;
+
+    const loadSettings = async () => {
+      try {
+        const s = await getAdminSiteSettings();
+        if (cancelled) return;
+        setSiteSettings(s);
+      } catch {
+        if (cancelled) return;
+        setSiteSettings(null);
+      }
+    };
+
+    void loadSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Update favicon globally based on settings.
+    const faviconUrl = (siteSettings?.faviconUrl ?? "").trim();
+    const href = faviconUrl || "/favicon.ico";
+
+    if (typeof document === "undefined") return;
+
+    const links = Array.from(
+      document.querySelectorAll<HTMLLinkElement>(
+        "link[rel='icon'], link[rel='shortcut icon']",
+      ),
+    );
+
+    if (links.length === 0) {
+      const link = document.createElement("link");
+      link.rel = "icon";
+      link.href = href;
+      document.head.appendChild(link);
+      return;
+    }
+
+    for (const link of links) {
+      link.href = href;
+    }
+  }, [siteSettings?.faviconUrl]);
 
   useEffect(() => {
     if (!user) return;
@@ -163,10 +213,32 @@ export default function PublicLayout() {
     );
   }
 
+  const effectiveBranding = {
+    ...publicSidebarBrandingDefaults,
+    expandedLightSrc:
+      (siteSettings?.logoExpandedLightUrl ?? "").trim() || publicSidebarBrandingDefaults.expandedLightSrc,
+    expandedDarkSrc:
+      (siteSettings?.logoExpandedDarkUrl ?? "").trim() || publicSidebarBrandingDefaults.expandedDarkSrc,
+    collapsedSrc:
+      (siteSettings?.logoCollapsedUrl ?? "").trim() || publicSidebarBrandingDefaults.collapsedSrc,
+    expandedWidth:
+      siteSettings?.logoExpandedWidth != null
+        ? siteSettings.logoExpandedWidth
+        : publicSidebarBrandingDefaults.expandedWidth,
+    expandedHeight:
+      siteSettings?.logoExpandedHeight != null
+        ? siteSettings.logoExpandedHeight
+        : publicSidebarBrandingDefaults.expandedHeight,
+    collapsedSize:
+      siteSettings?.logoCollapsedSize != null
+        ? siteSettings.logoCollapsedSize
+        : publicSidebarBrandingDefaults.collapsedSize,
+  };
+
   return (
     <AppLayout
       sidebarNavItems={publicNavItems}
-      sidebarBranding={publicSidebarBranding}
+      sidebarBranding={effectiveBranding}
       headerUser={
         user
           ? {

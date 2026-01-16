@@ -1,4 +1,4 @@
-import { FiBell, FiClipboard, FiFileText, FiHome, FiUsers } from "react-icons/fi";
+import { FiBell, FiClipboard, FiFileText, FiHome, FiUsers, FiSettings } from "react-icons/fi";
 
 import type { NavItem } from "../template/tailAdmin/layout/AppSidebar";
 
@@ -27,6 +27,11 @@ export const adminNavItems: NavItem[] = [
     name: "Notifications",
     icon: <FiBell className="size-5" />,
     path: "/admin/notifications",
+  },
+  {
+    name: "Settings",
+    icon: <FiSettings className="size-5" />,
+    path: "/admin/settings",
   },
 ];
 

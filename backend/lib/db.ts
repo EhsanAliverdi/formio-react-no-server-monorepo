@@ -276,6 +276,13 @@ async function initPoolAndMigrate() {
 
     await ensureNotificationsTables(client);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `);
+
   } finally {
     client.release();
   }
