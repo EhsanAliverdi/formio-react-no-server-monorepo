@@ -1,6 +1,7 @@
 import { apiFetch } from "./apiClient";
 
 export type AdminSiteSettings = {
+  siteName: string | null;
   faviconUrl: string | null;
   logoExpandedLightUrl: string | null;
   logoExpandedDarkUrl: string | null;
@@ -11,6 +12,7 @@ export type AdminSiteSettings = {
 };
 
 const DEFAULT_SETTINGS: AdminSiteSettings = {
+  siteName: null,
   faviconUrl: null,
   logoExpandedLightUrl: null,
   logoExpandedDarkUrl: null,

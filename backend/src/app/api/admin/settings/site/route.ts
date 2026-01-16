@@ -20,6 +20,7 @@ const KEY_LOGO_COLLAPSED = "logo_collapsed_url";
 const KEY_LOGO_EXPANDED_WIDTH = "logo_expanded_width";
 const KEY_LOGO_EXPANDED_HEIGHT = "logo_expanded_height";
 const KEY_LOGO_COLLAPSED_SIZE = "logo_collapsed_size";
+const KEY_SITE_NAME = "site_name";
 
 function parseNumber(value: string | null | undefined): number | null {
   if (typeof value !== "string") return null;
@@ -38,6 +39,7 @@ function mapRowsToPayload(rows: Array<{ key: string; value: string }>) {
   }
 
   return {
+    siteName: normalizeString(map.get(KEY_SITE_NAME)) ?? null,
     faviconUrl: map.get(KEY_FAVICON) ?? null,
     logoExpandedLightUrl: map.get(KEY_LOGO_EXPANDED_LIGHT) ?? null,
     logoExpandedDarkUrl: map.get(KEY_LOGO_EXPANDED_DARK) ?? null,
@@ -55,7 +57,8 @@ export async function GET(req: Request) {
   const db = await getDb();
 
   const rows = (await db.all<{ key: string; value: string }>(
-    "SELECT key, value FROM site_settings WHERE key IN (?, ?, ?, ?, ?, ?, ?)",
+    "SELECT key, value FROM site_settings WHERE key IN (?, ?, ?, ?, ?, ?, ?, ?)",
+    KEY_SITE_NAME,
     KEY_FAVICON,
     KEY_LOGO_EXPANDED_LIGHT,
     KEY_LOGO_EXPANDED_DARK,
@@ -85,6 +88,7 @@ export async function PUT(req: Request) {
   const logoExpandedLightUrl = normalizeString((body as any)?.logoExpandedLightUrl);
   const logoExpandedDarkUrl = normalizeString((body as any)?.logoExpandedDarkUrl);
   const logoCollapsedUrl = normalizeString((body as any)?.logoCollapsedUrl);
+  const siteName = normalizeString((body as any)?.siteName);
 
   const logoExpandedWidthRaw = (body as any)?.logoExpandedWidth;
   const logoExpandedHeightRaw = (body as any)?.logoExpandedHeight;
@@ -104,6 +108,7 @@ export async function PUT(req: Request) {
       : null;
 
   const upserts: Array<{ key: string; value: string | null }> = [
+    { key: KEY_SITE_NAME, value: siteName },
     { key: KEY_FAVICON, value: faviconUrl },
     { key: KEY_LOGO_EXPANDED_LIGHT, value: logoExpandedLightUrl },
     { key: KEY_LOGO_EXPANDED_DARK, value: logoExpandedDarkUrl },

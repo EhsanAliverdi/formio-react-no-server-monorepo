@@ -92,6 +92,7 @@ export default function AdminSettingsPage() {
       setDraft((cur) => ({
         ...(cur ??
           settings ?? {
+            siteName: null,
             faviconUrl: null,
             logoExpandedLightUrl: null,
             logoExpandedDarkUrl: null,
@@ -158,6 +159,41 @@ export default function AdminSettingsPage() {
         <div className="text-gray-600 dark:text-gray-300">Loading…</div>
       ) : (
         <div className="space-y-6">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">Site name</h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              This name is used for the browser tab title. If not set, it defaults to TailwindAdmin.
+            </p>
+
+            <div className="mt-4 max-w-md space-y-2">
+              <Label htmlFor="siteName">Site name</Label>
+              <Input
+                id="siteName"
+                type="text"
+                placeholder="TailwindAdmin"
+                value={(effective?.siteName ?? "")}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDraft((cur) => ({
+                    ...(cur ??
+                      settings ?? {
+                        siteName: null,
+                        faviconUrl: null,
+                        logoExpandedLightUrl: null,
+                        logoExpandedDarkUrl: null,
+                        logoCollapsedUrl: null,
+                        logoExpandedWidth: null,
+                        logoExpandedHeight: null,
+                        logoCollapsedSize: null,
+                      }),
+                    siteName: value,
+                  }));
+                }}
+                hint="Shown in the browser tab for both public and admin pages"
+              />
+            </div>
+          </div>
+
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
             <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">Favicon</h2>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -279,6 +315,7 @@ export default function AdminSettingsPage() {
                     const n = Number(raw);
                     setDraft((cur) => ({
                       ...(cur ?? (settings ?? {
+                        siteName: null,
                         faviconUrl: null,
                         logoExpandedLightUrl: null,
                         logoExpandedDarkUrl: null,
@@ -311,6 +348,7 @@ export default function AdminSettingsPage() {
                     const n = Number(raw);
                     setDraft((cur) => ({
                       ...(cur ?? (settings ?? {
+                        siteName: null,
                         faviconUrl: null,
                         logoExpandedLightUrl: null,
                         logoExpandedDarkUrl: null,
@@ -343,6 +381,7 @@ export default function AdminSettingsPage() {
                     const n = Number(raw);
                     setDraft((cur) => ({
                       ...(cur ?? (settings ?? {
+                        siteName: null,
                         faviconUrl: null,
                         logoExpandedLightUrl: null,
                         logoExpandedDarkUrl: null,

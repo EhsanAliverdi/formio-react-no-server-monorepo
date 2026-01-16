@@ -151,6 +151,12 @@ export default function AdminLayout() {
   }, [siteSettings?.faviconUrl]);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    const siteName = (siteSettings?.siteName ?? "").trim() || "TailwindAdmin";
+    document.title = siteName;
+  }, [siteSettings?.siteName]);
+
+  useEffect(() => {
     if (!user) return;
     if (user.role !== "admin") return;
 
