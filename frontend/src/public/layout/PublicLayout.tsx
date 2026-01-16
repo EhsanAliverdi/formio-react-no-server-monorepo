@@ -12,7 +12,11 @@ import {
 import AppLayout from "../../template/tailAdmin/layout/AppLayout";
 import type { NavItem } from "../../template/tailAdmin/layout/AppSidebar";
 import { FiFileText, FiHome } from "react-icons/fi";
-import { getAdminSiteSettings, type AdminSiteSettings } from "../../shared/services/adminSettingsService";
+import {
+  getAdminSiteSettings,
+  onSiteSettingsChanged,
+  type AdminSiteSettings,
+} from "../../shared/services/adminSettingsService";
 
 type HeaderNotification = {
   id: string | number;
@@ -134,8 +138,13 @@ export default function PublicLayout() {
 
     void loadSettings();
 
+    const stopListening = onSiteSettingsChanged(() => {
+      void loadSettings();
+    });
+
     return () => {
       cancelled = true;
+      stopListening();
     };
   }, []);
 

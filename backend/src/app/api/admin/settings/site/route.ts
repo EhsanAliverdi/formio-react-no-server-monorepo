@@ -55,11 +55,14 @@ export async function GET(req: Request) {
   const db = await getDb();
 
   const rows = (await db.all<{ key: string; value: string }>(
-    "SELECT key, value FROM site_settings WHERE key IN (?, ?, ?, ?)",
+    "SELECT key, value FROM site_settings WHERE key IN (?, ?, ?, ?, ?, ?, ?)",
     KEY_FAVICON,
     KEY_LOGO_EXPANDED_LIGHT,
     KEY_LOGO_EXPANDED_DARK,
     KEY_LOGO_COLLAPSED,
+    KEY_LOGO_EXPANDED_WIDTH,
+    KEY_LOGO_EXPANDED_HEIGHT,
+    KEY_LOGO_COLLAPSED_SIZE,
   )) as Array<{ key: string; value: string }>;
 
   return jsonResponse(mapRowsToPayload(rows));

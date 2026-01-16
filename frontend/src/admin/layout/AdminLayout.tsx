@@ -12,7 +12,11 @@ import {
 import AppLayout from "../../template/tailAdmin/layout/AppLayout";
 import { adminNavItems, adminOthersItems } from "../adminNav";
 import { adminSidebarBranding } from "../adminBranding";
-import { getAdminSiteSettings, type AdminSiteSettings } from "../../shared/services/adminSettingsService";
+import {
+  getAdminSiteSettings,
+  onSiteSettingsChanged,
+  type AdminSiteSettings,
+} from "../../shared/services/adminSettingsService";
 
 type HeaderNotification = {
   id: string | number;
@@ -110,8 +114,13 @@ export default function AdminLayout() {
 
     void loadSettings();
 
+    const stopListening = onSiteSettingsChanged(() => {
+      void loadSettings();
+    });
+
     return () => {
       cancelled = true;
+      stopListening();
     };
   }, []);
 

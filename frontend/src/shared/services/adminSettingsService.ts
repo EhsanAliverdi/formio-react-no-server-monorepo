@@ -40,3 +40,19 @@ export async function updateAdminSiteSettings(payload: Partial<AdminSiteSettings
     ...(json ?? {}),
   };
 }
+
+export const SITE_SETTINGS_CHANGED_EVENT = "app:site-settings-changed";
+
+export function emitSiteSettingsChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(SITE_SETTINGS_CHANGED_EVENT));
+}
+
+export function onSiteSettingsChanged(handler: () => void) {
+  if (typeof window === "undefined") return () => {};
+  const listener = () => handler();
+  window.addEventListener(SITE_SETTINGS_CHANGED_EVENT, listener);
+  return () => {
+    window.removeEventListener(SITE_SETTINGS_CHANGED_EVENT, listener);
+  };
+}

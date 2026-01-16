@@ -7,6 +7,7 @@ import {
   getAdminSiteSettings,
   updateAdminSiteSettings,
   type AdminSiteSettings,
+  emitSiteSettingsChanged,
 } from "../../shared/services/adminSettingsService";
 
 function fallbackFaviconUrl(settings: AdminSiteSettings | null): string {
@@ -115,6 +116,7 @@ export default function AdminSettingsPage() {
       const updated = await updateAdminSiteSettings(effective);
       setSettings(updated);
       setDraft(updated);
+      emitSiteSettingsChanged();
       setSuccess("Settings saved");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save settings");
