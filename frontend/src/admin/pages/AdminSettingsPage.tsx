@@ -201,32 +201,47 @@ export default function AdminSettingsPage() {
               This icon appears in the browser tab. If not set, the default favicon is used.
             </p>
 
-            <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                  <img
-                    src={fallbackFaviconUrl(effective)}
-                    alt="Favicon preview"
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Preview</div>
-              </div>
-
-              <div className="flex-1">
-                <Label htmlFor="siteFaviconUpload">Upload favicon</Label>
-                <FileUpload
-                  id="siteFaviconUpload"
-                  multiple={false}
-                  accept="image/*"
-                  showPreview={false}
-                  description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
-                  onFilesSelected={(files) => {
-                    const file = files[0] ?? null;
-                    void handleUpload(file, "faviconUrl");
-                  }}
-                />
-              </div>
+            <div className="mt-4 max-w-xl space-y-2">
+              <Label htmlFor="siteFaviconUpload">Upload favicon</Label>
+              <FileUpload
+                id="siteFaviconUpload"
+                mode="avatar"
+                orientation="horizontal"
+                multiple={false}
+                accept="image/*"
+                existingImageUrl={fallbackFaviconUrl(effective)}
+                uploadLabel="Upload favicon"
+                clearLabel="Delete"
+                description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
+                filePondOptions={{
+                  allowImagePreview: true,
+                  imagePreviewHeight: 100,
+                  allowImageCrop: true,
+                  allowImageTransform: true,
+                }}
+                onFilesSelected={(files) => {
+                  const file = files[0] ?? null;
+                  void handleUpload(file, "faviconUrl");
+                }}
+                onClear={() => {
+                  setError(null);
+                  setSuccess(null);
+                  setDraft((cur) => ({
+                    ...(cur ??
+                      settings ?? {
+                        siteName: null,
+                        faviconUrl: null,
+                        logoExpandedLightUrl: null,
+                        logoExpandedDarkUrl: null,
+                        logoCollapsedUrl: null,
+                        logoExpandedWidth: null,
+                        logoExpandedHeight: null,
+                        logoCollapsedSize: null,
+                      }),
+                    faviconUrl: null,
+                  }));
+                }}
+              />
             </div>
           </div>
 
@@ -239,69 +254,126 @@ export default function AdminSettingsPage() {
             <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3">
               <div className="space-y-3">
                 <div className="text-sm font-medium text-gray-800 dark:text-gray-200">Expanded (light mode)</div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-32 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                    <img
-                      src={fallbackLogoExpandedLight(effective)}
-                      alt="Expanded light logo preview"
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-                </div>
                 <FileUpload
+                  mode="avatar"
+                  orientation="vertical"
                   multiple={false}
                   accept="image/*"
-                  showPreview={false}
+                  existingImageUrl={fallbackLogoExpandedLight(effective)}
+                  uploadLabel="Upload logo"
+                  clearLabel="Delete"
                   description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
+                  filePondOptions={{
+                    allowImagePreview: true,
+                    imagePreviewHeight: 120,
+                    allowImageCrop: true,
+                    allowImageTransform: true,
+                  }}
                   onFilesSelected={(files) => {
                     const file = files[0] ?? null;
                     void handleUpload(file, "logoExpandedLightUrl");
+                  }}
+                  onClear={() => {
+                    setError(null);
+                    setSuccess(null);
+                    setDraft((cur) => ({
+                      ...(cur ??
+                        settings ?? {
+                          siteName: null,
+                          faviconUrl: null,
+                          logoExpandedLightUrl: null,
+                          logoExpandedDarkUrl: null,
+                          logoCollapsedUrl: null,
+                          logoExpandedWidth: null,
+                          logoExpandedHeight: null,
+                          logoCollapsedSize: null,
+                        }),
+                      logoExpandedLightUrl: null,
+                    }));
                   }}
                 />
               </div>
 
               <div className="space-y-3">
                 <div className="text-sm font-medium text-gray-800 dark:text-gray-200">Expanded (dark mode)</div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-32 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                    <img
-                      src={fallbackLogoExpandedDark(effective)}
-                      alt="Expanded dark logo preview"
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-                </div>
                 <FileUpload
+                  mode="avatar"
+                  orientation="vertical"
                   multiple={false}
                   accept="image/*"
-                  showPreview={false}
+                  existingImageUrl={fallbackLogoExpandedDark(effective)}
+                  uploadLabel="Upload logo"
+                  clearLabel="Delete"
                   description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
+                  filePondOptions={{
+                    allowImagePreview: true,
+                    imagePreviewHeight: 120,
+                    allowImageCrop: true,
+                    allowImageTransform: true,
+                  }}
                   onFilesSelected={(files) => {
                     const file = files[0] ?? null;
                     void handleUpload(file, "logoExpandedDarkUrl");
+                  }}
+                  onClear={() => {
+                    setError(null);
+                    setSuccess(null);
+                    setDraft((cur) => ({
+                      ...(cur ??
+                        settings ?? {
+                          siteName: null,
+                          faviconUrl: null,
+                          logoExpandedLightUrl: null,
+                          logoExpandedDarkUrl: null,
+                          logoCollapsedUrl: null,
+                          logoExpandedWidth: null,
+                          logoExpandedHeight: null,
+                          logoCollapsedSize: null,
+                        }),
+                      logoExpandedDarkUrl: null,
+                    }));
                   }}
                 />
               </div>
 
               <div className="space-y-3">
                 <div className="text-sm font-medium text-gray-800 dark:text-gray-200">Collapsed icon</div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                    <img
-                      src={fallbackLogoCollapsed(effective)}
-                      alt="Collapsed logo preview"
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-                </div>
                 <FileUpload
+                  mode="avatar"
+                  orientation="vertical"
                   multiple={false}
                   accept="image/*"
-                  showPreview={false}
+                  existingImageUrl={fallbackLogoCollapsed(effective)}
+                  uploadLabel="Upload icon"
+                  clearLabel="Delete"
                   description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
+                  filePondOptions={{
+                    allowImagePreview: true,
+                    imagePreviewHeight: 80,
+                    allowImageCrop: true,
+                    allowImageTransform: true,
+                  }}
                   onFilesSelected={(files) => {
                     const file = files[0] ?? null;
                     void handleUpload(file, "logoCollapsedUrl");
+                  }}
+                  onClear={() => {
+                    setError(null);
+                    setSuccess(null);
+                    setDraft((cur) => ({
+                      ...(cur ??
+                        settings ?? {
+                          siteName: null,
+                          faviconUrl: null,
+                          logoExpandedLightUrl: null,
+                          logoExpandedDarkUrl: null,
+                          logoCollapsedUrl: null,
+                          logoExpandedWidth: null,
+                          logoExpandedHeight: null,
+                          logoCollapsedSize: null,
+                        }),
+                      logoCollapsedUrl: null,
+                    }));
                   }}
                 />
               </div>
