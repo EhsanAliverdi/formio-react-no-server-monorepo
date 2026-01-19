@@ -1,0 +1,20 @@
+# Development Frontend Dockerfile
+# This image only installs dependencies. Source code is mounted at runtime.
+
+FROM node:20-alpine
+
+WORKDIR /app/frontend
+
+# Install dependencies (will be cached unless package files change)
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm install
+
+# Development mode: source code is mounted via bind mount
+# Vite dev server will serve the app with HMR
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Run Vite dev server with HMR
+# --host 0.0.0.0 binds to all interfaces so Docker can forward
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

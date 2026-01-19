@@ -1,32 +1,25 @@
 {
   "version": "2.0.0",
   "tasks": [
+    // Development Mode Tasks (uses docker-compose.override.yml automatically)
     {
-      "label": "Docker: Compose Up Frontend",
+      "label": "Docker: Start Dev Mode",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "up",
-        "frontend"
+        "-d"
       ],
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     },
     {
-      "label": "Docker: Compose Up Backend",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "up",
-        "backend"
-      ],
-      "isBackground": true,
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Compose Up Both",
+      "label": "Docker: Start Dev Mode (Logs)",
       "type": "shell",
       "command": "docker",
       "args": [
@@ -34,49 +27,170 @@
         "up"
       ],
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     },
     {
-      "label": "Docker: Recreate & Compose Up Frontend",
+      "label": "Docker: Rebuild Dev Mode",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "up",
-        "--force-recreate",
         "--build",
-        "frontend"
+        "-d"
       ],
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     },
     {
-      "label": "Docker: Recreate & Compose Up Backend",
+      "label": "Docker: Stop Dev Mode",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
-        "up",
-        "--force-recreate",
-        "--build",
+        "down"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Restart Backend (Dev)",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "restart",
+        "backend"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Restart Frontend (Dev)",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "restart",
+        "frontend"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Backend Logs",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "logs",
+        "-f",
         "backend"
       ],
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     },
     {
-      "label": "Docker: Recreate & Compose Up Both",
+      "label": "Docker: View Frontend Logs",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
+        "logs",
+        "-f",
+        "frontend"
+      ],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    // Production Mode Tasks
+    {
+      "label": "Docker: Build Production",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-p",
+        "surveyflow-prod",
+        "--env-file",
+        ".env.prod",
+        "-f",
+        "docker-compose.yml",
+        "build"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Production",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-p",
+        "surveyflow-prod",
+        "--env-file",
+        ".env.prod",
+        "-f",
+        "docker-compose.yml",
         "up",
-        "--force-recreate",
-        "--build"
+        "-d"
       ],
       "isBackground": true,
       "problemMatcher": []
     },
+    {
+      "label": "Docker: Stop Production",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-p",
+        "surveyflow-prod",
+        "-f",
+        "docker-compose.yml",
+        "down"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: View Production Logs",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-p",
+        "surveyflow-prod",
+        "-f",
+        "docker-compose.yml",
+        "logs",
+        "-f"
+      ],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    // Database Tasks
     {
       "label": "Docker: Seed Database",
       "type": "shell",
@@ -88,6 +202,37 @@
         "npm",
         "run",
         "seed"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Prisma Generate",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "exec",
+        "backend",
+        "npx",
+        "prisma",
+        "generate"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Prisma DB Push",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "exec",
+        "backend",
+        "npx",
+        "prisma",
+        "db",
+        "push"
       ],
       "isBackground": false,
       "problemMatcher": []

@@ -1,0 +1,73 @@
+# docker-compose.override.yml
+# 
+# This file is automatically merged with docker-compose.yml when you run:
+#   docker compose up
+#
+# It overrides the production configuration to enable development mode:
+# - Uses dev Dockerfiles instead of production ones
+# - Mounts source code as bind mounts for hot reload
+# - Uses named volumes for node_modules to avoid host/container conflicts
+# - Runs dev servers instead of production builds
+# - Uses different container names (with -dev suffix) to allow running both environments simultaneously
+# - Uses different project name (surveyflow-dev) to avoid conflicts with production
+#
+# To use PRODUCTION mode instead:
+#   docker compose -f docker-compose.yml -p surveyflow-prod up --build
+#
+# Or rename this file temporarily to disable the override.
+
+name: surveyflow-dev
+
+services:
+  postgres:
+    container_name: surveyflow-postgres-dev
+  
+  minio:
+    container_name: surveyflow-minio-dev
+  backend:
+    container_name: surveyflow-backend-dev
+    build:
+      dockerfile: Dockerfile.backend.dev
+    volumes:
+      # Mount source code for hot reload
+      - ./backend:/app/backend
+      # Use a named volume for node_modules to preserve container's installed packages
+      # This prevents host node_modules (if any) from overwriting container's
+      - backend_node_modules:/app/backend/node_modules
+      # Also preserve Playwright browsers
+      - backend_playwright:/app/backend/.cache
+    environment:
+      # Override for development
+      NODE_ENV: development
+      # Enable Next.js Fast Refresh
+      NEXT_TELEMETRY_DISABLED: 1
+      # Remove WASM binding override in dev mode - let Next.js use native bindings
+      NEXT_TEST_WASM: ""
+    command: sh -c "npx prisma generate && npm run dev -- -H 0.0.0.0 -p 3000"
+
+  frontend:
+    container_name: surveyflow-frontend-dev
+    build:
+      dockerfile: Dockerfile.frontend.dev
+    volumes:
+      # Mount source code for hot reload
+      - ./frontend:/app/frontend
+      # Use a named volume for node_modules
+      - frontend_node_modules:/app/frontend/node_modules
+    environment:
+      # Vite uses these at runtime in dev mode
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+      # Enable polling for file watching in Docker (required for Windows/Mac hosts)
+      # Without polling, file changes on the host don't trigger HMR in the container
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
+      WATCHPACK_POLLING: ${WATCHPACK_POLLING:-true}
+    # Note: ports from docker-compose.yml (5173:80) are merged with override ports
+    # This causes conflicts when FRONTEND_PORT is set. Leave FRONTEND_PORT unset for dev mode.
+    ports:
+      - "5174:5173"  # Using 5174 to avoid conflict with base config's 5173:80 mapping
+
+volumes:
+  # Named volumes to preserve node_modules and caches across restarts
+  backend_node_modules:
+  backend_playwright:
+  frontend_node_modules:

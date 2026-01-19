@@ -6,7 +6,28 @@ A modern, Docker-first survey and form management platform with a React admin/pu
 
 - `frontend/` — Vite + React + TypeScript UI (admin + public)
 - `backend/` — Next.js (App Router) API server
-- `docker-compose.yml` — local dev stack (frontend, backend, MinIO)
+- `docker-compose.yml` — Production Docker configuration
+- `docker-compose.override.yml` — Development mode with hot reload
+
+## ⚡ Quick Start
+
+**Development mode (with hot reload):**
+
+```bash
+# First time: build the images
+docker compose build
+
+# Start development mode
+docker compose up
+```
+
+This gives you:
+- ✅ Hot reload for both frontend and backend
+- ✅ No rebuilds needed when you change code
+- ✅ Frontend: http://localhost:5174
+- ✅ Backend: http://localhost:3000
+
+**For detailed documentation, see [DOCKER.md](DOCKER.md)**
 
 ## Features
 
@@ -21,43 +42,21 @@ A modern, Docker-first survey and form management platform with a React admin/pu
 
 ## Quick start (Docker)
 
-Build and run everything:
+**See [DOCKER.md](DOCKER.md) for comprehensive documentation.**
+
+Development mode (with hot reload):
 
 ```bash
-docker compose up -d --build
+docker compose up
 ```
 
-If you see a Docker build error like `failed to receive status: rpc error: ... EOF` on Windows/WSL2,
-disable Compose Bake and retry:
-
-PowerShell:
-
-```powershell
-$env:COMPOSE_BAKE = "false"
-docker compose up -d --build
-```
-
-Or run the helper script:
-
-```powershell
-./scripts/docker-up.ps1
-```
-
-Services (default):
-
-- Frontend (nginx): http://localhost
-- Backend API: http://localhost:3000
-- PostgreSQL: localhost:5432
-- MinIO Console: http://localhost:9001
-- MinIO S3 API: http://localhost:9000
-
-View logs:
+Production mode (optimized builds):
 
 ```bash
-docker compose logs -f --tail=200 backend
+docker compose -f docker-compose.yml up --build
 ```
 
-Stop:
+Stop containers:
 
 ```bash
 docker compose down
