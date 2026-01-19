@@ -1,7 +1,14 @@
 # Backend (Next.js) with server-side PDF export via Playwright/Chromium.
-FROM node:20-bookworm-slim AS backend
+# Use bullseye (OpenSSL 1.1) so Prisma's debian-openssl-1.1.x engine works without extra libs.
+FROM node:20-bullseye-slim AS backend
 
 WORKDIR /app/backend
+
+# Ensure OpenSSL 1.1 libraries are available for Prisma's
+# debian-openssl-1.1.x engine binary on Debian bullseye.
+RUN apt-get update -y \
+	&& apt-get install -y --no-install-recommends openssl libssl1.1 \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Optional: add corporate root CA certs for Docker builds.
 # Place one or more *.crt files in backend/certs/ and rebuild.
@@ -26,7 +33,7 @@ RUN if [ "$INSECURE_TLS" = "true" ]; then \
 		export NODE_TLS_REJECT_UNAUTHORIZED=0; \
 		export npm_config_strict_ssl=false; \
 	fi \
-	&& npm ci
+	&& (npm ci || npm install)
 
 # Install Chromium for Playwright.
 # PLAYWRIGHT_BROWSERS_PATH=0 keeps browsers inside the project for Docker caching.
@@ -34,11 +41,16 @@ ENV PLAYWRIGHT_BROWSERS_PATH=0
 RUN if [ "$INSECURE_TLS" = "true" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi \
 	&& npx playwright install chromium
 
-# Copy backend source
+# Copy backend source (including Prisma schema)
 COPY backend/ ./
 
-# Build for production
-RUN npm run build
+# Generate Prisma client and build for production
+RUN if [ "$INSECURE_TLS" = "true" ]; then \
+		export NODE_TLS_REJECT_UNAUTHORIZED=0; \
+		export npm_config_strict_ssl=false; \
+	fi \
+	&& npx prisma generate \
+	&& npm run build
 
 # Bake build metadata into a file for runtime visibility.
 # If BUILD_TIME isn't provided, use the current UTC time.
