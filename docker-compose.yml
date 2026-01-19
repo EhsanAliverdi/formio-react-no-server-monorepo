@@ -3,15 +3,15 @@ services:
     image: postgres:16
     pull_policy: always
     environment:
-      POSTGRES_DB: formio
-      POSTGRES_USER: formio
-      POSTGRES_PASSWORD: formio123
+      POSTGRES_DB: surveyflow
+      POSTGRES_USER: surveyflow
+      POSTGRES_PASSWORD: surveyflow123
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U formio"]
+      test: ["CMD-SHELL", "pg_isready -U surveyflow"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -59,7 +59,7 @@ services:
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
 
       # PostgreSQL connection
-      DATABASE_URL: postgresql://formio:formio123@postgres:5432/formio
+      DATABASE_URL: postgresql://surveyflow:surveyflow123@postgres:5432/surveyflow
 
       # Force SWC WASM bindings (native SWC can SIGBUS under Docker Desktop/WSL)
       NEXT_TEST_WASM: "1"

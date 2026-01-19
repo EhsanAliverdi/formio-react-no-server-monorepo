@@ -1,6 +1,6 @@
-# React + TypeScript + Vite
+# SurveyFlow Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The React + TypeScript + Vite frontend for SurveyFlow, providing both public and admin interfaces for survey and form management.
 
 Currently, two official plugins are available:
 

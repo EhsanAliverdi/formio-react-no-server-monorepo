@@ -1,6 +1,6 @@
-# FormIO React No Server (Monorepo)
+# SurveyFlow
 
-A Docker-first monorepo for building and running Form.io forms with a React admin/public UI and a Next.js backend API.
+A modern, Docker-first survey and form management platform with a React admin/public UI and a Next.js backend API.
 
 ## What’s inside
 
