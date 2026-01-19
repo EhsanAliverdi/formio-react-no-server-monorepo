@@ -1,6 +1,6 @@
 import { forms } from "./seedForms";
 import crypto from "crypto";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../lib/prisma";
 
 function hashPassword(password: string) {
   const salt = crypto.randomBytes(16);
