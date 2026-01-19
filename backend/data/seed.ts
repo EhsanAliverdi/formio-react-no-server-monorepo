@@ -1,6 +1,6 @@
 import { forms } from "./seedForms";
 import crypto from "crypto";
-import { get, run } from "../lib/db";
+import { prisma } from "@/lib/prisma";
 
 function hashPassword(password: string) {
   const salt = crypto.randomBytes(16);
@@ -13,42 +13,42 @@ async function seed() {
   const superPassword = process.env.SUPERUSER_PASSWORD || "admin12345";
   const superPasswordHash = hashPassword(superPassword);
 
-  const existingUser = await get("SELECT id FROM users WHERE email = ?", superEmail);
+  const existingUser = await prisma.user.findUnique({ where: { email: superEmail } });
   if (existingUser) {
-    await run(
-      "UPDATE users SET password_hash = ?, role = 'admin' WHERE email = ?",
-      superPasswordHash,
-      superEmail
-    );
+    await prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+        passwordHash: superPasswordHash,
+        role: "admin",
+      },
+    });
     console.log(`🔄 Superuser '${superEmail}' updated`);
   } else {
-    await run(
-      "INSERT INTO users (email, password_hash, role) VALUES (?, ?, 'admin')",
-      superEmail,
-      superPasswordHash
-    );
+    await prisma.user.create({
+      data: {
+        email: superEmail,
+        passwordHash: superPasswordHash,
+        role: "admin",
+      },
+    });
     console.log(`✅ Superuser '${superEmail}' created`);
   }
 
   for (const form of forms) {
-    // Check if form already exists
-    const existing = await get(
-      "SELECT id FROM forms WHERE name = ?",
-      form.name
-    );
+    const existing = await prisma.form.findFirst({ where: { name: form.name } });
     if (existing) {
-      await run(
-        "UPDATE forms SET json = ? WHERE name = ?",
-        JSON.stringify(form),
-        form.name
-      );
+      await prisma.form.update({
+        where: { id: existing.id },
+        data: { json: JSON.stringify(form) },
+      });
       console.log(`🔄 Form '${form.name}' updated`);
     } else {
-      await run(
-        "INSERT INTO forms (name, json) VALUES (?, ?)",
-        form.name,
-        JSON.stringify(form)
-      );
+      await prisma.form.create({
+        data: {
+          name: form.name,
+          json: JSON.stringify(form),
+        },
+      });
       console.log(`✅ Form '${form.name}' seeded successfully`);
     }
   }

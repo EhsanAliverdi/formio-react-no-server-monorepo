@@ -1,6 +1,6 @@
 import { corsHeaders, jsonResponse, requireAdmin } from "@/lib/auth";
 import { computeAbnormalities } from "@/lib/abnormalities";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -23,53 +23,32 @@ export async function GET(req: Request, context: RouteContext) {
 		return jsonResponse({ error: "Invalid submission id" }, { status: 400 });
 	}
 
-	const db = await getDb();
-	const row = await db.get(
-		`
-			SELECT
-				s.id as id,
-				s.form_id as form_id,
-				f.name as form_name,
-				f.json as form_json,
-				s.user_id as user_id,
-				u.email as user_email,
-				s.submitted_at as submitted_at,
-				s.data as data,
-				s.updated_at as updated_at,
-				s.updated_by as updated_by,
-				u2.email as updated_by_email,
-				s.edit_history as edit_history
-			FROM form_submissions s
-			JOIN forms f ON f.id = s.form_id
-			LEFT JOIN users u ON u.id = s.user_id
-			LEFT JOIN users u2 ON u2.id = s.updated_by
-			WHERE s.id = ?
-			LIMIT 1
-		`,
-		submissionId
-	);
+	const submission = await prisma.formSubmission.findUnique({
+		where: { id: submissionId },
+		include: { form: true, user: true },
+	});
 
-	if (!row) {
+	if (!submission || !submission.form) {
 		return jsonResponse({ error: "Not found" }, { status: 404 });
 	}
 
 	let parsedSchema: unknown = null;
 	try {
-		parsedSchema = row.form_json ? JSON.parse(String(row.form_json)) : null;
+		parsedSchema = submission.form.json ? JSON.parse(String(submission.form.json)) : null;
 	} catch {
 		parsedSchema = null;
 	}
 
 	let parsedData: unknown = null;
 	try {
-		parsedData = row.data ? JSON.parse(String(row.data)) : null;
+		parsedData = submission.data ? JSON.parse(String(submission.data)) : null;
 	} catch {
 		parsedData = null;
 	}
 
 	let editHistory: unknown = [];
 	try {
-		editHistory = row.edit_history ? JSON.parse(String(row.edit_history)) : [];
+		editHistory = submission.editHistory ? JSON.parse(String(submission.editHistory)) : [];
 	} catch {
 		editHistory = [];
 	}
@@ -77,16 +56,22 @@ export async function GET(req: Request, context: RouteContext) {
 
 	const abnormalities = computeAbnormalities(parsedSchema, parsedData);
 
+	let updatedByEmail: string | null = null;
+	if (submission.updatedBy != null) {
+		const updatedByUser = await prisma.user.findUnique({ where: { id: submission.updatedBy } });
+		updatedByEmail = updatedByUser ? updatedByUser.email : null;
+	}
+
 	return jsonResponse({
-		id: Number(row.id),
-		form_id: Number(row.form_id),
-		form_name: String(row.form_name ?? ""),
-		user_id: row.user_id == null ? null : Number(row.user_id),
-		user_email: row.user_email == null ? null : String(row.user_email),
-		submitted_at: String(row.submitted_at ?? ""),
-		updated_at: row.updated_at == null ? null : String(row.updated_at),
-		updated_by: row.updated_by == null ? null : Number(row.updated_by),
-		updated_by_email: row.updated_by_email == null ? null : String(row.updated_by_email),
+		id: submission.id,
+		form_id: submission.formId,
+		form_name: submission.form.name ?? "",
+		user_id: submission.userId ?? null,
+		user_email: submission.user ? submission.user.email : null,
+		submitted_at: submission.submittedAt.toISOString(),
+		updated_at: submission.updatedAt ? submission.updatedAt.toISOString() : null,
+		updated_by: submission.updatedBy ?? null,
+		updated_by_email: updatedByEmail,
 		edit_history: editHistory,
 		form: parsedSchema,
 		data: parsedData,
@@ -116,34 +101,12 @@ export async function PUT(req: Request, context: RouteContext) {
 		return jsonResponse({ error: "Invalid payload: expected { data: object }" }, { status: 400 });
 	}
 
-	const db = await getDb();
+	const existing = await prisma.formSubmission.findUnique({
+		where: { id: submissionId },
+		include: { form: true, user: true },
+	});
 
-	const existing = await db.get(
-		`
-			SELECT
-				s.id as id,
-				s.form_id as form_id,
-				f.name as form_name,
-				f.json as form_json,
-				s.user_id as user_id,
-				u.email as user_email,
-				s.submitted_at as submitted_at,
-				s.data as data,
-				s.updated_at as updated_at,
-				s.updated_by as updated_by,
-				u2.email as updated_by_email,
-				s.edit_history as edit_history
-			FROM form_submissions s
-			JOIN forms f ON f.id = s.form_id
-			LEFT JOIN users u ON u.id = s.user_id
-			LEFT JOIN users u2 ON u2.id = s.updated_by
-			WHERE s.id = ?
-			LIMIT 1
-		`,
-		submissionId
-	);
-
-	if (!existing) {
+	if (!existing || !existing.form) {
 		return jsonResponse({ error: "Not found" }, { status: 404 });
 	}
 
@@ -156,7 +119,7 @@ export async function PUT(req: Request, context: RouteContext) {
 
 	let history: unknown = [];
 	try {
-		history = existing.edit_history ? JSON.parse(String(existing.edit_history)) : [];
+		history = existing.editHistory ? JSON.parse(String(existing.editHistory)) : [];
 	} catch {
 		history = [];
 	}
@@ -170,27 +133,20 @@ export async function PUT(req: Request, context: RouteContext) {
 		new_data: data,
 	});
 
-	await db.run(
-		`
-			UPDATE form_submissions
-			SET
-				data = ?,
-				updated_at = ?,
-				updated_by = ?,
-				edit_history = ?
-			WHERE id = ?
-		`,
-		JSON.stringify(data),
-		nowIso,
-		auth.user.id,
-		JSON.stringify(history),
-		submissionId
-	);
+	await prisma.formSubmission.update({
+		where: { id: submissionId },
+		data: {
+			data: JSON.stringify(data),
+			updatedAt: new Date(nowIso),
+			updatedBy: auth.user.id,
+			editHistory: JSON.stringify(history),
+		},
+	});
 
 	// Return same shape as GET
 	let parsedSchema: unknown = null;
 	try {
-		parsedSchema = existing.form_json ? JSON.parse(String(existing.form_json)) : null;
+		parsedSchema = existing.form.json ? JSON.parse(String(existing.form.json)) : null;
 	} catch {
 		parsedSchema = null;
 	}
@@ -198,12 +154,12 @@ export async function PUT(req: Request, context: RouteContext) {
 	const abnormalities = computeAbnormalities(parsedSchema, data);
 
 	return jsonResponse({
-		id: Number(existing.id),
-		form_id: Number(existing.form_id),
-		form_name: String(existing.form_name ?? ""),
-		user_id: existing.user_id == null ? null : Number(existing.user_id),
-		user_email: existing.user_email == null ? null : String(existing.user_email),
-		submitted_at: String(existing.submitted_at ?? ""),
+		id: existing.id,
+		form_id: existing.formId,
+		form_name: existing.form.name ?? "",
+		user_id: existing.userId ?? null,
+		user_email: existing.user ? existing.user.email : null,
+		submitted_at: existing.submittedAt.toISOString(),
 		updated_at: nowIso,
 		updated_by: auth.user.id,
 		updated_by_email: auth.user.email,

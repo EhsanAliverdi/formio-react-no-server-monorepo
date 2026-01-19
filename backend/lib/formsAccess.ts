@@ -1,5 +1,6 @@
 import type { Role } from "./auth";
 import { prisma } from "./prisma";
+import type { Form } from "@prisma/client";
 
 type FormVisibility = "public" | "restricted";
 
@@ -49,7 +50,7 @@ export async function listAccessibleForms(user: CurrentUser | null) {
       orderBy: { id: "desc" },
     });
 
-    return forms.map((f) => ({
+    return forms.map((f: Form) => ({
       id: f.id,
       name: f.name,
       json: f.json,
@@ -77,7 +78,7 @@ export async function listAccessibleForms(user: CurrentUser | null) {
     orderBy: { id: "desc" },
   });
 
-  return forms.map((f) => ({
+  return forms.map((f: Form) => ({
     id: f.id,
     name: f.name,
     json: f.json,

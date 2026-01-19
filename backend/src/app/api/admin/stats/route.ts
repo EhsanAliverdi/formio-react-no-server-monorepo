@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireAdmin } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -14,25 +14,48 @@ export async function GET(req: Request) {
   const auth = await requireAdmin(req);
   if (!auth.ok) return auth.res;
 
-  const db = await getDb();
+  const [totalForms, totalSubmissions] = await Promise.all([
+    prisma.form.count(),
+    prisma.formSubmission.count(),
+  ]);
 
-  const totalFormsRow = await db.get<{ c: number }>("SELECT COUNT(*) as c FROM forms");
-  const totalSubmissionsRow = await db.get<{ c: number }>("SELECT COUNT(*) as c FROM form_submissions");
-  const submittedFormsRow = await db.get<{ c: number }>(
-      "SELECT COUNT(DISTINCT form_id) as c FROM form_submissions"
-  );
-    const submissionsTodayRow = await db.get<{ c: number }>(
-      "SELECT COUNT(*) as c FROM form_submissions WHERE submitted_at::date = CURRENT_DATE"
-  );
-    const submissionsLast7DaysRow = await db.get<{ c: number }>(
-      "SELECT COUNT(*) as c FROM form_submissions WHERE submitted_at >= NOW() - INTERVAL '7 days'"
-  );
+  // Count distinct forms that have submissions.
+  const distinctForms = await prisma.formSubmission.findMany({
+    select: { formId: true },
+    distinct: ["formId"],
+  });
+  const submittedForms = distinctForms.length;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfTomorrow = new Date(startOfToday);
+  startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const [submissionsToday, submissionsLast7Days] = await Promise.all([
+    prisma.formSubmission.count({
+      where: {
+        submittedAt: {
+          gte: startOfToday,
+          lt: startOfTomorrow,
+        },
+      },
+    }),
+    prisma.formSubmission.count({
+      where: {
+        submittedAt: {
+          gte: sevenDaysAgo,
+        },
+      },
+    }),
+  ]);
 
   return jsonResponse({
-    totalForms: Number(totalFormsRow?.c ?? 0),
-    totalSubmissions: Number(totalSubmissionsRow?.c ?? 0),
-    submittedForms: Number(submittedFormsRow?.c ?? 0),
-    submissionsToday: Number(submissionsTodayRow?.c ?? 0),
-    submissionsLast7Days: Number(submissionsLast7DaysRow?.c ?? 0),
+    totalForms,
+    totalSubmissions,
+    submittedForms,
+    submissionsToday,
+    submissionsLast7Days,
   });
 }

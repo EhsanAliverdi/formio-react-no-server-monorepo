@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { corsHeaders, createSession, jsonResponse, verifyPassword } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -16,35 +16,31 @@ export async function POST(req: Request) {
     return jsonResponse({ error: "Missing email or password" }, { status: 400 });
   }
 
-  const db = await getDb();
-  const userRow = await db.get(
-    "SELECT id, email, role, password_hash, display_name, preferred_name, first_name, last_name, avatar_url FROM users WHERE email = ? LIMIT 1",
-    email
-  );
+  const user = await prisma.user.findUnique({ where: { email } });
 
-  if (!userRow) {
+  if (!user) {
     return jsonResponse({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const ok = verifyPassword(password, String(userRow.password_hash));
+  const ok = verifyPassword(password, String(user.passwordHash));
   if (!ok) {
     return jsonResponse({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const session = await createSession(Number(userRow.id));
+  const session = await createSession(user.id);
 
   return jsonResponse({
     token: session.token,
     expiresAt: session.expiresAt,
     user: {
-      id: Number(userRow.id),
-      email: String(userRow.email),
-      role: String(userRow.role),
-      display_name: (userRow.display_name as any) ?? null,
-      preferred_name: (userRow.preferred_name as any) ?? null,
-      first_name: (userRow.first_name as any) ?? null,
-      last_name: (userRow.last_name as any) ?? null,
-      avatar_url: (userRow.avatar_url as any) ?? null,
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      display_name: user.displayName ?? null,
+      preferred_name: user.preferredName ?? null,
+      first_name: user.firstName ?? null,
+      last_name: user.lastName ?? null,
+      avatar_url: user.avatarUrl ?? null,
     },
   });
 }

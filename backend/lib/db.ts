@@ -287,78 +287,10 @@ async function initPoolAndMigrate() {
     client.release();
   }
 
-  // Expose a Db-like wrapper on top of the pool
-  dbInstance = {
-    query: query,
-    get,
-    all,
-    run,
-    exec,
-  };
+  // Legacy DB helper is no longer used now that Prisma is in place.
+  dbInstance = null;
 }
 
 export async function getDb(): Promise<Db> {
-  if (!dbInstance) {
-    await initPoolAndMigrate();
-  }
-  // dbInstance is guaranteed after init
-  return dbInstance as Db;
-}
-
-// Helper to convert `?` placeholders to PostgreSQL-style $1, $2, ...
-function convertPlaceholders(text: string): string {
-  let paramIndex = 1;
-  return text.replace(/\?/g, () => `$${paramIndex++}`);
-}
-
-// Helper methods to provide a SQLite-like interface for compatibility,
-// backed directly by the pg client. This keeps the existing SQL surface
-// while routing all connections through the configured PostgreSQL pool.
-export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {
-  if (!pool || !dbInstance) {
-    await initPoolAndMigrate();
-  }
-  if (!pool) {
-    throw new Error("Database pool not initialized");
-  }
-
-  const convertedText = convertPlaceholders(text);
-  const result = await pool.query(convertedText, params);
-  return result.rows as T[];
-}
-
-export async function get<T = any>(text: string, ...params: any[]): Promise<T | null> {
-  const rows = await query<T>(text, params);
-  return rows[0] ?? null;
-}
-
-export async function all<T = any>(text: string, ...params: any[]): Promise<T[]> {
-  return query<T>(text, params);
-}
-
-export async function run(text: string, ...params: any[]): Promise<{ changes: number; lastID: number | null }> {
-  if (!pool || !dbInstance) {
-    await initPoolAndMigrate();
-  }
-  if (!pool) {
-    throw new Error("Database pool not initialized");
-  }
-
-  const convertedText = convertPlaceholders(text);
-  const result = await pool.query(convertedText, params);
-  return {
-    changes: result.rowCount || 0,
-    lastID: (result.rows[0] as any)?.id ?? null,
-  };
-}
-
-export async function exec(text: string): Promise<void> {
-  if (!pool || !dbInstance) {
-    await initPoolAndMigrate();
-  }
-  if (!pool) {
-    throw new Error("Database pool not initialized");
-  }
-  const convertedText = convertPlaceholders(text);
-  await pool.query(convertedText);
+  throw new Error("getDb is deprecated and should not be called; use Prisma instead.");
 }

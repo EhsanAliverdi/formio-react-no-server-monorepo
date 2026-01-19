@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireAdmin } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -31,45 +31,45 @@ export async function GET(req: Request) {
   const limit = Math.max(1, Math.min(200, Number(url.searchParams.get("limit") ?? 50) || 50));
   const offset = Math.max(0, Number(url.searchParams.get("offset") ?? 0) || 0);
 
-  const db = await getDb();
+  const notifications = await prisma.notification.findMany({
+    include: {
+      creator: true,
+      recipients: true,
+    },
+    orderBy: { id: "desc" },
+    take: limit,
+    skip: offset,
+  });
 
-  const rows = await db.all(
-    `
-      SELECT
-        n.id as id,
-        n.title as title,
-        n.body as body,
-        COALESCE(n.level, CASE
-          WHEN n.type = 'error' THEN 'critical'
-          WHEN n.type = 'warning' THEN 'high'
-          WHEN n.type = 'success' THEN 'normal'
-          WHEN n.type = 'info' THEN 'normal'
-          ELSE 'normal'
-        END) as level,
-        n.created_at as created_at,
-        n.created_by as created_by,
-        cu.email as created_by_email,
-        cu.avatar_url as created_by_avatar_url,
-        (
-          SELECT COUNT(*)
-          FROM notification_recipients r
-          WHERE r.notification_id = n.id
-        ) as recipient_count,
-        (
-          SELECT COUNT(*)
-          FROM notification_recipients r
-          WHERE r.notification_id = n.id AND r.read_at IS NOT NULL
-        ) as read_count
-      FROM notifications n
-      LEFT JOIN users cu ON cu.id = n.created_by
-      ORDER BY n.id DESC
-      LIMIT ? OFFSET ?
-    `,
-    limit,
-    offset
-  );
+  const items = notifications.map((n) => {
+    const level: string =
+      n.level ??
+      (n.type === "error"
+        ? "critical"
+        : n.type === "warning"
+        ? "high"
+        : n.type === "success" || n.type === "info"
+        ? "normal"
+        : "normal");
 
-  return jsonResponse({ items: rows ?? [], limit, offset });
+    const recipientCount = n.recipients.length;
+    const readCount = n.recipients.filter((r) => r.readAt !== null).length;
+
+    return {
+      id: n.id,
+      title: n.title,
+      body: n.body,
+      level,
+      created_at: n.createdAt,
+      created_by: n.createdBy,
+      created_by_email: n.creator ? n.creator.email : null,
+      created_by_avatar_url: n.creator ? n.creator.avatarUrl : null,
+      recipient_count: recipientCount,
+      read_count: readCount,
+    };
+  });
+
+  return jsonResponse({ items, limit, offset });
 }
 
 export async function POST(req: Request) {
@@ -102,60 +102,56 @@ export async function POST(req: Request) {
     return jsonResponse({ error: "Choose at least one role or user, or set all_users" }, { status: 400 });
   }
 
-  const db = await getDb();
-
   // Create the notification
-  const insert = await db.run(
-    "INSERT INTO notifications (title, body, type, level, created_by) VALUES (?, ?, ?, ?, ?)",
-    title,
-    message,
-    "info",
-    level,
-    auth.user.id
-  );
-
-  const notificationId = Number(insert.lastID);
+  const notification = await prisma.notification.create({
+    data: {
+      title,
+      body: message,
+      type: "info",
+      level,
+      createdBy: auth.user.id,
+    },
+  });
 
   // Resolve recipients
   const recipientSet = new Set<number>();
 
   if (allUsers) {
-    const rows = (await db.all("SELECT id FROM users WHERE COALESCE(is_active, 1) = 1")) as Array<{ id: number }>;
-    for (const r of rows ?? []) {
-      const id = Number(r.id);
-      if (Number.isFinite(id) && id > 0) recipientSet.add(id);
+    const users = await prisma.user.findMany({ where: { isActive: true } });
+    for (const u of users) {
+      recipientSet.add(u.id);
     }
   } else {
-    for (const id of userIds) recipientSet.add(id);
+    if (userIds.length > 0) {
+      const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
+      for (const u of users) recipientSet.add(u.id);
+    }
 
     if (roles.length > 0) {
-      const placeholders = roles.map(() => "?").join(", ");
-      const roleRows = (await db.all(
-        `SELECT id FROM users WHERE COALESCE(is_active, 1) = 1 AND role IN (${placeholders})`,
-        ...roles
-      )) as Array<{ id: number }>;
-      for (const r of roleRows ?? []) {
-        const id = Number(r.id);
-        if (Number.isFinite(id) && id > 0) recipientSet.add(id);
-      }
+      const roleUsers = await prisma.user.findMany({
+        where: {
+          isActive: true,
+          role: { in: roles },
+        },
+      });
+      for (const u of roleUsers) recipientSet.add(u.id);
     }
   }
 
   const recipients = Array.from(recipientSet);
 
   let insertedCount = 0;
-  for (const userId of recipients) {
-    const r = await db.run(
-      "INSERT OR IGNORE INTO notification_recipients (notification_id, user_id) VALUES (?, ?)",
-      notificationId,
-      userId
-    );
-    insertedCount += Number(r?.changes ?? 0);
+  if (recipients.length > 0) {
+    const result = await prisma.notificationRecipient.createMany({
+      data: recipients.map((userId) => ({ notificationId: notification.id, userId })),
+      skipDuplicates: true,
+    });
+    insertedCount = result.count;
   }
 
   return jsonResponse({
     success: true,
-    notification_id: notificationId,
+    notification_id: notification.id,
     recipient_count: insertedCount,
   });
 }

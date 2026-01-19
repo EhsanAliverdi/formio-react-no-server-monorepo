@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireRole } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { buildUserAvatarKey, encodeKeyPath, uploadObject } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -83,18 +83,15 @@ export async function POST(req: Request) {
   const origin = getPublicOrigin(req);
   const url = `${origin}/api/uploads/${encodeKeyPath(obj.key)}`;
 
-  const db = await getDb();
-  await db.run("UPDATE users SET avatar_url = ? WHERE id = ?", url, auth.user.id);
-
-  const row = await db.get(
-    "SELECT id, email, role, is_active, created_at, display_name, preferred_name, first_name, middle_name, last_name, pronouns, date_of_birth, phone, job_title, department, company, website_url, bio, address_line1, address_line2, city, state, postal_code, country, timezone, locale, avatar_url FROM users WHERE id = ?",
-    auth.user.id
-  );
+  const user = await prisma.user.update({
+    where: { id: auth.user.id },
+    data: { avatarUrl: url },
+  });
 
   return jsonResponse(
     {
       success: true,
-      user: row,
+      user,
       avatar_url: url,
       storage: "minio",
       key: obj.key,

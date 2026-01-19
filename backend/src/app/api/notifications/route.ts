@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireRole } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -16,52 +16,61 @@ export async function GET(req: Request) {
   const limit = Math.max(1, Math.min(200, Number(url.searchParams.get("limit") ?? 50) || 50));
   const offset = Math.max(0, Number(url.searchParams.get("offset") ?? 0) || 0);
 
-  const whereUnread = unreadOnly ? "AND r.read_at IS NULL" : "";
+  const where: any = { userId: auth.user.id };
+  if (unreadOnly) {
+    where.readAt = null;
+  }
 
-  const db = await getDb();
+  const [recipients, unreadCount] = await Promise.all([
+    prisma.notificationRecipient.findMany({
+      where,
+      include: {
+        notification: {
+          include: {
+            creator: true,
+          },
+        },
+      },
+      orderBy: [
+        { readAt: "asc" },
+        { notificationId: "desc" },
+      ],
+      take: limit,
+      skip: offset,
+    }),
+    prisma.notificationRecipient.count({ where: { userId: auth.user.id, readAt: null } }),
+  ]);
 
-  const rows = await db.all(
-    `
-      SELECT
-        n.id as id,
-        n.title as title,
-        n.body as body,
-        COALESCE(n.level, CASE
-          WHEN n.type = 'error' THEN 'critical'
-          WHEN n.type = 'warning' THEN 'high'
-          WHEN n.type = 'success' THEN 'normal'
-          WHEN n.type = 'info' THEN 'normal'
-          ELSE 'normal'
-        END) as level,
-        n.created_at as created_at,
-        n.created_by as created_by,
-        cu.email as created_by_email,
-        cu.avatar_url as created_by_avatar_url,
-        r.delivered_at as delivered_at,
-        r.read_at as read_at
-      FROM notification_recipients r
-      JOIN notifications n ON n.id = r.notification_id
-      LEFT JOIN users cu ON cu.id = n.created_by
-      WHERE r.user_id = ?
-        ${whereUnread}
-      ORDER BY
-        CASE WHEN r.read_at IS NULL THEN 0 ELSE 1 END,
-        n.id DESC
-      LIMIT ? OFFSET ?
-    `,
-    auth.user.id,
-    limit,
-    offset
-  );
+  const items = recipients.map((r) => {
+    const n = r.notification;
+    const creator = n.creator;
+    const level =
+      n.level ??
+      (n.type === "error"
+        ? "critical"
+        : n.type === "warning"
+        ? "high"
+        : n.type === "success" || n.type === "info"
+        ? "normal"
+        : "normal");
 
-  const unreadRow = await db.get<{ c: number }>(
-    "SELECT COUNT(*) as c FROM notification_recipients WHERE user_id = ? AND read_at IS NULL",
-    auth.user.id
-  );
+    return {
+      id: n.id,
+      title: n.title,
+      body: n.body,
+      level,
+      created_at: n.createdAt,
+      created_by: n.createdBy,
+      created_by_email: creator ? creator.email : null,
+      created_by_avatar_url: creator ? creator.avatarUrl : null,
+      delivered_at: r.deliveredAt,
+      read_at: r.readAt,
+    };
+  });
 
   return jsonResponse({
-    items: rows ?? [],
-    unread_count: Number(unreadRow?.c ?? 0),
+    items,
+    unread_count: unreadCount,
     limit,
     offset,
   });

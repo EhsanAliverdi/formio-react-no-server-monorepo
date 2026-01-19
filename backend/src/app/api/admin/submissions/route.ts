@@ -1,6 +1,7 @@
 import { corsHeaders, jsonResponse, requireAdmin } from "@/lib/auth";
 import { computeAbnormalities } from "@/lib/abnormalities";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import type { FormSubmission, Form as PrismaForm, User as PrismaUser } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -30,102 +31,88 @@ export async function GET(req: Request) {
 	const from = (fromRaw ?? "").trim();
 	const to = (toRaw ?? "").trim();
 
-	const db = await getDb();
-
-	const whereParts: string[] = [];
-	const params: any[] = [];
+	const where: any = {};
+	const and: any[] = [];
 
 	if (Number.isFinite(formId as any)) {
-		whereParts.push("s.form_id = ?");
-		params.push(formId);
+		and.push({ formId: formId as number });
 	}
 
 	if (q) {
-		const qLower = q.toLowerCase();
-		const qLike = `%${qLower}%`;
-		whereParts.push(
-			"(LOWER(f.name) LIKE ? OR LOWER(COALESCE(u.email, '')) LIKE ? OR CAST(s.id AS TEXT) LIKE ?)"
-		);
-		params.push(qLike, qLike, `%${q}%`);
+		const or: any[] = [
+			{ form: { name: { contains: q, mode: "insensitive" as const } } },
+			{ user: { email: { contains: q, mode: "insensitive" as const } } },
+		];
+
+		// If the query looks like an integer, also match by id.
+		if (/^\d+$/.test(q)) {
+			const numericId = Number(q);
+			if (Number.isFinite(numericId)) {
+				or.push({ id: numericId });
+			}
+		}
+
+		and.push({ OR: or });
 	}
 
 	// Optional date filtering (inclusive), expected YYYY-MM-DD.
-	// Uses PostgreSQL date casting to compare against submitted_at timestamps.
+	// Approximate the original ::date comparisons by using start/end-of-day bounds.
 	const ymd = /^\d{4}-\d{2}-\d{2}$/;
 	if (from && ymd.test(from)) {
-		whereParts.push("s.submitted_at::date >= ?::date");
-		params.push(from);
+		const fromDate = new Date(`${from}T00:00:00.000Z`);
+		and.push({ submittedAt: { gte: fromDate } });
 	}
 	if (to && ymd.test(to)) {
-		whereParts.push("s.submitted_at::date <= ?::date");
-		params.push(to);
+		const toDate = new Date(`${to}T23:59:59.999Z`);
+		and.push({ submittedAt: { lte: toDate } });
 	}
 
-	const whereSql = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";
+	if (and.length) {
+		where.AND = and;
+	}
 
-	const totalRow = await db.get<{ c: number }>(
-		`
-			SELECT COUNT(*) as c
-			FROM form_submissions s
-			JOIN forms f ON f.id = s.form_id
-			LEFT JOIN users u ON u.id = s.user_id
-			${whereSql}
-		`,
-		...params
-	);
-	const total = Number(totalRow?.c ?? 0);
+	const total = await prisma.formSubmission.count({ where });
 
-	const pageParams = [...params, limit, offset];
+	const submissions = await prisma.formSubmission.findMany({
+		where,
+		include: {
+			form: true,
+			user: true,
+		},
+		orderBy: { id: "desc" },
+		take: limit,
+		skip: offset,
+	});
 
-	const rows = await db.all(
-		`
-			SELECT
-				s.id as id,
-				s.form_id as form_id,
-				f.name as form_name,
-				f.json as form_json,
-				s.user_id as user_id,
-				u.email as user_email,
-				s.submitted_at as submitted_at,
-				s.data as data
-			FROM form_submissions s
-			JOIN forms f ON f.id = s.form_id
-			LEFT JOIN users u ON u.id = s.user_id
-			${whereSql}
-			ORDER BY s.id DESC
-			LIMIT ? OFFSET ?
-		`,
-		...pageParams
-	);
+	type SubmissionWithRelations = FormSubmission & { form: PrismaForm; user: PrismaUser | null };
+	const items = (submissions as SubmissionWithRelations[]).map((s) => {
+		let parsedSchema: unknown = null;
+		try {
+			parsedSchema = s.form.json ? JSON.parse(String(s.form.json)) : null;
+		} catch {
+			parsedSchema = null;
+		}
 
-	const items = (rows ?? []).map((r: any) => {
-			let parsedSchema: unknown = null;
-			try {
-				parsedSchema = r.form_json ? JSON.parse(String(r.form_json)) : null;
-			} catch {
-				parsedSchema = null;
-			}
+		let parsedData: unknown = null;
+		try {
+			parsedData = s.data ? JSON.parse(String(s.data)) : null;
+		} catch {
+			parsedData = null;
+		}
 
-			let parsedData: unknown = null;
-			try {
-				parsedData = r.data ? JSON.parse(String(r.data)) : null;
-			} catch {
-				parsedData = null;
-			}
+		const abnormalities = computeAbnormalities(parsedSchema, parsedData);
 
-			const abnormalities = computeAbnormalities(parsedSchema, parsedData);
-
-			return {
-				id: Number(r.id),
-				form_id: Number(r.form_id),
-				form_name: String(r.form_name ?? ""),
-				user_id: r.user_id == null ? null : Number(r.user_id),
-				user_email: r.user_email == null ? null : String(r.user_email),
-				submitted_at: String(r.submitted_at ?? ""),
-				has_abnormalities: abnormalities.length > 0,
-				abnormal_count: abnormalities.length,
-			};
-		});
+		return {
+			id: s.id,
+			form_id: s.formId,
+			form_name: s.form?.name ?? "",
+			user_id: s.userId ?? null,
+			user_email: s.user ? s.user.email : null,
+			submitted_at: s.submittedAt.toISOString(),
+			has_abnormalities: abnormalities.length > 0,
+			abnormal_count: abnormalities.length,
+		};
+	});
 
 	return jsonResponse({
 		items,

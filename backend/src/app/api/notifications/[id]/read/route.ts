@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireRole } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -17,21 +17,26 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     return jsonResponse({ error: "Invalid notification id" }, { status: 400 });
   }
 
-  const db = await getDb();
-
-  const result = await db.run(
-    "UPDATE notification_recipients SET read_at = NOW() WHERE notification_id = ? AND user_id = ? AND read_at IS NULL",
-    notificationId,
-    auth.user.id
-  );
-
-  if (Number(result?.changes ?? 0) === 0) {
-    // Either already read or not a recipient.
-    const exists = await db.get(
-      "SELECT 1 FROM notification_recipients WHERE notification_id = ? AND user_id = ?",
+  const result = await prisma.notificationRecipient.updateMany({
+    where: {
       notificationId,
-      auth.user.id
-    );
+      userId: auth.user.id,
+      readAt: null,
+    },
+    data: {
+      readAt: new Date(),
+    },
+  });
+
+  if (result.count === 0) {
+    const exists = await prisma.notificationRecipient.findUnique({
+      where: {
+        notificationId_userId: {
+          notificationId,
+          userId: auth.user.id,
+        },
+      },
+    });
 
     if (!exists) {
       return jsonResponse({ error: "Not found" }, { status: 404 });

@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireAdmin } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { buildUserAvatarKey, encodeKeyPath, uploadObject } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -91,24 +91,15 @@ export async function POST(req: Request, context: RouteContext) {
   const origin = getPublicOrigin(req);
   const url = `${origin}/api/uploads/${encodeKeyPath(obj.key)}`;
 
-  const db = await getDb();
-
-  const exists = await db.get("SELECT id FROM users WHERE id = ?", userId);
-  if (!exists) {
-    return jsonResponse({ error: "Not found" }, { status: 404 });
-  }
-
-  await db.run("UPDATE users SET avatar_url = ? WHERE id = ?", url, userId);
-
-  const row = await db.get(
-    "SELECT id, email, role, is_active, created_at, display_name, preferred_name, first_name, middle_name, last_name, pronouns, date_of_birth, phone, job_title, department, company, website_url, bio, address_line1, address_line2, city, state, postal_code, country, timezone, locale, avatar_url FROM users WHERE id = ?",
-    userId
-  );
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { avatarUrl: url },
+  });
 
   return jsonResponse(
     {
       success: true,
-      user: row,
+      user,
       avatar_url: url,
       storage: "minio",
       key: obj.key,

@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -45,19 +45,22 @@ function mapRowsToPayload(rows: Array<{ key: string; value: string }>) {
 }
 
 export async function GET(req: Request) {
-  const db = await getDb();
+  const rows = await prisma.siteSetting.findMany({
+    where: {
+      key: {
+        in: [
+          KEY_SITE_NAME,
+          KEY_FAVICON,
+          KEY_LOGO_EXPANDED_LIGHT,
+          KEY_LOGO_EXPANDED_DARK,
+          KEY_LOGO_COLLAPSED,
+          KEY_LOGO_EXPANDED_WIDTH,
+          KEY_LOGO_EXPANDED_HEIGHT,
+          KEY_LOGO_COLLAPSED_SIZE,
+        ],
+      },
+    },
+  });
 
-  const rows = (await db.all<{ key: string; value: string }>(
-    "SELECT key, value FROM site_settings WHERE key IN (?, ?, ?, ?, ?, ?, ?, ?)",
-    KEY_SITE_NAME,
-    KEY_FAVICON,
-    KEY_LOGO_EXPANDED_LIGHT,
-    KEY_LOGO_EXPANDED_DARK,
-    KEY_LOGO_COLLAPSED,
-    KEY_LOGO_EXPANDED_WIDTH,
-    KEY_LOGO_EXPANDED_HEIGHT,
-    KEY_LOGO_COLLAPSED_SIZE,
-  )) as Array<{ key: string; value: string }>;
-
-  return jsonResponse(mapRowsToPayload(rows));
+  return jsonResponse(mapRowsToPayload(rows as Array<{ key: string; value: string }>));
 }

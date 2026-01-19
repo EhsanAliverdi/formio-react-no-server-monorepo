@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireAdmin } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -62,153 +62,64 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const limit = clampInt(url.searchParams.get("limit"), 10, 1, 50);
 
-  const db = await getDb();
-
   const perSource = Math.max(10, limit * 2);
 
-  const submissions = (await db.all(
-    `
-      SELECT
-        s.id as submission_id,
-        s.form_id as form_id,
-        f.name as form_name,
-        s.user_id as user_id,
-        u.email as user_email,
-        u.display_name as user_display_name,
-        u.avatar_url as user_avatar_url,
-        s.submitted_at as submitted_at
-      FROM form_submissions s
-      LEFT JOIN forms f ON f.id = s.form_id
-      LEFT JOIN users u ON u.id = s.user_id
-      ORDER BY s.submitted_at DESC
-      LIMIT ?
-    `,
-    perSource
-  )) as unknown as Array<{
-    submission_id: number;
-    form_id: number;
-    form_name: string | null;
-    user_id: number | null;
-    user_email: string | null;
-    user_display_name: string | null;
-    user_avatar_url: string | null;
-    submitted_at: string;
-  }>;
+  const [submissions, updated, users, notifications] = await Promise.all([
+    prisma.formSubmission.findMany({
+      include: { form: true, user: true },
+      orderBy: { submittedAt: "desc" },
+      take: perSource,
+    }),
+    prisma.formSubmission.findMany({
+      where: { updatedAt: { not: null } },
+      include: { form: true },
+      orderBy: { updatedAt: "desc" },
+      take: perSource,
+    }),
+    prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: perSource,
+    }),
+    prisma.notification.findMany({
+      include: { creator: true },
+      orderBy: { createdAt: "desc" },
+      take: perSource,
+    }),
+  ]);
 
-  const updated = (await db.all(
-    `
-      SELECT
-        s.id as submission_id,
-        s.form_id as form_id,
-        f.name as form_name,
-        s.user_id as user_id,
-        u.email as user_email,
-        u.display_name as user_display_name,
-        u.avatar_url as user_avatar_url,
-        s.updated_at as updated_at,
-        s.updated_by as updated_by,
-        ub.email as updated_by_email,
-        ub.display_name as updated_by_display_name,
-        ub.avatar_url as updated_by_avatar_url
-      FROM form_submissions s
-      LEFT JOIN forms f ON f.id = s.form_id
-      LEFT JOIN users u ON u.id = s.user_id
-      LEFT JOIN users ub ON ub.id = s.updated_by
-      WHERE s.updated_at IS NOT NULL
-      ORDER BY s.updated_at DESC
-      LIMIT ?
-    `,
-    perSource
-  )) as unknown as Array<{
-    submission_id: number;
-    form_id: number;
-    form_name: string | null;
-    user_id: number | null;
-    user_email: string | null;
-    user_display_name: string | null;
-    user_avatar_url: string | null;
-    updated_at: string;
-    updated_by: number | null;
-    updated_by_email: string | null;
-    updated_by_display_name: string | null;
-    updated_by_avatar_url: string | null;
-  }>;
-
-  const users = (await db.all(
-    `
-      SELECT
-        id,
-        email,
-        role,
-        created_at,
-        display_name,
-        avatar_url,
-        is_active
-      FROM users
-      ORDER BY created_at DESC
-      LIMIT ?
-    `,
-    perSource
-  )) as unknown as Array<{
-    id: number;
-    email: string;
-    role: string;
-    created_at: string;
-    display_name: string | null;
-    avatar_url: string | null;
-    is_active: number | null;
-  }>;
-
-  const notifications = (await db.all(
-    `
-      SELECT
-        n.id as id,
-        n.title as title,
-        n.body as body,
-        n.type as type,
-        n.level as level,
-        n.created_at as created_at,
-        n.created_by as created_by,
-        u.email as created_by_email,
-        u.display_name as created_by_display_name,
-        u.avatar_url as created_by_avatar_url
-      FROM notifications n
-      LEFT JOIN users u ON u.id = n.created_by
-      ORDER BY n.created_at DESC
-      LIMIT ?
-    `,
-    perSource
-  )) as unknown as Array<{
-    id: number;
-    title: string;
-    body: string;
-    type: string;
-    level: string;
-    created_at: string;
-    created_by: number | null;
-    created_by_email: string | null;
-    created_by_display_name: string | null;
-    created_by_avatar_url: string | null;
-  }>;
+  // Preload updated-by users for updated submissions
+  const updatedByIds = Array.from(
+    new Set(
+      updated
+        .map((s: { updatedBy: number | null }) => s.updatedBy)
+        .filter((id: number | null): id is number => id != null),
+    ),
+  );
+  const updatedByUsers = updatedByIds.length
+    ? await prisma.user.findMany({ where: { id: { in: updatedByIds } } })
+    : [];
+  const updatedByMap = new Map<number, (typeof updatedByUsers)[number]>(
+    updatedByUsers.map((u: (typeof updatedByUsers)[number]) => [u.id, u]),
+  );
 
   const items: AdminActivityItem[] = [];
 
-  for (const row of submissions) {
-    const occurredAt = sqliteDateToIso(String(row.submitted_at ?? ""));
+  for (const s of submissions) {
+    const occurredAt = s.submittedAt.toISOString();
 
-    const actor: ActivityActor | null = row.user_id
+    const actor: ActivityActor | null = s.user
       ? {
-          id: Number(row.user_id),
-          email: String(row.user_email ?? ""),
-          display_name: row.user_display_name == null ? null : String(row.user_display_name),
-          avatar_url: row.user_avatar_url == null ? null : String(row.user_avatar_url),
-        }
+        id: s.user.id,
+        email: s.user.email,
+        display_name: s.user.displayName ?? null,
+        avatar_url: s.user.avatarUrl ?? null,
+      }
       : null;
 
-    const formName = String(row.form_name ?? "Form");
+    const formName = s.form?.name ?? "Form";
 
     items.push({
-      id: `submission:${row.submission_id}`,
+      id: `submission:${s.id}`,
       type: "submission",
       occurred_at: occurredAt,
       title: "New submission",
@@ -216,40 +127,36 @@ export async function GET(req: Request) {
       actor,
       entity: {
         kind: "submission",
-        id: Number(row.submission_id),
-        form_id: Number(row.form_id),
+        id: s.id,
+        form_id: s.formId,
       },
       link: "/admin/submissions",
       details: {
-        submission_id: Number(row.submission_id),
-        form_id: Number(row.form_id),
+        submission_id: s.id,
+        form_id: s.formId,
         form_name: formName,
       },
     });
   }
 
-  for (const row of updated) {
-    const occurredAt = sqliteDateToIso(String(row.updated_at ?? ""));
+  for (const s of updated) {
+    if (!s.updatedAt) continue;
+    const occurredAt = s.updatedAt.toISOString();
 
-    const actor: ActivityActor | null = row.updated_by
+    const updater = s.updatedBy != null ? updatedByMap.get(s.updatedBy) : undefined;
+    const actor: ActivityActor | null = updater
       ? {
-          id: Number(row.updated_by),
-          email: String(row.updated_by_email ?? ""),
-          display_name:
-            row.updated_by_display_name == null
-              ? null
-              : String(row.updated_by_display_name),
-          avatar_url:
-            row.updated_by_avatar_url == null
-              ? null
-              : String(row.updated_by_avatar_url),
-        }
+        id: updater.id,
+        email: updater.email,
+        display_name: updater.displayName ?? null,
+        avatar_url: updater.avatarUrl ?? null,
+      }
       : null;
 
-    const formName = String(row.form_name ?? "Form");
+    const formName = s.form?.name ?? "Form";
 
     items.push({
-      id: `submission_updated:${row.submission_id}`,
+      id: `submission_updated:${s.id}`,
       type: "submission_updated",
       occurred_at: occurredAt,
       title: "Submission updated",
@@ -257,30 +164,30 @@ export async function GET(req: Request) {
       actor,
       entity: {
         kind: "submission",
-        id: Number(row.submission_id),
-        form_id: Number(row.form_id),
+        id: s.id,
+        form_id: s.formId,
       },
       link: "/admin/submissions",
       details: {
-        submission_id: Number(row.submission_id),
-        form_id: Number(row.form_id),
+        submission_id: s.id,
+        form_id: s.formId,
         form_name: formName,
       },
     });
   }
 
-  for (const row of users) {
-    const occurredAt = sqliteDateToIso(String(row.created_at ?? ""));
+  for (const u of users) {
+    const occurredAt = u.createdAt.toISOString();
 
     const actor: ActivityActor = {
-      id: Number(row.id),
-      email: String(row.email ?? ""),
-      display_name: row.display_name == null ? null : String(row.display_name),
-      avatar_url: row.avatar_url == null ? null : String(row.avatar_url),
+      id: u.id,
+      email: u.email,
+      display_name: u.displayName ?? null,
+      avatar_url: u.avatarUrl ?? null,
     };
 
     items.push({
-      id: `user_created:${row.id}`,
+      id: `user_created:${u.id}`,
       type: "user_created",
       occurred_at: occurredAt,
       title: "User created",
@@ -288,54 +195,49 @@ export async function GET(req: Request) {
       actor,
       entity: {
         kind: "user",
-        id: Number(row.id),
+        id: u.id,
       },
       link: "/admin/users",
       details: {
-        user_id: Number(row.id),
+        user_id: u.id,
         email: actor.email,
-        role: String(row.role ?? ""),
-        is_active: row.is_active == null ? null : Number(row.is_active),
+        role: u.role,
+        is_active: u.isActive ? 1 : 0,
       },
     });
   }
 
-  for (const row of notifications) {
-    const occurredAt = sqliteDateToIso(String(row.created_at ?? ""));
+  for (const n of notifications) {
+    const occurredAt = n.createdAt.toISOString();
 
-    const actor: ActivityActor | null = row.created_by
+    const creator = n.creator;
+    const actor: ActivityActor | null = creator
       ? {
-          id: Number(row.created_by),
-          email: String(row.created_by_email ?? ""),
-          display_name:
-            row.created_by_display_name == null
-              ? null
-              : String(row.created_by_display_name),
-          avatar_url:
-            row.created_by_avatar_url == null
-              ? null
-              : String(row.created_by_avatar_url),
-        }
+        id: creator.id,
+        email: creator.email,
+        display_name: creator.displayName ?? null,
+        avatar_url: creator.avatarUrl ?? null,
+      }
       : null;
 
     items.push({
-      id: `notification_sent:${row.id}`,
+      id: `notification_sent:${n.id}`,
       type: "notification_sent",
       occurred_at: occurredAt,
       title: "Notification sent",
-      summary: String(row.title ?? "Notification"),
+      summary: n.title ?? "Notification",
       actor,
       entity: {
         kind: "notification",
-        id: Number(row.id),
+        id: n.id,
       },
       link: "/admin/notifications",
       details: {
-        notification_id: Number(row.id),
-        title: String(row.title ?? ""),
-        body: String(row.body ?? ""),
-        type: String(row.type ?? ""),
-        level: String(row.level ?? ""),
+        notification_id: n.id,
+        title: n.title,
+        body: n.body,
+        type: n.type,
+        level: n.level,
       },
     });
   }

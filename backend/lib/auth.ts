@@ -1,5 +1,7 @@
 import crypto from "crypto";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+
+export type Role = "admin" | "editor" | "viewer";
 
 type AuthedUser = {
   id: number;
@@ -12,9 +14,7 @@ type AuthedUser = {
   avatar_url?: string | null;
 };
 
-export type Role = "admin" | "editor" | "viewer";
-
-export const corsHeaders = {
+export const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
   // Form.io file uploads may send additional X-* headers; allow a safe superset.
@@ -74,21 +74,20 @@ export async function createSession(userId: number, ttlDays = 7) {
   const tokenHash = sha256Hex(rawToken);
   const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
 
-  const db = await getDb();
-  await db.run(
-    "INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
-    userId,
-    tokenHash,
-    expiresAt.toISOString()
-  );
+  await prisma.session.create({
+    data: {
+      userId,
+      tokenHash,
+      expiresAt,
+    },
+  });
 
   return { token: rawToken, expiresAt: expiresAt.toISOString() };
 }
 
 export async function deleteSessionByToken(rawToken: string) {
   const tokenHash = sha256Hex(rawToken);
-  const db = await getDb();
-  await db.run("DELETE FROM sessions WHERE token_hash = ?", tokenHash);
+  await prisma.session.deleteMany({ where: { tokenHash } });
 }
 
 export async function getUserFromRequest(req: Request): Promise<AuthedUser | null> {
@@ -96,60 +95,35 @@ export async function getUserFromRequest(req: Request): Promise<AuthedUser | nul
   if (!token) return null;
 
   const tokenHash = sha256Hex(token);
-  const db = await getDb();
+  const session = await prisma.session.findFirst({
+    where: { tokenHash },
+    include: { user: true },
+  });
 
-  const row = await db.get<
-    {
-      id: number;
-      email: string;
-      role: string;
-      display_name?: string | null;
-      preferred_name?: string | null;
-      first_name?: string | null;
-      last_name?: string | null;
-      avatar_url?: string | null;
-      expires_at: string | Date;
-    }
-  >(
-    `SELECT
-        u.id,
-        u.email,
-        u.role,
-        u.display_name,
-        u.preferred_name,
-        u.first_name,
-        u.last_name,
-        u.avatar_url,
-        s.expires_at
-      FROM sessions s
-      JOIN users u ON u.id = s.user_id
-      WHERE s.token_hash = ?`,
-    tokenHash
-  );
+  if (!session || !session.user) return null;
 
-  if (!row) return null;
-
-  const expires = new Date(row.expires_at).getTime();
+  const expires = session.expiresAt.getTime();
   if (!Number.isFinite(expires) || expires <= Date.now()) {
-    await db.run("DELETE FROM sessions WHERE token_hash = ?", tokenHash);
+    await prisma.session.deleteMany({ where: { tokenHash } });
     return null;
   }
 
+  const u = session.user;
   return {
-    id: row.id,
-    email: row.email,
-    role: (row.role as Role) || "viewer",
-    display_name: row.display_name ?? null,
-    preferred_name: row.preferred_name ?? null,
-    first_name: row.first_name ?? null,
-    last_name: row.last_name ?? null,
-    avatar_url: row.avatar_url ?? null,
+    id: u.id,
+    email: u.email,
+    role: (u.role as Role) || "viewer",
+    display_name: u.displayName ?? null,
+    preferred_name: u.preferredName ?? null,
+    first_name: u.firstName ?? null,
+    last_name: u.lastName ?? null,
+    avatar_url: u.avatarUrl ?? null,
   };
 }
 
 export async function requireRole(
   req: Request,
-  allowed: Role[]
+  allowed: Role[],
 ): Promise<{ ok: true; user: AuthedUser } | { ok: false; res: Response }> {
   const user = await getUserFromRequest(req);
   if (!user) {
@@ -161,6 +135,8 @@ export async function requireRole(
   return { ok: true, user };
 }
 
-export async function requireAdmin(req: Request): Promise<{ ok: true; user: AuthedUser } | { ok: false; res: Response }> {
+export async function requireAdmin(
+  req: Request,
+): Promise<{ ok: true; user: AuthedUser } | { ok: false; res: Response }> {
   return requireRole(req, ["admin"]);
 }

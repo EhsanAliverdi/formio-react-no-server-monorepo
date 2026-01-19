@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireAdmin } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -54,28 +54,29 @@ export async function GET(req: Request) {
   const auth = await requireAdmin(req);
   if (!auth.ok) return auth.res;
 
-  const db = await getDb();
+  const rows = await prisma.siteSetting.findMany({
+    where: {
+      key: {
+        in: [
+          KEY_SITE_NAME,
+          KEY_FAVICON,
+          KEY_LOGO_EXPANDED_LIGHT,
+          KEY_LOGO_EXPANDED_DARK,
+          KEY_LOGO_COLLAPSED,
+          KEY_LOGO_EXPANDED_WIDTH,
+          KEY_LOGO_EXPANDED_HEIGHT,
+          KEY_LOGO_COLLAPSED_SIZE,
+        ],
+      },
+    },
+  });
 
-  const rows = (await db.all<{ key: string; value: string }>(
-    "SELECT key, value FROM site_settings WHERE key IN (?, ?, ?, ?, ?, ?, ?, ?)",
-    KEY_SITE_NAME,
-    KEY_FAVICON,
-    KEY_LOGO_EXPANDED_LIGHT,
-    KEY_LOGO_EXPANDED_DARK,
-    KEY_LOGO_COLLAPSED,
-    KEY_LOGO_EXPANDED_WIDTH,
-    KEY_LOGO_EXPANDED_HEIGHT,
-    KEY_LOGO_COLLAPSED_SIZE,
-  )) as Array<{ key: string; value: string }>;
-
-  return jsonResponse(mapRowsToPayload(rows));
+  return jsonResponse(mapRowsToPayload(rows as Array<{ key: string; value: string }>));
 }
 
 export async function PUT(req: Request) {
   const auth = await requireAdmin(req);
   if (!auth.ok) return auth.res;
-
-  const db = await getDb();
 
   let body: unknown;
   try {
@@ -129,26 +130,32 @@ export async function PUT(req: Request) {
 
   for (const { key, value } of upserts) {
     if (value === null) {
-      await db.run("DELETE FROM site_settings WHERE key = ?", key);
+      // Ignore if the key does not exist.
+      await prisma.siteSetting.delete({ where: { key } }).catch(() => {});
     } else {
-      await db.run(
-        "INSERT INTO site_settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value",
-        key,
-        value,
-      );
+      await prisma.siteSetting.upsert({
+        where: { key },
+        update: { value },
+        create: { key, value },
+      });
     }
   }
 
-  const rows = (await db.all<{ key: string; value: string }>(
-    "SELECT key, value FROM site_settings WHERE key IN (?, ?, ?, ?, ?, ?, ?)",
-    KEY_FAVICON,
-    KEY_LOGO_EXPANDED_LIGHT,
-    KEY_LOGO_EXPANDED_DARK,
-    KEY_LOGO_COLLAPSED,
-    KEY_LOGO_EXPANDED_WIDTH,
-    KEY_LOGO_EXPANDED_HEIGHT,
-    KEY_LOGO_COLLAPSED_SIZE,
-  )) as Array<{ key: string; value: string }>;
+  const rows = await prisma.siteSetting.findMany({
+    where: {
+      key: {
+        in: [
+          KEY_FAVICON,
+          KEY_LOGO_EXPANDED_LIGHT,
+          KEY_LOGO_EXPANDED_DARK,
+          KEY_LOGO_COLLAPSED,
+          KEY_LOGO_EXPANDED_WIDTH,
+          KEY_LOGO_EXPANDED_HEIGHT,
+          KEY_LOGO_COLLAPSED_SIZE,
+        ],
+      },
+    },
+  });
 
-  return jsonResponse(mapRowsToPayload(rows));
+  return jsonResponse(mapRowsToPayload(rows as Array<{ key: string; value: string }>));
 }
