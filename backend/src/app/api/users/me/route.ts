@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireRole } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -11,17 +11,43 @@ export async function GET(req: Request) {
   const auth = await requireRole(req, ["admin", "editor", "viewer"]);
   if (!auth.ok) return auth.res;
 
-  const db = await getDb();
-  const row = await db.get(
-    "SELECT id, email, role, is_active, created_at, display_name, preferred_name, first_name, middle_name, last_name, pronouns, date_of_birth, phone, job_title, department, company, website_url, bio, address_line1, address_line2, city, state, postal_code, country, timezone, locale, avatar_url FROM users WHERE id = ?",
-    auth.user.id
-  );
+  const user = await prisma.user.findUnique({ where: { id: auth.user.id } });
 
-  if (!row) {
+  if (!user) {
     return jsonResponse({ error: "Not found" }, { status: 404 });
   }
 
-  return jsonResponse(row);
+  const dto = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    is_active: user.isActive,
+    created_at: user.createdAt,
+    display_name: user.displayName ?? null,
+    preferred_name: user.preferredName ?? null,
+    first_name: user.firstName ?? null,
+    middle_name: user.middleName ?? null,
+    last_name: user.lastName ?? null,
+    pronouns: user.pronouns ?? null,
+    date_of_birth: user.dateOfBirth ?? null,
+    phone: user.phone ?? null,
+    job_title: user.jobTitle ?? null,
+    department: user.department ?? null,
+    company: user.company ?? null,
+    website_url: user.websiteUrl ?? null,
+    bio: user.bio ?? null,
+    address_line1: user.addressLine1 ?? null,
+    address_line2: user.addressLine2 ?? null,
+    city: user.city ?? null,
+    state: user.state ?? null,
+    postal_code: user.postalCode ?? null,
+    country: user.country ?? null,
+    timezone: user.timezone ?? null,
+    locale: user.locale ?? null,
+    avatar_url: user.avatarUrl ?? null,
+  };
+
+  return jsonResponse(dto);
 }
 
 export async function PUT(req: Request) {
@@ -170,17 +196,76 @@ export async function PUT(req: Request) {
     return jsonResponse({ error: "No changes" }, { status: 400 });
   }
 
-  const db = await getDb();
-  const result = await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, ...params, auth.user.id);
+  const data: any = {};
 
-  if (result.changes === 0) {
-    return jsonResponse({ error: "Not found" }, { status: 404 });
+  if (displayName !== undefined) data.displayName = displayName || null;
+  if (preferredName !== undefined) data.preferredName = preferredName || null;
+  if (firstName !== undefined) data.firstName = firstName || null;
+  if (middleName !== undefined) data.middleName = middleName || null;
+  if (lastName !== undefined) data.lastName = lastName || null;
+  if (pronouns !== undefined) data.pronouns = pronouns || null;
+  if (dateOfBirth !== undefined) data.dateOfBirth = dateOfBirth || null;
+  if (phone !== undefined) data.phone = phone || null;
+  if (jobTitle !== undefined) data.jobTitle = jobTitle || null;
+  if (department !== undefined) data.department = department || null;
+  if (company !== undefined) data.company = company || null;
+  if (websiteUrl !== undefined) data.websiteUrl = websiteUrl || null;
+  if (bio !== undefined) data.bio = bio || null;
+  if (addressLine1 !== undefined) data.addressLine1 = addressLine1 || null;
+  if (addressLine2 !== undefined) data.addressLine2 = addressLine2 || null;
+  if (city !== undefined) data.city = city || null;
+  if (state !== undefined) data.state = state || null;
+  if (postalCode !== undefined) data.postalCode = postalCode || null;
+  if (country !== undefined) data.country = country || null;
+  if (timezone !== undefined) data.timezone = timezone || null;
+  if (locale !== undefined) data.locale = locale || null;
+  if (avatarUrl !== undefined) data.avatarUrl = avatarUrl || null;
+
+  if (Object.keys(data).length === 0) {
+    return jsonResponse({ error: "No changes" }, { status: 400 });
   }
 
-  const row = await db.get(
-    "SELECT id, email, role, is_active, created_at, display_name, preferred_name, first_name, middle_name, last_name, pronouns, date_of_birth, phone, job_title, department, company, website_url, bio, address_line1, address_line2, city, state, postal_code, country, timezone, locale, avatar_url FROM users WHERE id = ?",
-    auth.user.id
-  );
+  try {
+    const updated = await prisma.user.update({
+      where: { id: auth.user.id },
+      data,
+    });
 
-  return jsonResponse({ success: true, user: row });
+    const dto = {
+      id: updated.id,
+      email: updated.email,
+      role: updated.role,
+      is_active: updated.isActive,
+      created_at: updated.createdAt,
+      display_name: updated.displayName ?? null,
+      preferred_name: updated.preferredName ?? null,
+      first_name: updated.firstName ?? null,
+      middle_name: updated.middleName ?? null,
+      last_name: updated.lastName ?? null,
+      pronouns: updated.pronouns ?? null,
+      date_of_birth: updated.dateOfBirth ?? null,
+      phone: updated.phone ?? null,
+      job_title: updated.jobTitle ?? null,
+      department: updated.department ?? null,
+      company: updated.company ?? null,
+      website_url: updated.websiteUrl ?? null,
+      bio: updated.bio ?? null,
+      address_line1: updated.addressLine1 ?? null,
+      address_line2: updated.addressLine2 ?? null,
+      city: updated.city ?? null,
+      state: updated.state ?? null,
+      postal_code: updated.postalCode ?? null,
+      country: updated.country ?? null,
+      timezone: updated.timezone ?? null,
+      locale: updated.locale ?? null,
+      avatar_url: updated.avatarUrl ?? null,
+    };
+
+    return jsonResponse({ success: true, user: dto });
+  } catch (e) {
+    if (e && typeof e === "object" && (e as any).code === "P2025") {
+      return jsonResponse({ error: "Not found" }, { status: 404 });
+    }
+    return jsonResponse({ error: "Failed to update profile" }, { status: 500 });
+  }
 }
