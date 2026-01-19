@@ -1,5 +1,5 @@
 import { corsHeaders, getUserFromRequest, jsonResponse, requireRole } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { canUserAccessForm } from "@/lib/formsAccess";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -12,8 +12,11 @@ export async function OPTIONS() {
 }
 
 export async function GET(_req: Request, context: RouteContext) {
-  const db = await getDb();
   const { id } = await context.params;
+  const formId = Number(id);
+  if (!Number.isFinite(formId)) {
+    return jsonResponse({ error: "Invalid form id" }, { status: 400 });
+  }
 
   const mode = new URL(_req.url).searchParams.get("mode");
   const isPublicMode = mode === "public";
@@ -21,16 +24,14 @@ export async function GET(_req: Request, context: RouteContext) {
   const user = await getUserFromRequest(_req);
   const isPrivileged = !isPublicMode && user && (user.role === "admin" || user.role === "editor");
 
-  const row = await db.get("SELECT * FROM forms WHERE id=?", id);
+  const form = await prisma.form.findUnique({ where: { id: formId } });
 
-  if (!row) {
+  if (!form) {
     return jsonResponse({ error: "Not found" }, { status: 404 });
   }
 
-  const formId = Number(row.id);
   if (!isPrivileged) {
     const allowed = await canUserAccessForm(
-      db,
       formId,
       user ? { id: user.id, role: user.role } : null
     );
@@ -42,25 +43,20 @@ export async function GET(_req: Request, context: RouteContext) {
   let allowedRoles: string[] | undefined;
   let allowedUserIds: number[] | undefined;
   if (isPrivileged) {
-    const rolesRows = (await db.all(
-      "SELECT role FROM form_allowed_roles WHERE form_id = ? ORDER BY role ASC",
-      formId
-    )) as Array<{ role: string }>;
-    allowedRoles = rolesRows.map((r) => String(r.role));
-
-    const usersRows = (await db.all(
-      "SELECT user_id FROM form_allowed_users WHERE form_id = ? ORDER BY user_id ASC",
-      formId
-    )) as Array<{ user_id: number }>;
-    allowedUserIds = usersRows.map((r) => Number(r.user_id));
+    const [rolesRows, usersRows] = await Promise.all([
+      prisma.formAllowedRole.findMany({ where: { formId }, orderBy: { role: "asc" } }),
+      prisma.formAllowedUser.findMany({ where: { formId }, orderBy: { userId: "asc" } }),
+    ]);
+    allowedRoles = rolesRows.map((r) => r.role);
+    allowedUserIds = usersRows.map((r) => r.userId);
   }
 
   return jsonResponse({
-    id: row.id,
-    name: row.name,
-    json: JSON.parse(row.json),
-    allow_anonymous_submit: typeof row.allow_anonymous_submit === "number" ? row.allow_anonymous_submit : Number(row.allow_anonymous_submit ?? 1) ? 1 : 0,
-    visibility: row.visibility === "restricted" ? "restricted" : "public",
+    id: form.id,
+    name: form.name,
+    json: JSON.parse(form.json),
+    allow_anonymous_submit: form.allowAnonymousSubmit ? 1 : 0,
+    visibility: form.visibility === "restricted" ? "restricted" : "public",
     ...(isPrivileged ? { allowed_roles: allowedRoles ?? [], allowed_user_ids: allowedUserIds ?? [] } : {}),
   });
 }
@@ -69,7 +65,6 @@ export async function PUT(req: Request, context: RouteContext) {
   const auth = await requireRole(req, ["admin", "editor"]);
   if (!auth.ok) return auth.res;
 
-  const db = await getDb();
   const { id } = await context.params;
   const body: unknown = await req.json().catch(() => null);
   const obj = body && typeof body === "object" ? (body as Record<string, unknown>) : null;
@@ -126,54 +121,89 @@ export async function PUT(req: Request, context: RouteContext) {
     return jsonResponse({ error: "No changes" }, { status: 400 });
   }
 
-  if (updates.length > 0) {
-    await db.run(`UPDATE forms SET ${updates.join(", ")} WHERE id=?`, ...params, formId);
+  if (hasAllowedUsers && auth.user.role !== "admin") {
+    return jsonResponse({ error: "Only admins can assign forms to specific users" }, { status: 403 });
   }
 
-  // If visibility is set to public, clear assignments.
+  const data: any = {};
+
+  if (typeof obj?.name === "string") {
+    data.name = obj.name;
+  }
+
+  if (obj && Object.prototype.hasOwnProperty.call(obj, "json")) {
+    data.json = JSON.stringify(obj.json);
+  }
+
+  if (hasAllow) {
+    const allowRaw = (obj as any).allow_anonymous_submit;
+    const allowAnonymousSubmit =
+      typeof allowRaw === "boolean"
+        ? allowRaw
+        : typeof allowRaw === "number"
+          ? Boolean(allowRaw)
+          : true;
+    data.allowAnonymousSubmit = allowAnonymousSubmit;
+  }
+
+  let visibility: "public" | "restricted" | undefined;
   if (hasVisibility) {
-    const visRaw = obj?.visibility;
-    const visibility = visRaw === "restricted" ? "restricted" : "public";
-    if (visibility === "public") {
-      await db.run("DELETE FROM form_allowed_roles WHERE form_id = ?", formId);
-      await db.run("DELETE FROM form_allowed_users WHERE form_id = ?", formId);
-    }
+    const visRaw = (obj as any).visibility;
+    visibility = visRaw === "restricted" ? "restricted" : "public";
+    data.visibility = visibility;
   }
 
-  if (hasAllowedRoles) {
-    const allowedRolesRaw = Array.isArray(obj?.allowed_roles) ? (obj?.allowed_roles as unknown[]) : [];
-    const allowedRoles = allowedRolesRaw.filter(
-      (r: unknown) => r === "admin" || r === "editor" || r === "viewer"
-    ) as Array<"admin" | "editor" | "viewer">;
-
-    await db.run("DELETE FROM form_allowed_roles WHERE form_id = ?", formId);
-    for (const role of allowedRoles) {
-      await db.run(
-        "INSERT OR IGNORE INTO form_allowed_roles (form_id, role) VALUES (?, ?)",
-        formId,
-        role
-      );
-    }
+  if (updates.length === 0 && !hasAllowedRoles && !hasAllowedUsers && Object.keys(data).length === 0) {
+    return jsonResponse({ error: "No changes" }, { status: 400 });
   }
 
-  if (hasAllowedUsers) {
-    if (auth.user.role !== "admin") {
-      return jsonResponse({ error: "Only admins can assign forms to specific users" }, { status: 403 });
-    }
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (Object.keys(data).length > 0) {
+        await tx.form.update({ where: { id: formId }, data });
+      }
 
-    const allowedUserIdsRaw = Array.isArray(obj?.allowed_user_ids) ? (obj?.allowed_user_ids as unknown[]) : [];
-    const allowedUserIds = allowedUserIdsRaw
-      .map((v: unknown) => Number(v))
-      .filter((n: number) => Number.isFinite(n) && n > 0);
+      // If visibility is set to public, clear assignments.
+      if (hasVisibility && visibility === "public") {
+        await tx.formAllowedRole.deleteMany({ where: { formId } });
+        await tx.formAllowedUser.deleteMany({ where: { formId } });
+      }
 
-    await db.run("DELETE FROM form_allowed_users WHERE form_id = ?", formId);
-    for (const userId of allowedUserIds) {
-      await db.run(
-        "INSERT OR IGNORE INTO form_allowed_users (form_id, user_id) VALUES (?, ?)",
-        formId,
-        userId
-      );
+      if (hasAllowedRoles) {
+        const allowedRolesRaw = Array.isArray(obj?.allowed_roles) ? (obj?.allowed_roles as unknown[]) : [];
+        const allowedRoles = allowedRolesRaw.filter(
+          (r: unknown) => r === "admin" || r === "editor" || r === "viewer"
+        ) as Array<"admin" | "editor" | "viewer">;
+
+        await tx.formAllowedRole.deleteMany({ where: { formId } });
+        if (allowedRoles.length > 0) {
+          await tx.formAllowedRole.createMany({
+            data: allowedRoles.map((role) => ({ formId, role })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      if (hasAllowedUsers) {
+        const allowedUserIdsRaw = Array.isArray(obj?.allowed_user_ids) ? (obj?.allowed_user_ids as unknown[]) : [];
+        const allowedUserIds = allowedUserIdsRaw
+          .map((v: unknown) => Number(v))
+          .filter((n: number) => Number.isFinite(n) && n > 0);
+
+        await tx.formAllowedUser.deleteMany({ where: { formId } });
+        if (allowedUserIds.length > 0) {
+          await tx.formAllowedUser.createMany({
+            data: allowedUserIds.map((userId) => ({ formId, userId })),
+            skipDuplicates: true,
+          });
+        }
+      }
+    });
+  } catch (e) {
+    if (e && typeof e === "object" && (e as any).code === "P2025") {
+      return jsonResponse({ error: "Not found" }, { status: 404 });
     }
+    return jsonResponse({ error: "Failed to update form" }, { status: 500 });
   }
 
   return jsonResponse({ success: true });
@@ -183,11 +213,20 @@ export async function DELETE(_req: Request, context: RouteContext) {
   const auth = await requireRole(_req, ["admin", "editor"]);
   if (!auth.ok) return auth.res;
 
-  const db = await getDb();
   const { id } = await context.params;
-  const result = await db.run("DELETE FROM forms WHERE id=?", id);
-  if (result.changes === 0) {
-    return jsonResponse({ error: "Not found" }, { status: 404 });
+  const formId = Number(id);
+  if (!Number.isFinite(formId)) {
+    return jsonResponse({ error: "Invalid form id" }, { status: 400 });
   }
+
+  try {
+    await prisma.form.delete({ where: { id: formId } });
+  } catch (e) {
+    if (e && typeof e === "object" && (e as any).code === "P2025") {
+      return jsonResponse({ error: "Not found" }, { status: 404 });
+    }
+    return jsonResponse({ error: "Failed to delete form" }, { status: 500 });
+  }
+
   return jsonResponse({ success: true });
 }

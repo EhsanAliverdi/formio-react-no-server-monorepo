@@ -1,5 +1,5 @@
-import type { Db } from "./db";
 import type { Role } from "./auth";
+import { prisma } from "./prisma";
 
 type FormVisibility = "public" | "restricted";
 
@@ -8,74 +8,79 @@ export type CurrentUser = {
   role: Role;
 };
 
-export async function getFormVisibility(db: Db, formId: number): Promise<FormVisibility | null> {
-  const row = (await db.get(
-    "SELECT visibility FROM forms WHERE id = ?",
-    formId,
-  )) as { visibility?: string } | undefined;
+export async function getFormVisibility(formId: number): Promise<FormVisibility | null> {
+  const form = await prisma.form.findUnique({
+    where: { id: formId },
+    select: { visibility: true },
+  });
 
-  if (!row) return null;
+  if (!form) return null;
 
-  return row.visibility === "restricted" ? "restricted" : "public";
+  return form.visibility === "restricted" ? "restricted" : "public";
 }
 
-export async function canUserAccessForm(db: Db, formId: number, user: CurrentUser | null): Promise<boolean> {
-  const visibility = await getFormVisibility(db, formId);
+export async function canUserAccessForm(formId: number, user: CurrentUser | null): Promise<boolean> {
+  const visibility = await getFormVisibility(formId);
   if (visibility === null) return false;
   if (visibility === "public") return true;
 
   // restricted
   if (!user) return false;
 
-  const byRole = (await db.get(
-    "SELECT 1 AS ok FROM form_allowed_roles WHERE form_id = ? AND role = ? LIMIT 1",
-    formId,
-    user.role,
-  )) as { ok?: number } | undefined;
-  if (byRole?.ok) return true;
+  const byRole = await prisma.formAllowedRole.findFirst({
+    where: { formId, role: user.role },
+    select: { formId: true },
+  });
+  if (byRole) return true;
 
-  const byUser = (await db.get(
-    "SELECT 1 AS ok FROM form_allowed_users WHERE form_id = ? AND user_id = ? LIMIT 1",
-    formId,
-    user.id,
-  )) as { ok?: number } | undefined;
-  if (byUser?.ok) return true;
+  const byUser = await prisma.formAllowedUser.findFirst({
+    where: { formId, userId: user.id },
+    select: { formId: true },
+  });
+  if (byUser) return true;
 
   return false;
 }
 
-export async function listAccessibleForms(db: Db, user: CurrentUser | null) {
+export async function listAccessibleForms(user: CurrentUser | null) {
   if (!user) {
-    return (await db.all(
-      `
-        SELECT
-          f.id,
-          f.name,
-          f.json,
-          f.allow_anonymous_submit
-        FROM forms f
-        WHERE f.visibility = 'public'
-        ORDER BY f.id DESC
-      `,
-    )) as unknown[];
+    const forms = await prisma.form.findMany({
+      where: { visibility: "public" },
+      orderBy: { id: "desc" },
+    });
+
+    return forms.map((f) => ({
+      id: f.id,
+      name: f.name,
+      json: f.json,
+      allow_anonymous_submit: f.allowAnonymousSubmit ? 1 : 0,
+    }));
   }
 
-  return (await db.all(
-    `
-      SELECT DISTINCT
-        f.id,
-        f.name,
-        f.json,
-        f.allow_anonymous_submit
-      FROM forms f
-      LEFT JOIN form_allowed_roles far ON far.form_id = f.id AND far.role = ?
-      LEFT JOIN form_allowed_users fau ON fau.form_id = f.id AND fau.user_id = ?
-      WHERE
-        f.visibility = 'public'
-        OR (f.visibility = 'restricted' AND (far.role IS NOT NULL OR fau.user_id IS NOT NULL))
-      ORDER BY f.id DESC
-    `,
-    user.role,
-    user.id,
-  )) as unknown[];
+  const forms = await prisma.form.findMany({
+    where: {
+      OR: [
+        { visibility: "public" },
+        {
+          AND: [
+            { visibility: "restricted" },
+            {
+              OR: [
+                { allowedRoles: { some: { role: user.role } } },
+                { allowedUsers: { some: { userId: user.id } } },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    orderBy: { id: "desc" },
+  });
+
+  return forms.map((f) => ({
+    id: f.id,
+    name: f.name,
+    json: f.json,
+    allow_anonymous_submit: f.allowAnonymousSubmit ? 1 : 0,
+  }));
 }

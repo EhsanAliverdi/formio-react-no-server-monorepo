@@ -1,5 +1,5 @@
 import { corsHeaders, getUserFromRequest, jsonResponse } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { canUserAccessForm } from "@/lib/formsAccess";
 
 export const runtime = "nodejs";
@@ -20,18 +20,16 @@ export async function POST(req: Request, context: RouteContext) {
     return jsonResponse({ error: "Invalid form id" }, { status: 400 });
   }
 
-  const db = await getDb();
-  const formRow = await db.get(
-    "SELECT id, allow_anonymous_submit, visibility FROM forms WHERE id = ?",
-    formId
-  );
-  if (!formRow) {
+  const form = await prisma.form.findUnique({
+    where: { id: formId },
+    select: { id: true, allowAnonymousSubmit: true, visibility: true },
+  });
+  if (!form) {
     return jsonResponse({ error: "Not found" }, { status: 404 });
   }
 
-  const allowAnonymous = Number(formRow.allow_anonymous_submit ?? 1) ? 1 : 0;
-  const visibility =
-    (formRow as Record<string, unknown>).visibility === "restricted" ? "restricted" : "public";
+  const allowAnonymous = form.allowAnonymousSubmit ? 1 : 0;
+  const visibility = form.visibility === "restricted" ? "restricted" : "public";
 
   const user = await getUserFromRequest(req);
 
@@ -39,7 +37,7 @@ export async function POST(req: Request, context: RouteContext) {
     if (!user) {
       return jsonResponse({ error: "Unauthorized" }, { status: 401 });
     }
-    const allowed = await canUserAccessForm(db, formId, { id: user.id, role: user.role });
+    const allowed = await canUserAccessForm(formId, { id: user.id, role: user.role });
     if (!allowed) {
       return jsonResponse({ error: "Forbidden" }, { status: 403 });
     }
@@ -57,12 +55,14 @@ export async function POST(req: Request, context: RouteContext) {
     return jsonResponse({ error: "Missing submission data" }, { status: 400 });
   }
 
-  const result = await db.run(
-    "INSERT INTO form_submissions (form_id, user_id, data) VALUES (?, ?, ?)",
-    formId,
-    user ? user.id : null,
-    JSON.stringify(data)
-  );
+  const created = await prisma.formSubmission.create({
+    data: {
+      formId,
+      userId: user ? user.id : null,
+      data: JSON.stringify(data),
+    },
+    select: { id: true },
+  });
 
-  return jsonResponse({ success: true, id: result.lastID });
+  return jsonResponse({ success: true, id: created.id });
 }

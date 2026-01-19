@@ -1,5 +1,5 @@
 import { corsHeaders, getUserFromRequest, jsonResponse, requireRole } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { listAccessibleForms } from "@/lib/formsAccess";
 
 export const runtime = "nodejs";
@@ -15,7 +15,6 @@ export async function POST(req: Request) {
   const auth = await requireRole(req, ["admin", "editor"]);
   if (!auth.ok) return auth.res;
 
-  const db = await getDb();
   const body = await req.json();
   if (!body.name || !body.json) {
     return jsonResponse({ error: "Missing name or json" }, { status: 400 });
@@ -43,43 +42,40 @@ export async function POST(req: Request) {
     .map((id: unknown) => Number(id))
     .filter((id: number) => Number.isFinite(id) && id > 0);
 
-  const result = await db.run(
-    "INSERT INTO forms (name, json, allow_anonymous_submit, visibility) VALUES (?, ?, ?, ?)",
-    body.name,
-    JSON.stringify(body.json),
-    allowAnonymousSubmit,
-    visibility
-  );
+  const data = {
+    name: body.name as string,
+    json: JSON.stringify(body.json),
+    allowAnonymousSubmit: Boolean(allowAnonymousSubmit),
+    visibility,
+  };
 
-  const formId = Number(result.lastID);
+  const created = await prisma.$transaction(async (tx) => {
+    const form = await tx.form.create({ data });
 
-  if (visibility === "restricted") {
-    for (const role of allowedRoles) {
-      await db.run(
-        "INSERT OR IGNORE INTO form_allowed_roles (form_id, role) VALUES (?, ?)",
-        formId,
-        role
-      );
-    }
+    if (visibility === "restricted") {
+      if (allowedRoles.length > 0) {
+        await tx.formAllowedRole.createMany({
+          data: allowedRoles.map((role) => ({ formId: form.id, role })),
+          skipDuplicates: true,
+        });
+      }
 
-    // Only admins can assign to specific users.
-    if (auth.user.role === "admin") {
-      for (const userId of allowedUserIds) {
-        await db.run(
-          "INSERT OR IGNORE INTO form_allowed_users (form_id, user_id) VALUES (?, ?)",
-          formId,
-          userId
-        );
+      // Only admins can assign to specific users.
+      if (auth.user.role === "admin" && allowedUserIds.length > 0) {
+        await tx.formAllowedUser.createMany({
+          data: allowedUserIds.map((userId: number) => ({ formId: form.id, userId })),
+          skipDuplicates: true,
+        });
       }
     }
-  }
 
-  return jsonResponse({ success: true, id: formId });
+    return form;
+  });
+
+  return jsonResponse({ success: true, id: created.id });
 }
 
 export async function GET(req: Request) {
-  const db = await getDb();
-
   const mode = new URL(req.url).searchParams.get("mode");
   const isPublicMode = mode === "public";
 
@@ -87,12 +83,21 @@ export async function GET(req: Request) {
 
   // Admin/editor can see all forms (management UI).
   if (!isPublicMode && user && (user.role === "admin" || user.role === "editor")) {
-    const forms = await db.all(
-      "SELECT id, name, json, allow_anonymous_submit, visibility FROM forms ORDER BY id DESC"
-    );
-    return jsonResponse(forms);
+    const forms = await prisma.form.findMany({
+      orderBy: { id: "desc" },
+    });
+
+    const dto = forms.map((f) => ({
+      id: f.id,
+      name: f.name,
+      json: f.json,
+      allow_anonymous_submit: f.allowAnonymousSubmit ? 1 : 0,
+      visibility: f.visibility === "restricted" ? "restricted" : "public",
+    }));
+
+    return jsonResponse(dto);
   }
 
-  const forms = await listAccessibleForms(db, user ? { id: user.id, role: user.role } : null);
+  const forms = await listAccessibleForms(user ? { id: user.id, role: user.role } : null);
   return jsonResponse(forms);
 }
