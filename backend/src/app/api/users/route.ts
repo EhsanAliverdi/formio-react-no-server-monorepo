@@ -1,5 +1,5 @@
 import { corsHeaders, hashPassword, jsonResponse, requireAdmin, type Role } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -27,48 +27,65 @@ export async function GET(req: Request) {
 
   const roles = rolesRaw.filter((r): r is Role => r === "admin" || r === "editor" || r === "viewer");
 
-  const where: string[] = [];
-  const params: Array<string | number> = [];
+  const where: any = {};
 
   if (activeOnly) {
-    where.push("COALESCE(is_active, 1) = 1");
+    where.isActive = true;
   }
 
   if (roles.length > 0) {
-    where.push(`role IN (${roles.map(() => "?").join(", ")})`);
-    params.push(...roles);
+    where.role = { in: roles };
   }
 
   if (search) {
-    const like = `%${search.toLowerCase()}%`;
-    where.push(
-      "(LOWER(email) LIKE ? OR LOWER(COALESCE(display_name, '')) LIKE ? OR LOWER(COALESCE(preferred_name, '')) LIKE ? OR LOWER(COALESCE(first_name, '')) LIKE ? OR LOWER(COALESCE(last_name, '')) LIKE ?)"
-    );
-    params.push(like, like, like, like, like);
+    const like = search;
+    where.OR = [
+      { email: { contains: like, mode: "insensitive" } },
+      { displayName: { contains: like, mode: "insensitive" } },
+      { preferredName: { contains: like, mode: "insensitive" } },
+      { firstName: { contains: like, mode: "insensitive" } },
+      { lastName: { contains: like, mode: "insensitive" } },
+    ];
   }
 
-  const whereSql = where.length > 0 ? `WHERE ${where.join(" AND ")}` : "";
+  const users = await prisma.user.findMany({
+    where,
+    orderBy: { email: "asc" },
+    take: limit,
+  });
 
-  const db = await getDb();
-  const users = await db.all(
-    `
-      SELECT
-        id, email, role, is_active, created_at,
-        display_name, preferred_name, first_name, middle_name, last_name,
-        pronouns, date_of_birth, phone, job_title, department, company,
-        website_url, bio,
-        address_line1, address_line2, city, state, postal_code, country,
-        timezone, locale, avatar_url
-      FROM users
-      ${whereSql}
-      ORDER BY LOWER(email) ASC
-      LIMIT ?
-    `,
-    ...params,
-    limit
-  );
+  // Map Prisma model (camelCase) to the original JSON shape (snake_case)
+  const dto = users.map((u: any) => ({
+    id: u.id,
+    email: u.email,
+    role: u.role as Role,
+    is_active: u.isActive,
+    created_at: u.createdAt,
+    display_name: u.displayName ?? null,
+    preferred_name: u.preferredName ?? null,
+    first_name: u.firstName ?? null,
+    middle_name: u.middleName ?? null,
+    last_name: u.lastName ?? null,
+    pronouns: u.pronouns ?? null,
+    date_of_birth: u.dateOfBirth ?? null,
+    phone: u.phone ?? null,
+    job_title: u.jobTitle ?? null,
+    department: u.department ?? null,
+    company: u.company ?? null,
+    website_url: u.websiteUrl ?? null,
+    bio: u.bio ?? null,
+    address_line1: u.addressLine1 ?? null,
+    address_line2: u.addressLine2 ?? null,
+    city: u.city ?? null,
+    state: u.state ?? null,
+    postal_code: u.postalCode ?? null,
+    country: u.country ?? null,
+    timezone: u.timezone ?? null,
+    locale: u.locale ?? null,
+    avatar_url: u.avatarUrl ?? null,
+  }));
 
-  return jsonResponse(users ?? []);
+  return jsonResponse(dto);
 }
 
 export async function POST(req: Request) {
@@ -131,48 +148,46 @@ export async function POST(req: Request) {
   }
 
   const passwordHash = hashPassword(password);
-  const db = await getDb();
 
   try {
-    const result = await db.run(
-      "INSERT INTO users (email, password_hash, role, is_active, display_name, preferred_name, first_name, middle_name, last_name, pronouns, date_of_birth, phone, job_title, department, company, website_url, bio, address_line1, address_line2, city, state, postal_code, country, timezone, locale, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      email,
-      passwordHash,
-      role,
-      isActive,
-      displayName,
-      preferredName,
-      firstName,
-      middleName,
-      lastName,
-      pronouns,
-      dateOfBirth,
-      phone,
-      jobTitle,
-      department,
-      company,
-      websiteUrl,
-      bio,
-      addressLine1,
-      addressLine2,
-      city,
-      state,
-      postalCode,
-      country,
-      timezone,
-      locale,
-      avatarUrl
-    );
-
-    return jsonResponse({
-      success: true,
-      id: result.lastID,
+    const created = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        role,
+        isActive: Boolean(isActive),
+        displayName,
+        preferredName,
+        firstName,
+        middleName,
+        lastName,
+        pronouns,
+        dateOfBirth,
+        phone,
+        jobTitle,
+        department,
+        company,
+        websiteUrl,
+        bio,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        postalCode,
+        country,
+        timezone,
+        locale,
+        avatarUrl,
+      },
+      select: { id: true },
     });
+
+    return jsonResponse({ success: true, id: created.id });
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    if (message.toLowerCase().includes("unique")) {
+    if (e && typeof e === "object" && (e as any).code === "P2002") {
       return jsonResponse({ error: "Email already exists" }, { status: 409 });
     }
+    const message = e instanceof Error ? e.message : String(e);
     return jsonResponse({ error: "Failed to create user" }, { status: 500 });
   }
 }
