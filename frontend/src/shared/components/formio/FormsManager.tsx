@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import toast from "react-hot-toast";
 import { FaRegFileAlt } from "react-icons/fa";
+import JSZip from "jszip";
 
 import Button from "../../../template/tailAdmin/components/ui/button/Button";
 import { Modal } from "../../../template/tailAdmin/components/ui/modal";
@@ -286,6 +287,14 @@ export default function FormsManager({
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
+  
+  // Import progress modal state
+  const [showImportProgress, setShowImportProgress] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    current: number;
+    total: number;
+    results: Array<{ filename: string; success: boolean; message: string }>;
+  }>({ current: 0, total: 0, results: [] });
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteName, setDeleteName] = useState<string>("");
@@ -356,9 +365,13 @@ export default function FormsManager({
     e.target.value = "";
 
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".json")) {
+    
+    const isJson = file.name.toLowerCase().endsWith(".json");
+    const isZip = file.name.toLowerCase().endsWith(".zip");
+    
+    if (!isJson && !isZip) {
       setImportWarnings([]);
-      setImportErrors(["Please select a .json file."]);
+      setImportErrors(["Please select a .json or .zip file."]);
       return;
     }
 
@@ -367,32 +380,141 @@ export default function FormsManager({
     setImporting(true);
 
     try {
-      const text = await file.text();
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        setImportErrors(["Invalid JSON: unable to parse file."]);
-        return;
+      if (isJson) {
+        await importSingleJsonFile(file);
+      } else if (isZip) {
+        await importZipFile(file);
       }
-
-      const result = validateImportedForm(parsed);
-      if (!result.ok) {
-        setImportErrors(result.errors);
-        return;
-      }
-
-      const { name, schema, warnings } = result.value;
-      setImportWarnings(warnings);
-
-      await onImportCreate({ name, schema });
-      toast.success("Form imported successfully!");
-      await onRefresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setImportErrors([msg || "Failed to import form."]);
     } finally {
       setImporting(false);
+    }
+  };
+
+  const importSingleJsonFile = async (file: File) => {
+    setShowImportProgress(true);
+    setImportProgress({ current: 0, total: 1, results: [] });
+
+    try {
+      const text = await file.text();
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        setImportProgress(prev => ({
+          ...prev,
+          current: 1,
+          results: [{ filename: file.name, success: false, message: "Invalid JSON: unable to parse file" }]
+        }));
+        return;
+      }
+
+      const result = validateImportedForm(parsed);
+      if (!result.ok) {
+        setImportProgress(prev => ({
+          ...prev,
+          current: 1,
+          results: [{ filename: file.name, success: false, message: result.errors.join(", ") }]
+        }));
+        return;
+      }
+
+      const { name, schema, warnings } = result.value;
+      if (warnings.length > 0) {
+        setImportWarnings(warnings);
+      }
+
+      await onImportCreate({ name, schema });
+      setImportProgress(prev => ({
+        ...prev,
+        current: 1,
+        results: [{ filename: file.name, success: true, message: "Successfully imported" }]
+      }));
+      await onRefresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setImportProgress(prev => ({
+        ...prev,
+        current: 1,
+        results: [{ filename: file.name, success: false, message: msg || "Failed to import" }]
+      }));
+    }
+  };
+
+  const importZipFile = async (file: File) => {
+    try {
+      const zip = new JSZip();
+      const zipContent = await zip.loadAsync(file);
+      
+      // Find all JSON files in the zip
+      const jsonFiles = Object.keys(zipContent.files).filter(
+        filename => filename.toLowerCase().endsWith(".json") && !zipContent.files[filename].dir
+      );
+
+      if (jsonFiles.length === 0) {
+        setImportErrors(["No JSON files found in the ZIP archive."]);
+        return;
+      }
+
+      setShowImportProgress(true);
+      setImportProgress({ current: 0, total: jsonFiles.length, results: [] });
+
+      for (let i = 0; i < jsonFiles.length; i++) {
+        const filename = jsonFiles[i];
+        const fileData = zipContent.files[filename];
+
+        try {
+          const text = await fileData.async("text");
+          let parsed: unknown;
+          
+          try {
+            parsed = JSON.parse(text);
+          } catch {
+            setImportProgress(prev => ({
+              ...prev,
+              current: i + 1,
+              results: [...prev.results, { filename, success: false, message: "Invalid JSON" }]
+            }));
+            continue;
+          }
+
+          const result = validateImportedForm(parsed);
+          if (!result.ok) {
+            setImportProgress(prev => ({
+              ...prev,
+              current: i + 1,
+              results: [...prev.results, { filename, success: false, message: result.errors.join(", ") }]
+            }));
+            continue;
+          }
+
+          const { name, schema, warnings } = result.value;
+          if (warnings.length > 0 && i === 0) {
+            setImportWarnings(warnings);
+          }
+
+          await onImportCreate({ name, schema });
+          setImportProgress(prev => ({
+            ...prev,
+            current: i + 1,
+            results: [...prev.results, { filename, success: true, message: "Successfully imported" }]
+          }));
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setImportProgress(prev => ({
+            ...prev,
+            current: i + 1,
+            results: [...prev.results, { filename, success: false, message: msg || "Failed to import" }]
+          }));
+        }
+      }
+
+      await onRefresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setImportErrors([msg || "Failed to read ZIP file."]);
     }
   };
 
@@ -445,7 +567,7 @@ export default function FormsManager({
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/json,.json"
+            accept="application/json,.json,application/zip,.zip"
             className="hidden"
             onChange={(e) => void onImportFileChange(e)}
           />
@@ -656,6 +778,61 @@ export default function FormsManager({
           >
             {deleting ? "Deleting..." : "Delete"}
           </Button>
+        </div>
+      </Modal>
+
+      {/* Import Progress Modal */}
+      <Modal isOpen={showImportProgress} onClose={() => setShowImportProgress(false)} className="w-[92vw] max-w-lg">
+        <div className="p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Importing Forms
+          </h2>
+
+          <div className="mb-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+              Importing {importProgress.current} / {importProgress.total}
+            </p>
+          </div>
+
+          {importProgress.results.length > 0 && (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {importProgress.results.map((result, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-lg border ${
+                    result.success
+                      ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
+                      : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
+                  }`}
+                >
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {result.filename}
+                  </p>
+                  <p
+                    className={`text-xs mt-1 ${
+                      result.success
+                        ? "text-green-700 dark:text-green-300"
+                        : "text-red-700 dark:text-red-300"
+                    }`}
+                  >
+                    {result.message}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {importProgress.current === importProgress.total && (
+            <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowImportProgress(false)}
+              >
+                Close
+              </Button>
+            </div>
+          )}
         </div>
       </Modal>
     </div>
