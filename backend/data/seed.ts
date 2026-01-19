@@ -39,14 +39,14 @@ async function seed() {
     if (existing) {
       await prisma.form.update({
         where: { id: existing.id },
-        data: { json: JSON.stringify(form) },
+        data: { json: JSON.stringify(form.schema) },
       });
       console.log(`🔄 Form '${form.name}' updated`);
     } else {
       await prisma.form.create({
         data: {
           name: form.name,
-          json: JSON.stringify(form),
+          json: JSON.stringify(form.schema),
         },
       });
       console.log(`✅ Form '${form.name}' seeded successfully`);
