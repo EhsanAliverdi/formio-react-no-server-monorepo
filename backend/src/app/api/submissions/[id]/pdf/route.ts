@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse, requireRole } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -50,29 +50,18 @@ export async function POST(req: Request, context: RouteContext) {
 		return jsonResponse({ error: "Invalid submission id" }, { status: 400 });
 	}
 
-	const db = await getDb();
-	const row = (await db.get(
-		`
-			SELECT
-				s.id as id,
-				f.name as form_name,
-				f.json as form_json
-			FROM form_submissions s
-			JOIN forms f ON f.id = s.form_id
-			WHERE s.id = ? AND s.user_id = ?
-			LIMIT 1
-		`,
-		submissionId,
-		auth.user.id
-	)) as { id: number; form_name: string; form_json: string } | undefined;
+	const submission = await prisma.formSubmission.findFirst({
+		where: { id: submissionId, userId: auth.user.id },
+		include: { form: true },
+	});
 
-	if (!row) {
+	if (!submission || !submission.form) {
 		return jsonResponse({ error: "Not found" }, { status: 404 });
 	}
 
 	let parsedForm: unknown = null;
 	try {
-		parsedForm = row.form_json ? JSON.parse(String(row.form_json)) : null;
+		parsedForm = submission.form.json ? JSON.parse(String(submission.form.json)) : null;
 	} catch {
 		parsedForm = null;
 	}
@@ -102,7 +91,7 @@ export async function POST(req: Request, context: RouteContext) {
 	const finalFileName = safeContentDispositionFilename(
 		typeof fileNameRaw === "string" && fileNameRaw.trim()
 			? fileNameRaw
-			: `submission-${submissionId}-${String(row.form_name ?? "form")}`
+			: `submission-${submissionId}-${String(submission.form.name ?? "form")}`
 	);
 
 	let browser: unknown = null;
