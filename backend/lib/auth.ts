@@ -72,22 +72,22 @@ export function extractBearerToken(req: Request): string | null {
 export async function createSession(userId: number, ttlDays = 7) {
   const rawToken = base64Url(crypto.randomBytes(32));
   const tokenHash = sha256Hex(rawToken);
-  const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
 
   const db = await getDb();
   await db.run(
     "INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
     userId,
     tokenHash,
-    expiresAt
+    expiresAt.toISOString()
   );
 
-  return { token: rawToken, expiresAt };
+  return { token: rawToken, expiresAt: expiresAt.toISOString() };
 }
 
 export async function deleteSessionByToken(rawToken: string) {
-  const db = await getDb();
   const tokenHash = sha256Hex(rawToken);
+  const db = await getDb();
   await db.run("DELETE FROM sessions WHERE token_hash = ?", tokenHash);
 }
 
@@ -98,43 +98,52 @@ export async function getUserFromRequest(req: Request): Promise<AuthedUser | nul
   const tokenHash = sha256Hex(token);
   const db = await getDb();
 
-  const row = await db.get(
-    `
-      SELECT
-        u.id as id,
-        u.email as email,
-        u.role as role,
-        u.display_name as display_name,
-        u.preferred_name as preferred_name,
-        u.first_name as first_name,
-        u.last_name as last_name,
-        u.avatar_url as avatar_url,
-        s.expires_at as expires_at
+  const row = await db.get<
+    {
+      id: number;
+      email: string;
+      role: string;
+      display_name?: string | null;
+      preferred_name?: string | null;
+      first_name?: string | null;
+      last_name?: string | null;
+      avatar_url?: string | null;
+      expires_at: string | Date;
+    }
+  >(
+    `SELECT
+        u.id,
+        u.email,
+        u.role,
+        u.display_name,
+        u.preferred_name,
+        u.first_name,
+        u.last_name,
+        u.avatar_url,
+        s.expires_at
       FROM sessions s
       JOIN users u ON u.id = s.user_id
-      WHERE s.token_hash = ?
-      LIMIT 1
-    `,
+      WHERE s.token_hash = ?`,
     tokenHash
   );
 
   if (!row) return null;
 
-  const expires = Date.parse(String(row.expires_at));
+  const expires = new Date(row.expires_at).getTime();
   if (!Number.isFinite(expires) || expires <= Date.now()) {
     await db.run("DELETE FROM sessions WHERE token_hash = ?", tokenHash);
     return null;
   }
 
   return {
-    id: Number(row.id),
-    email: String(row.email),
-    role: (String(row.role) as Role) || "viewer",
-    display_name: (row.display_name as any) ?? null,
-    preferred_name: (row.preferred_name as any) ?? null,
-    first_name: (row.first_name as any) ?? null,
-    last_name: (row.last_name as any) ?? null,
-    avatar_url: (row.avatar_url as any) ?? null,
+    id: row.id,
+    email: row.email,
+    role: (row.role as Role) || "viewer",
+    display_name: row.display_name ?? null,
+    preferred_name: row.preferred_name ?? null,
+    first_name: row.first_name ?? null,
+    last_name: row.last_name ?? null,
+    avatar_url: row.avatar_url ?? null,
   };
 }
 

@@ -5,7 +5,7 @@ let pool: Pool | null = null;
 // Lightweight wrapper interface to mimic the old sqlite Database API
 // so the rest of the codebase can keep using db.get/db.all/db.run/db.exec.
 export type Db = {
-  query: (text: string, params?: any[]) => Promise<import("pg").QueryResult>;
+  query: <T = any>(text: string, params?: any[]) => Promise<T[]>;
   get: <T = any>(text: string, ...params: any[]) => Promise<T | null>;
   all: <T = any>(text: string, ...params: any[]) => Promise<T[]>;
   run: (text: string, ...params: any[]) => Promise<{ changes: number; lastID: number | null }>;
@@ -305,32 +305,47 @@ export async function getDb(): Promise<Db> {
   return dbInstance as Db;
 }
 
-// Helper methods to provide a SQLite-like interface for compatibility
-export async function query(text: string, params?: any[]) {
-  if (!pool) {
+// Helper to convert `?` placeholders to PostgreSQL-style $1, $2, ...
+function convertPlaceholders(text: string): string {
+  let paramIndex = 1;
+  return text.replace(/\?/g, () => `$${paramIndex++}`);
+}
+
+// Helper methods to provide a SQLite-like interface for compatibility,
+// backed directly by the pg client. This keeps the existing SQL surface
+// while routing all connections through the configured PostgreSQL pool.
+export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {
+  if (!pool || !dbInstance) {
     await initPoolAndMigrate();
   }
   if (!pool) {
     throw new Error("Database pool not initialized");
   }
-  // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
-  let paramIndex = 1;
-  const convertedText = text.replace(/\?/g, () => `$${paramIndex++}`);
-  return pool.query(convertedText, params);
-}
 
-export async function get<T = any>(text: string, ...params: any[]): Promise<T | null> {
-  const result = await query(text, params);
-  return (result.rows[0] as T) ?? null;
-}
-
-export async function all<T = any>(text: string, ...params: any[]): Promise<T[]> {
-  const result = await query(text, params);
+  const convertedText = convertPlaceholders(text);
+  const result = await pool.query(convertedText, params);
   return result.rows as T[];
 }
 
+export async function get<T = any>(text: string, ...params: any[]): Promise<T | null> {
+  const rows = await query<T>(text, params);
+  return rows[0] ?? null;
+}
+
+export async function all<T = any>(text: string, ...params: any[]): Promise<T[]> {
+  return query<T>(text, params);
+}
+
 export async function run(text: string, ...params: any[]): Promise<{ changes: number; lastID: number | null }> {
-  const result = await query(text, params);
+  if (!pool || !dbInstance) {
+    await initPoolAndMigrate();
+  }
+  if (!pool) {
+    throw new Error("Database pool not initialized");
+  }
+
+  const convertedText = convertPlaceholders(text);
+  const result = await pool.query(convertedText, params);
   return {
     changes: result.rowCount || 0,
     lastID: (result.rows[0] as any)?.id ?? null,
@@ -338,5 +353,12 @@ export async function run(text: string, ...params: any[]): Promise<{ changes: nu
 }
 
 export async function exec(text: string): Promise<void> {
-  await query(text);
+  if (!pool || !dbInstance) {
+    await initPoolAndMigrate();
+  }
+  if (!pool) {
+    throw new Error("Database pool not initialized");
+  }
+  const convertedText = convertPlaceholders(text);
+  await pool.query(convertedText);
 }
