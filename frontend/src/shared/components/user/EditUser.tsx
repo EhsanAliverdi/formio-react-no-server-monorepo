@@ -146,20 +146,33 @@ export default function EditUser({ user, saving = false, onSave, onUploadAvatar,
 
               {onUploadAvatar ? (
                 <div className="mt-3 w-full">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Profile photo</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1"></label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    className="block w-full text-sm"
-                    disabled={saving || uploadingAvatar}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      void handleAvatarUpload(f);
-                      e.currentTarget.value = "";
-                    }}
-                  />
-                  {uploadingAvatar ? <div className="mt-1 text-xs text-gray-500">Uploading…</div> : null}
+  id="avatar-upload"
+  type="file"
+  accept="image/*"
+  className="hidden"
+  disabled={saving || uploadingAvatar}
+  onChange={(e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    void handleAvatarUpload(f);
+    e.currentTarget.value = "";
+  }}
+/>
+                 <label
+  htmlFor="avatar-upload"
+  className={`
+    mt-3 inline-flex w-full cursor-pointer items-center justify-center
+    rounded-md border border-gray-300 bg-white px-4 py-2
+    text-sm font-medium text-gray-700
+    hover:bg-gray-50
+    disabled:pointer-events-none disabled:opacity-50
+    dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200
+  `}
+>
+  {uploadingAvatar ? "Uploading…" : "Upload avatar"}
+</label>
                 </div>
               ) : null}
 

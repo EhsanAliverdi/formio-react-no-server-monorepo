@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { UserProfileEditor } from "../../shared/components/user";
-import { getMyProfile, updateMyProfile, type UserRow } from "../../shared/services/userService";
+import { getMyProfile, updateMyProfile, uploadMyAvatar, type UserRow } from "../../shared/services/userService";
 
 export default function AdminProfilePage() {
   const [loading, setLoading] = useState(true);
@@ -33,6 +33,12 @@ export default function AdminProfilePage() {
         saving={saving}
         error={error}
         onReload={load}
+        onUploadAvatar={async (file) => {
+          const result = await uploadMyAvatar(file);
+          const updated = (result?.user ?? null) as UserRow | null;
+          if (updated) setUser(updated);
+          return updated ?? undefined;
+        }}
         onSave={async (payload) => {
           setSaving(true);
           try {
