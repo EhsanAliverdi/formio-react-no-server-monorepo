@@ -6,6 +6,10 @@ import { FiChevronDown,  FiMoreHorizontal} from "react-icons/fi";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
 import AppVersion from "../../../shared/components/AppVersion";
+import Button from "../components/ui/button/Button";
+import { AiOutlineQuestionCircle } from "react-icons/ai";
+import { Modal } from "../components/ui/modal";
+import { useModal } from "../hooks/useModal";
 
 export type NavItem = {
   name: string;
@@ -238,6 +242,8 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
     </ul>
   );
 
+  const { isOpen, openModal, closeModal } = useModal();
+
   return (
     <aside
       className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
@@ -338,66 +344,36 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
 
       <div className="pb-6">
         <AppVersion>
-          {(info) => {
-            const isOpen = isExpanded || isHovered || isMobileOpen;
-
-            if (isOpen) {
-              return (
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500">
-                  <div className="flex flex-col gap-1">
-                    <div>
-                      <span className="font-medium">App Version :</span> {info.appVersion}
-                    </div>
-                    {info.showDetailed && (
-                      <>
-                        <div>
-                          <span className="font-medium">Frontend:</span> {info.frontend.version}
-                          <span> ({info.frontend.buildTime})</span>
-                        </div>
-                        <div>
-                          <span className="font-medium">Backend:</span> {info.backend.version}
-                          <span> ({info.backend.buildTime})</span>
-                        </div>
-                        <div>
-                          <span className="font-medium">environment</span> {info.environment.label}
-                        </div>
-                      </>
-                    )}
+          {(info) => (
+            <>
+              <button
+                type="button"
+                onClick={openModal}
+                className={`menu-item group mt-3 flex w-full items-center gap-3 ${
+                  !isExpanded && !isHovered ? "justify-center" : "justify-start"
+                } text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none`}
+              >
+                <span className="menu-item-icon-size inline-flex items-center justify-center">
+                  <AiOutlineQuestionCircle className="w-5 h-5" />
+                </span>
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <span className="menu-item-text whitespace-nowrap">About</span>
+                )}
+              </button>
+              <Modal isOpen={isOpen} onClose={closeModal} className="max-w-md w-full p-6">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">About this site</h2>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    <div><span className="font-medium">App Version:</span> {info.appVersion}</div>
+                    <div><span className="font-medium">Frontend:</span> {info.frontend.version} <span>({info.frontend.buildTime})</span></div>
+                    <div><span className="font-medium">Backend:</span> {info.backend.version} <span>({info.backend.buildTime})</span></div>
+                    <div><span className="font-medium">Environment:</span> {info.environment.label}</div>
                   </div>
+                  <div className="text-xs text-gray-400 pt-2">&copy; {new Date().getFullYear()} SurveyFlow</div>
                 </div>
-              );
-            }
-
-            return (
-              <div className="relative mt-3 pt-3 border-t border-gray-200 dark:border-gray-800 flex justify-center">
-                <div className="group relative">
-                  <div className="h-7 w-7 rounded-full border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs font-semibold select-none cursor-default">
-                    i
-                  </div>
-                  <div className="pointer-events-none absolute left-full ml-3 bottom-0 hidden group-hover:block z-50">
-                    <div className="min-w-[240px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 shadow-lg">
-                      <div className="text-xs text-gray-500">
-                        <div>
-                          <span className="font-medium">App Version :</span> {info.appVersion}
-                        </div>
-                        <div>
-                          <span className="font-medium">Frontend:</span> {info.frontend.version}
-                          <span> ({info.frontend.buildTime})</span>
-                        </div>
-                        <div>
-                          <span className="font-medium">Backend:</span> {info.backend.version}
-                          <span> ({info.backend.buildTime})</span>
-                        </div>
-                        <div>
-                          <span className="font-medium">environment</span> {info.environment.label}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          }}
+              </Modal>
+            </>
+          )}
         </AppVersion>
       </div>
     </aside>
