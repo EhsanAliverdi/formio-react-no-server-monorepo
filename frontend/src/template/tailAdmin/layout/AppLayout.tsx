@@ -50,7 +50,7 @@ const LayoutContent: React.FC<AppLayoutProps> = ({
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
 
   return (
-    <div className="h-screen xl:flex overflow-hidden">
+    <div className="flex h-dvh xl:flex-row flex-col">
       <div>
         <AppSidebar
           navItems={sidebarNavItems}
@@ -73,7 +73,7 @@ const LayoutContent: React.FC<AppLayoutProps> = ({
           signOutRedirectTo={headerSignOutRedirectTo}
           logoHref={sidebarBranding?.href ?? "/"}
         />
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
             <Outlet />
           </div>
