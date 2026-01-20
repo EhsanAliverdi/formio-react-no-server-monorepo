@@ -179,8 +179,15 @@ export default function SingleImageUpload(props: FileUploadProps) {
 							onClick={() => {
 								if (pondRef.current) {
 									pondRef.current.browse();
+								}								// Clear the preview and call onClear handler
+								if (previewObjectUrlRef.current) {
+									URL.revokeObjectURL(previewObjectUrlRef.current);
+									previewObjectUrlRef.current = null;
 								}
-							}}
+								setPreviewUrl(null);
+								if (onClear) {
+									onClear();
+								}							}}
 						>
 							{resolvedUploadLabel}
 						</Button>
@@ -193,15 +200,6 @@ export default function SingleImageUpload(props: FileUploadProps) {
 								onClick={() => {
 									if (pondRef.current) {
 										pondRef.current.removeFiles();
-									}
-									// Clear the preview and call onClear handler
-									if (previewObjectUrlRef.current) {
-										URL.revokeObjectURL(previewObjectUrlRef.current);
-										previewObjectUrlRef.current = null;
-									}
-									setPreviewUrl(null);
-									if (onClear) {
-										onClear();
 									}
 								}}
 							>

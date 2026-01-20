@@ -4,6 +4,7 @@ import Label from "../../template/tailAdmin/components/form/Label";
 import Input from "../../template/tailAdmin/components/form/input/InputField";
 import FileUpload from "../../shared/components/ui/FileUpload";
 import { apiFetch } from "../../shared/services/apiClient";
+import toast from "react-hot-toast";
 import {
   getAdminSiteSettings,
   updateAdminSiteSettings,
@@ -14,25 +15,28 @@ import {
 function fallbackFaviconUrl(settings: AdminSiteSettings | null): string {
   const fromSettings = settings?.faviconUrl;
   if (typeof fromSettings === "string" && fromSettings.trim()) return fromSettings.trim();
-  // Default favicon from public assets
-  return "/favicon.ico";
+  // Default favicon path
+  return "/favicon.png";
 }
 
 function fallbackLogoExpandedLight(settings: AdminSiteSettings | null): string {
   const fromSettings = settings?.logoExpandedLightUrl;
   if (typeof fromSettings === "string" && fromSettings.trim()) return fromSettings.trim();
+  // Default logo (light)
   return "/images/logo/logo.svg";
 }
 
 function fallbackLogoExpandedDark(settings: AdminSiteSettings | null): string {
   const fromSettings = settings?.logoExpandedDarkUrl;
   if (typeof fromSettings === "string" && fromSettings.trim()) return fromSettings.trim();
+  // Default logo (dark)
   return "/images/logo/logo-dark.svg";
 }
 
 function fallbackLogoCollapsed(settings: AdminSiteSettings | null): string {
   const fromSettings = settings?.logoCollapsedUrl;
   if (typeof fromSettings === "string" && fromSettings.trim()) return fromSettings.trim();
+  // Default logo icon
   return "/images/logo/logo-icon.svg";
 }
 
@@ -119,7 +123,7 @@ export default function AdminSettingsPage() {
       setSettings(updated);
       setDraft(updated);
       emitSiteSettingsChanged();
-      setSuccess("Settings saved");
+      toast.success("Settings saved");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save settings");
     } finally {
@@ -150,11 +154,6 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      {success && (
-        <div className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100">
-          {success}
-        </div>
-      )}
 
       {loading ? (
         <div className="text-gray-600 dark:text-gray-300">Loading…</div>
@@ -171,7 +170,7 @@ export default function AdminSettingsPage() {
               <Input
                 id="siteName"
                 type="text"
-                placeholder="TailwindAdmin"
+                placeholder="SurveyFlow"
                 value={(effective?.siteName ?? "")}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -207,10 +206,13 @@ export default function AdminSettingsPage() {
                 id="siteFaviconUpload"
                 mode="avatar"
                 orientation="horizontal"
+                buttonOrientation="horizontal"
+                size="avatar"                
+                backgroundColor="#ffffff"                
                 multiple={false}
                 accept="image/*"
                 existingImageUrl={fallbackFaviconUrl(effective)}
-                uploadLabel="Upload favicon"
+                uploadLabel="Upload"
                 clearLabel="Delete"
                 description="SVG, PNG, JPG or GIF (MAX. 800x400px)."
                 filePondOptions={{
@@ -257,6 +259,9 @@ export default function AdminSettingsPage() {
                 <FileUpload
                   mode="avatar"
                   orientation="vertical"
+                  buttonOrientation="horizontal"
+                  size="avatar"                  
+                  backgroundColor="#ffffff"                  
                   multiple={false}
                   accept="image/*"
                   existingImageUrl={fallbackLogoExpandedLight(effective)}
@@ -299,6 +304,9 @@ export default function AdminSettingsPage() {
                 <FileUpload
                   mode="avatar"
                   orientation="vertical"
+                  buttonOrientation="horizontal"
+                  size="avatar"
+                  backgroundColor="#1f2937"
                   multiple={false}
                   accept="image/*"
                   existingImageUrl={fallbackLogoExpandedDark(effective)}
@@ -341,6 +349,9 @@ export default function AdminSettingsPage() {
                 <FileUpload
                   mode="avatar"
                   orientation="vertical"
+                  buttonOrientation="horizontal"
+                  size="avatar"
+                  backgroundColor="#ffffff"
                   multiple={false}
                   accept="image/*"
                   existingImageUrl={fallbackLogoCollapsed(effective)}

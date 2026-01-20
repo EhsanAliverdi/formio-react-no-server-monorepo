@@ -57,6 +57,14 @@ export type FileUploadProps = {
   showDeleteButton?: boolean;
   /** Size of the upload/delete buttons in single-image mode. */
   buttonSize?: "sm" | "md" | "lg";
+  /** Orientation of the upload/delete buttons. Horizontal places them side-by-side, vertical stacks them. */
+  buttonOrientation?: "horizontal" | "vertical";
+  /** Position of the description text relative to the buttons. */
+  descriptionPosition?: "before" | "after";
+  /** Size preset for the image preview. Defines max height and width. */
+  size?: "small" | "md" | "lg" | "avatar";
+  /** Background color for empty image container. */
+  backgroundColor?: string;
   /** Pixel size (width & height) of the single-image preview box. */
   previewSize?: number;
   /** Called whenever the selected files list changes. */
@@ -87,6 +95,10 @@ export default function FileUpload({
   previewShape = "square",
   showDeleteButton = true,
   buttonSize = "md",
+  buttonOrientation = "horizontal",
+  descriptionPosition = "after",
+  size = "md",
+  backgroundColor,
   showPreview = true,
   previewSize,
   filePondOptions,
@@ -123,6 +135,10 @@ export default function FileUpload({
           previewShape={previewShape}
           showDeleteButton={showDeleteButton}
           buttonSize={buttonSize}
+          buttonOrientation={buttonOrientation}
+          descriptionPosition={descriptionPosition}
+          size={size}
+          backgroundColor={backgroundColor}
           previewSize={previewSize}
           onFilesSelected={onFilesSelected}
           onClear={onClear}
@@ -153,6 +169,10 @@ export default function FileUpload({
           previewShape={previewShape}
           showDeleteButton={showDeleteButton}
           buttonSize={buttonSize}
+          buttonOrientation={buttonOrientation}
+          descriptionPosition={descriptionPosition}
+          size={size}
+          backgroundColor={backgroundColor}
           previewSize={previewSize}
           onFilesSelected={onFilesSelected}
           onClear={onClear}

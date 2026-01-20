@@ -1,15 +1,20 @@
 import { ReactNode } from "react";
 
 interface ButtonProps {
-  children: ReactNode; // Button text or content
-  size?: "sm" | "md" | "xsm"; // Button size
-  variant?: "primary" | "outline"; // Button variant
-  startIcon?: ReactNode; // Icon before the text
-  endIcon?: ReactNode; // Icon after the text
-  onClick?: () => void; // Click handler
-  disabled?: boolean; // Disabled state
-  className?: string; // Disabled state
+  children: ReactNode;
+  size?: "xsm" | "sm" | "md" | "lg";
+  variant?: "primary" | "outline" | "delete" | "secondary" | "ghost";
+  startIcon?: ReactNode;
+  endIcon?: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+  type?: "button" | "submit" | "reset";
+  fullWidth?: boolean;
 }
+
+
+import { useRef } from "react";
 
 const Button: React.FC<ButtonProps> = ({
   children,
@@ -20,30 +25,49 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = "",
   disabled = false,
+  type = "button",
+  fullWidth = false,
 }) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   // Size Classes
   const sizeClasses = {
-    sm: "px-4 py-3 text-sm",
-    md: "px-5 py-3.5 text-sm",
-    xsm: "px-2 py-2 text-xs",
+    xsm: "px-2 py-1 text-xs",
+    sm: "px-3 py-1 text-xs",
+    md: "px-4 py-1.5 text-sm",
+    lg: "px-4 py-2 text-sm",
   };
 
   // Variant Classes
   const variantClasses = {
     primary:
-      "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300",
+      "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
     outline:
-      "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300",
+      "bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-800",
+    delete:
+      "border border-red-600 text-red-600 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 dark:border-red-400 dark:text-red-400 dark:hover:text-red-300",
+    secondary:
+      "bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600",
+    ghost:
+      "text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 dark:text-gray-300 dark:hover:bg-gray-800",
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    if (onClick) onClick();
+    // Blur after click to remove focus ring
+    if (buttonRef.current) buttonRef.current.blur();
   };
 
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-lg transition ${className} ${
-        sizeClasses[size]
-      } ${variantClasses[variant]} ${
+      ref={buttonRef}
+      type={type}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition ${
+        fullWidth ? "w-full" : ""
+      } ${sizeClasses[size]} ${variantClasses[variant]} ${
         disabled ? "cursor-not-allowed opacity-50" : ""
-      }`}
-      onClick={onClick}
+      } ${className}`.trim()}
+      onClick={handleClick}
       disabled={disabled}
     >
       {startIcon && <span className="flex items-center">{startIcon}</span>}
