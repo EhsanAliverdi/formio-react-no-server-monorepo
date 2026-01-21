@@ -198,6 +198,24 @@ npm run dev
 
 Note: if you run without Docker, you still need an S3-compatible endpoint for uploads (MinIO recommended).
 
+## Capacitor mobile app (high-level)
+
+The mobile app wraps the `frontend/` Vite build with Capacitor. You will need Xcode (iOS) or Android Studio (Android) installed locally.
+
+1. Install frontend deps:
+   - `cd frontend && npm install`
+2. Initialize native platforms:
+   - `npx cap add ios`
+   - `npx cap add android`
+3. Build and sync web assets:
+   - `npm run build`
+   - `npm run cap:sync`
+4. Open native projects:
+   - `npm run cap:open:ios`
+   - `npm run cap:open:android`
+
+Make sure `VITE_API_BASE_URL` points to a reachable backend URL from your device/emulator (not `localhost` on device). 
+
 ## Repository notes
 
 - `_reference/` is intentionally ignored and not part of the repo history.
