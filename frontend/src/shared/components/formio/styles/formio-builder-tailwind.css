@@ -1,3 +1,9 @@
+/* Force input/select/textarea border color for builder edit panel */
+.component-edit-container input,
+.component-edit-container select,
+.component-edit-container textarea {
+  border-color: #c3c3c3 !important;
+}
 /*
   Extra Tailwind overrides for Form.io builder edit panel (component-edit-container)
   Ensures grid, spacing, and utility classes are Tailwind-only, not Bootstrap.
