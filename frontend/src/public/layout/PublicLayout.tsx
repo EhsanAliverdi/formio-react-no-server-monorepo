@@ -176,7 +176,7 @@ export default function PublicLayout() {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const siteName = (siteSettings?.siteName ?? "").trim() || "TailwindAdmin";
+    const siteName = (siteSettings?.siteName ?? "").trim() || "Survey Flow";
     document.title = siteName;
   }, [siteSettings?.siteName]);
 

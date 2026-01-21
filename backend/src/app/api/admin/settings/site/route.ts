@@ -51,9 +51,7 @@ function mapRowsToPayload(rows: Array<{ key: string; value: string }>) {
 }
 
 export async function GET(req: Request) {
-  const auth = await requireAdmin(req);
-  if (!auth.ok) return auth.res;
-
+  // Allow unauthenticated GET for public site settings
   const rows = await prisma.siteSetting.findMany({
     where: {
       key: {
