@@ -1,3 +1,19 @@
+/* Only the error message should be red, not the whole field */
+.formio-scope .formio-error-wrapper,
+.formio-scope .has-message,
+.formio-scope .has-feedback {
+  background: none !important;
+}
+.formio-scope .formio-errors,
+.formio-scope .invalid-feedback,
+.formio-scope .form-text.error {
+  @apply text-red-600 bg-transparent;
+}
+.formio-scope input.is-invalid,
+.formio-scope select.is-invalid,
+.formio-scope textarea.is-invalid {
+  @apply border-red-500;
+}
 /* Force input/select/textarea border color for Form.io forms to #c3c3c3, overriding Tailwind base */
 .formio-scope input,
 .formio-scope select,
