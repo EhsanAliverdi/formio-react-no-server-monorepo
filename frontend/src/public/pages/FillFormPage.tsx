@@ -79,7 +79,7 @@ export default function FillFormPage() {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-white p-4 rounded-lg border border-gray-200 ">
       <div className="flex items-center justify-between mb-4">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">{formTitle}</h1>
