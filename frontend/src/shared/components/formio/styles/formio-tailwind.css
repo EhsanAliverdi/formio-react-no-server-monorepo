@@ -1,3 +1,9 @@
+/* Force input/select/textarea border color for Form.io forms to #c3c3c3, overriding Tailwind base */
+.formio-scope input,
+.formio-scope select,
+.formio-scope textarea {
+  border-color: #c3c3c3 !important;
+}
 @reference "tailwindcss";
 
 /*
@@ -164,7 +170,8 @@
 .formio-scope input.form-control,
 .formio-scope select.form-control,
 .formio-scope textarea.form-control {
-  @apply w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-sm;
+  @apply w-full rounded-lg appearance-none px-4 py-2.5 text-sm shadow-sm;
+  border: 1px solid #c3c3c3;
   @apply bg-transparent text-gray-800 placeholder:text-gray-400;
   @apply focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-500/20;
   @apply dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:border-gray-700 dark:focus:border-blue-800;
