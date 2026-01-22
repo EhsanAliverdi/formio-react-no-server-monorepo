@@ -10,6 +10,6 @@ To fix this securely, add your corporate root CA certificate(s) here and rebuild
 2. Put it in this folder: `backend/certs/corp-root-ca.crt`
 3. Rebuild: `docker compose build backend`
 
-The backend image copies `backend/certs/` into the system trust store and runs `update-ca-certificates`.
+The backend images (production and dev) copy `backend/certs/` into the system trust store and run `update-ca-certificates`.
 
 Temporary workaround (less secure): set `INSECURE_TLS=true` for the build (see `docker-compose.yml`).

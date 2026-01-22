@@ -10,6 +10,14 @@ RUN apt-get update -y \
 	&& apt-get install -y --no-install-recommends openssl libssl1.1 ca-certificates \
 	&& rm -rf /var/lib/apt/lists/*
 
+# Optional: add corporate root CA certs for Docker builds.
+# Place one or more *.crt files in backend/certs/ and rebuild.
+COPY backend/certs/ /usr/local/share/ca-certificates/
+RUN update-ca-certificates || true
+
+# Ensure Node can use the system CA bundle (including any added certs).
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 # Handle TLS certificate issues in corporate environments
 ARG INSECURE_TLS=false
 
