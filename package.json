@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "@capacitor/android": "^8.0.1",
+    "@capacitor/core": "^8.0.1",
     "formiojs": "^4.21.7"
   },
   "devDependencies": {
