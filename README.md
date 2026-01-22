@@ -215,8 +215,8 @@ The mobile app wraps the `frontend/` Vite build with Capacitor. You will need Xc
    - `npm run cap:open:ios`
    - `npm run cap:open:android`
 
-Make sure `VITE_API_BASE_URL` points to a reachable backend URL from your device/emulator (not `localhost` on device). 
-For Docker-based builds, set `VITE_API_BASE_URL` in `docker-compose.yml`/`docker-compose.override.yml` or in an `.env` file passed to Docker Compose so the built web assets target the correct backend.
+Make sure `VITE_CAPACITOR_API_BASE_URL` points to a reachable backend URL from your device/emulator (not `localhost` on device).
+For Docker-based builds, set `VITE_API_BASE_URL` in `docker-compose.yml`/`docker-compose.override.yml` (or in an `.env` passed to Docker Compose) so the web build targets the correct backend, and set `VITE_CAPACITOR_API_BASE_URL` in your shell before running `npm run build`/`cap sync` for mobile builds.
 
 ## Repository notes
 
