@@ -42,7 +42,8 @@ services:
       dockerfile: Dockerfile.backend
       pull: true
       args:
-        INSECURE_TLS: ${INSECURE_TLS:-false}
+        # INSECURE_TLS: ${INSECURE_TLS:-false}
+        INSECURE_TLS: "true"
         APP_VERSION: ${BACKEND_APP_VERSION:-}
         BUILD_TIME: ${BUILD_TIME:-}
         APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
