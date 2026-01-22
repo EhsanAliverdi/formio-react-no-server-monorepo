@@ -1,25 +1,10 @@
 import { corsHeaders, jsonResponse } from "@/lib/auth";
 import { uploadImageObject } from "@/lib/minio";
+import { getPublicOrigin } from "@/lib/urls";
 
 export const runtime = "nodejs";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB per image
-
-function getPublicOrigin(req: Request) {
-	const forwardedProto = req.headers.get("x-forwarded-proto");
-	const forwardedHost = req.headers.get("x-forwarded-host");
-	if (forwardedProto && forwardedHost) {
-		return `${forwardedProto}://${forwardedHost}`;
-	}
-
-	const host = req.headers.get("host");
-	if (host) {
-		// Default to http because this API is typically served behind a reverse proxy that sets x-forwarded-proto.
-		return `http://${host}`;
-	}
-
-	return new URL(req.url).origin;
-}
 
 export async function OPTIONS() {
 	return new Response(null, { status: 204, headers: corsHeaders });
