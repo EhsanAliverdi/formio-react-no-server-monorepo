@@ -1,0 +1,51 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        // Android Gradle Plugin
+        classpath "com.android.tools.build:gradle:8.7.2"
+
+        // Google Services (Firebase, Push, etc.)
+        classpath "com.google.gms:google-services:4.4.2"
+    }
+}
+
+// Shared versions / variables
+apply from: "variables.gradle"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// Force Java 17 for ALL subprojects (IMPORTANT)
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            sourceCompatibility = JavaVersion.VERSION_17.toString()
+            targetCompatibility = JavaVersion.VERSION_17.toString()
+        }
+    }
+}
+
+// Clean task
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
