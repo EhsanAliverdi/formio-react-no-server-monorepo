@@ -1,5 +1,3 @@
-import { Capacitor } from "@capacitor/core";
-
 type ApiErrorPayload = { error?: string };
 
 const DEFAULT_API_BASE = "http://localhost:3000";
@@ -36,6 +34,19 @@ function logApiBase(message: string, details: Record<string, unknown>) {
 
 function normalizeBase(value: string) {
   return value.replace(/\/+$/, "");
+}
+
+type CapacitorLike = {
+  isNativePlatform?: () => boolean;
+  getPlatform?: () => string;
+};
+
+function getCapacitor(): CapacitorLike | null {
+  if (typeof window === "undefined") return null;
+  const candidate = (window as any).Capacitor as CapacitorLike | undefined;
+  if (!candidate) return null;
+  if (typeof candidate !== "object" && typeof candidate !== "function") return null;
+  return candidate;
 }
 
 export function normalizeUploadUrl(value: string) {
@@ -108,8 +119,9 @@ export function getApiBaseUrl() {
       ? window.location.origin
       : "";
 
-  if (Capacitor.isNativePlatform()) {
-    const platform = Capacitor.getPlatform?.() ?? "web";
+  const capacitor = getCapacitor();
+  if (capacitor?.isNativePlatform?.()) {
+    const platform = capacitor.getPlatform?.() ?? "web";
     if (platform === "android") {
       const candidate = androidEmulatorBase || nativeEnvBase || ANDROID_EMULATOR_DEFAULT_BASE;
       const resolved = adjustAndroidLoopback(candidate);
