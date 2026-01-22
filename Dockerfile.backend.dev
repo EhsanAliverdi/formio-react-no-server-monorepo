@@ -29,7 +29,11 @@ RUN if [ "$INSECURE_TLS" = "true" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0;
 # Development mode: source code is mounted via bind mount
 # We only copy the Prisma schema here to generate the client
 COPY backend/prisma ./prisma
-RUN npx prisma generate
+RUN if [ "$INSECURE_TLS" = "true" ]; then \
+		export NODE_TLS_REJECT_UNAUTHORIZED=0; \
+		export npm_config_strict_ssl=false; \
+	fi \
+	&& npx prisma generate
 
 # Expose dev server port
 EXPOSE 3000
