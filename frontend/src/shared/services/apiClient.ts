@@ -5,6 +5,27 @@ type ApiErrorPayload = { error?: string };
 const DEFAULT_API_BASE = "http://localhost:3000";
 const ANDROID_EMULATOR_DEFAULT_BASE = "http://10.0.2.2:3000";
 const IOS_SIMULATOR_DEFAULT_BASE = "http://localhost:3000";
+const ANDROID_EMULATOR_LOOPBACK_HOST = "10.0.2.2";
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1"]);
+
+function stripTrailingSlash(value: string) {
+  return value.endsWith("/") ? value.replace(/\/+$/, "") : value;
+}
+
+function adjustAndroidLoopback(value: string) {
+  if (!value) return value;
+  try {
+    const url = new URL(value);
+    if (LOOPBACK_HOSTS.has(url.hostname)) {
+      url.hostname = ANDROID_EMULATOR_LOOPBACK_HOST;
+      return stripTrailingSlash(url.toString());
+    }
+  } catch {
+    // ignore invalid URL inputs
+  }
+
+  return stripTrailingSlash(value);
+}
 
 export function getApiBaseUrl() {
   const env = (import.meta as any).env ?? {};
@@ -24,15 +45,15 @@ export function getApiBaseUrl() {
       : "";
 
   if (Capacitor.isNativePlatform()) {
-    if (nativeEnvBase) return nativeEnvBase;
     const platform = Capacitor.getPlatform?.() ?? "web";
     if (platform === "android") {
-      return androidEmulatorBase || ANDROID_EMULATOR_DEFAULT_BASE;
+      const candidate = androidEmulatorBase || nativeEnvBase || ANDROID_EMULATOR_DEFAULT_BASE;
+      return adjustAndroidLoopback(candidate);
     }
     if (platform === "ios") {
-      return iosSimulatorBase || IOS_SIMULATOR_DEFAULT_BASE;
+      return nativeEnvBase || iosSimulatorBase || IOS_SIMULATOR_DEFAULT_BASE;
     }
-    return DEFAULT_API_BASE;
+    return nativeEnvBase || DEFAULT_API_BASE;
   }
 
   if (webEnvBase) return webEnvBase;
