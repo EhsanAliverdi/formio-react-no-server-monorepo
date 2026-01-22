@@ -94,7 +94,9 @@ All tasks run in the background except for the seed task, which will show output
 ## Environment configuration
 
 This repo expects environment variables to be supplied via Docker Compose or your shell. For convenience, you can use
-the root `.env.development` and `.env.production` files and pass them to Docker Compose via `--env-file`.
+the root `.env.development` and `.env.production` files and pass them to Docker Compose via `--env-file`. The frontend
+and backend will also read these root env files when running locally, so you do not need separate `.env` files under
+`frontend/` or `backend/`.
 
 ### Backend
 
