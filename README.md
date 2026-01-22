@@ -124,6 +124,18 @@ Exact values are defined in `docker-compose.yml` for local usage.
 - `VITE_API_BASE_URL`
 	- Base URL for the backend API.
 	- When running behind nginx at `http://localhost`, this usually points to `http://localhost:3000`.
+	- If unset for web builds, the frontend falls back to the current browser origin; native (Capacitor) builds should instead set `VITE_CAPACITOR_API_BASE_URL`.
+
+- `VITE_CAPACITOR_API_BASE_URL`
+	- Base URL for the backend API when running the Capacitor native shell.
+	- Required for device/emulator builds because `localhost` points to the device itself.
+	- If unset, native builds fall back to platform defaults: Android emulator uses `http://10.0.2.2:3000`, iOS simulator uses `http://localhost:3000`.
+
+- `VITE_ANDROID_EMULATOR_API_BASE_URL`
+	- Override for the Android emulator API base when running in the Capacitor shell.
+
+- `VITE_IOS_SIMULATOR_API_BASE_URL`
+	- Override for the iOS simulator API base when running in the Capacitor shell.
 
 ## MinIO (S3 storage)
 
@@ -214,7 +226,8 @@ The mobile app wraps the `frontend/` Vite build with Capacitor. You will need Xc
    - `npm run cap:open:ios`
    - `npm run cap:open:android`
 
-Make sure `VITE_API_BASE_URL` points to a reachable backend URL from your device/emulator (not `localhost` on device). 
+Make sure `VITE_CAPACITOR_API_BASE_URL` points to a reachable backend URL from your device/emulator (not `localhost` on a physical device). Android emulators can reach the host at `http://10.0.2.2:3000` (default) and iOS simulators can use `http://localhost:3000` by default.
+For Docker-based builds, set `VITE_API_BASE_URL` in `docker-compose.yml`/`docker-compose.override.yml` (or in an `.env` passed to Docker Compose) so the web build targets the correct backend, and set `VITE_CAPACITOR_API_BASE_URL` (or the emulator-specific overrides) in your shell before running `npm run build`/`cap sync` for mobile builds.
 
 ## Repository notes
 

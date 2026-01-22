@@ -1,10 +1,43 @@
+import { Capacitor } from "@capacitor/core";
+
 type ApiErrorPayload = { error?: string };
 
 const DEFAULT_API_BASE = "http://localhost:3000";
+const ANDROID_EMULATOR_DEFAULT_BASE = "http://10.0.2.2:3000";
+const IOS_SIMULATOR_DEFAULT_BASE = "http://localhost:3000";
 
 export function getApiBaseUrl() {
-  const fromEnv = (import.meta as any).env?.VITE_API_BASE_URL;
-  return typeof fromEnv === "string" && fromEnv.trim() ? fromEnv.trim() : DEFAULT_API_BASE;
+  const env = (import.meta as any).env ?? {};
+  const webEnvBase = typeof env.VITE_API_BASE_URL === "string" ? env.VITE_API_BASE_URL.trim() : "";
+  const nativeEnvBase =
+    typeof env.VITE_CAPACITOR_API_BASE_URL === "string" ? env.VITE_CAPACITOR_API_BASE_URL.trim() : "";
+  const androidEmulatorBase =
+    typeof env.VITE_ANDROID_EMULATOR_API_BASE_URL === "string"
+      ? env.VITE_ANDROID_EMULATOR_API_BASE_URL.trim()
+      : "";
+  const iosSimulatorBase =
+    typeof env.VITE_IOS_SIMULATOR_API_BASE_URL === "string" ? env.VITE_IOS_SIMULATOR_API_BASE_URL.trim() : "";
+
+  const origin =
+    typeof window !== "undefined" && typeof window.location?.origin === "string"
+      ? window.location.origin
+      : "";
+
+  if (Capacitor.isNativePlatform()) {
+    if (nativeEnvBase) return nativeEnvBase;
+    const platform = Capacitor.getPlatform?.() ?? "web";
+    if (platform === "android") {
+      return androidEmulatorBase || ANDROID_EMULATOR_DEFAULT_BASE;
+    }
+    if (platform === "ios") {
+      return iosSimulatorBase || IOS_SIMULATOR_DEFAULT_BASE;
+    }
+    return DEFAULT_API_BASE;
+  }
+
+  if (webEnvBase) return webEnvBase;
+  if (origin.startsWith("http")) return origin;
+  return DEFAULT_API_BASE;
 }
 
 const TOKEN_KEY = "authToken";
