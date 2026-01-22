@@ -27,6 +27,13 @@ function adjustAndroidLoopback(value: string) {
   return stripTrailingSlash(value);
 }
 
+function logApiBase(message: string, details: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  if ((window as any).__surveyflowApiDebugLogged) return;
+  (window as any).__surveyflowApiDebugLogged = true;
+  console.info(`[SurveyFlow] ${message}`, details);
+}
+
 export function getApiBaseUrl() {
   const env = (import.meta as any).env ?? {};
   const webEnvBase = typeof env.VITE_API_BASE_URL === "string" ? env.VITE_API_BASE_URL.trim() : "";
@@ -48,12 +55,33 @@ export function getApiBaseUrl() {
     const platform = Capacitor.getPlatform?.() ?? "web";
     if (platform === "android") {
       const candidate = androidEmulatorBase || nativeEnvBase || ANDROID_EMULATOR_DEFAULT_BASE;
-      return adjustAndroidLoopback(candidate);
+      const resolved = adjustAndroidLoopback(candidate);
+      logApiBase("Resolved Android API base URL", {
+        platform,
+        androidEmulatorBase,
+        nativeEnvBase,
+        candidate,
+        resolved,
+      });
+      return resolved;
     }
     if (platform === "ios") {
-      return nativeEnvBase || iosSimulatorBase || IOS_SIMULATOR_DEFAULT_BASE;
+      const resolved = nativeEnvBase || iosSimulatorBase || IOS_SIMULATOR_DEFAULT_BASE;
+      logApiBase("Resolved iOS API base URL", {
+        platform,
+        iosSimulatorBase,
+        nativeEnvBase,
+        resolved,
+      });
+      return resolved;
     }
-    return nativeEnvBase || DEFAULT_API_BASE;
+    const resolved = nativeEnvBase || DEFAULT_API_BASE;
+    logApiBase("Resolved native API base URL", {
+      platform,
+      nativeEnvBase,
+      resolved,
+    });
+    return resolved;
   }
 
   if (webEnvBase) return webEnvBase;
