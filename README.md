@@ -124,11 +124,7 @@ Exact values are defined in `docker-compose.yml` for local usage.
 - `VITE_API_BASE_URL`
 	- Base URL for the backend API.
 	- When running behind nginx at `http://localhost`, this usually points to `http://localhost:3000`.
-	- If unset for web builds, the frontend falls back to the current browser origin; native (Capacitor) builds should instead set `VITE_CAPACITOR_API_BASE_URL`.
-
-- `VITE_CAPACITOR_API_BASE_URL`
-	- Base URL for the backend API when running the Capacitor native shell.
-	- Required for device/emulator builds because `localhost` points to the device itself.
+	- If unset for web builds, the frontend falls back to the current browser origin; native (Capacitor) builds must set this explicitly.
 
 ## MinIO (S3 storage)
 
