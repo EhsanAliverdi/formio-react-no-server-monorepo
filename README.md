@@ -129,7 +129,7 @@ Exact values are defined in `docker-compose.yml` for local usage.
 - `VITE_CAPACITOR_API_BASE_URL`
 	- Base URL for the backend API when running the Capacitor native shell.
 	- Required for device/emulator builds because `localhost` points to the device itself.
-	- If unset, native builds fall back to platform defaults: Android emulator uses `http://10.0.2.2:3000`, iOS simulator uses `http://localhost:3000`.
+	- If unset, native builds fall back to platform defaults: Android emulator uses `http://10.0.2.2:3000`, iOS simulator uses `http://localhost:3000`. When running on Android, `localhost`/`127.0.0.1` values are automatically rewritten to `10.0.2.2` for emulator compatibility.
 
 - `VITE_ANDROID_EMULATOR_API_BASE_URL`
 	- Override for the Android emulator API base when running in the Capacitor shell.

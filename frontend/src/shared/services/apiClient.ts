@@ -5,6 +5,34 @@ type ApiErrorPayload = { error?: string };
 const DEFAULT_API_BASE = "http://localhost:3000";
 const ANDROID_EMULATOR_DEFAULT_BASE = "http://10.0.2.2:3000";
 const IOS_SIMULATOR_DEFAULT_BASE = "http://localhost:3000";
+const ANDROID_EMULATOR_LOOPBACK_HOST = "10.0.2.2";
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1"]);
+
+function stripTrailingSlash(value: string) {
+  return value.endsWith("/") ? value.replace(/\/+$/, "") : value;
+}
+
+function adjustAndroidLoopback(value: string) {
+  if (!value) return value;
+  try {
+    const url = new URL(value);
+    if (LOOPBACK_HOSTS.has(url.hostname)) {
+      url.hostname = ANDROID_EMULATOR_LOOPBACK_HOST;
+      return stripTrailingSlash(url.toString());
+    }
+  } catch {
+    // ignore invalid URL inputs
+  }
+
+  return stripTrailingSlash(value);
+}
+
+function logApiBase(message: string, details: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  if ((window as any).__surveyflowApiDebugLogged) return;
+  (window as any).__surveyflowApiDebugLogged = true;
+  console.info(`[SurveyFlow] ${message}`, details);
+}
 
 export function getApiBaseUrl() {
   const env = (import.meta as any).env ?? {};
@@ -24,15 +52,36 @@ export function getApiBaseUrl() {
       : "";
 
   if (Capacitor.isNativePlatform()) {
-    if (nativeEnvBase) return nativeEnvBase;
     const platform = Capacitor.getPlatform?.() ?? "web";
     if (platform === "android") {
-      return androidEmulatorBase || ANDROID_EMULATOR_DEFAULT_BASE;
+      const candidate = androidEmulatorBase || nativeEnvBase || ANDROID_EMULATOR_DEFAULT_BASE;
+      const resolved = adjustAndroidLoopback(candidate);
+      logApiBase("Resolved Android API base URL", {
+        platform,
+        androidEmulatorBase,
+        nativeEnvBase,
+        candidate,
+        resolved,
+      });
+      return resolved;
     }
     if (platform === "ios") {
-      return iosSimulatorBase || IOS_SIMULATOR_DEFAULT_BASE;
+      const resolved = nativeEnvBase || iosSimulatorBase || IOS_SIMULATOR_DEFAULT_BASE;
+      logApiBase("Resolved iOS API base URL", {
+        platform,
+        iosSimulatorBase,
+        nativeEnvBase,
+        resolved,
+      });
+      return resolved;
     }
-    return DEFAULT_API_BASE;
+    const resolved = nativeEnvBase || DEFAULT_API_BASE;
+    logApiBase("Resolved native API base URL", {
+      platform,
+      nativeEnvBase,
+      resolved,
+    });
+    return resolved;
   }
 
   if (webEnvBase) return webEnvBase;
