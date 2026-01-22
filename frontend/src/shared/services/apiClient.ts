@@ -1,10 +1,22 @@
+import { Capacitor } from "@capacitor/core";
+
 type ApiErrorPayload = { error?: string };
 
 const DEFAULT_API_BASE = "http://localhost:3000";
 
 export function getApiBaseUrl() {
   const fromEnv = (import.meta as any).env?.VITE_API_BASE_URL;
-  return typeof fromEnv === "string" && fromEnv.trim() ? fromEnv.trim() : DEFAULT_API_BASE;
+  if (typeof fromEnv === "string" && fromEnv.trim()) {
+    return fromEnv.trim();
+  }
+
+  if (!Capacitor.isNativePlatform()) {
+    if (typeof window !== "undefined" && window.location?.origin) {
+      return window.location.origin;
+    }
+  }
+
+  return DEFAULT_API_BASE;
 }
 
 const TOKEN_KEY = "authToken";
