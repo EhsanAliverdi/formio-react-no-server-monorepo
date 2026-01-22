@@ -124,6 +124,7 @@ Exact values are defined in `docker-compose.yml` for local usage.
 - `VITE_API_BASE_URL`
 	- Base URL for the backend API.
 	- When running behind nginx at `http://localhost`, this usually points to `http://localhost:3000`.
+	- If unset for web builds, the frontend falls back to the current browser origin; native (Capacitor) builds must set this explicitly.
 
 ## MinIO (S3 storage)
 
@@ -215,6 +216,7 @@ The mobile app wraps the `frontend/` Vite build with Capacitor. You will need Xc
    - `npm run cap:open:android`
 
 Make sure `VITE_API_BASE_URL` points to a reachable backend URL from your device/emulator (not `localhost` on device). 
+For Docker-based builds, set `VITE_API_BASE_URL` in `docker-compose.yml`/`docker-compose.override.yml` or in an `.env` file passed to Docker Compose so the built web assets target the correct backend.
 
 ## Repository notes
 
