@@ -10,6 +10,14 @@ RUN apt-get update -y \
 	&& apt-get install -y --no-install-recommends openssl libssl1.1 ca-certificates \
 	&& rm -rf /var/lib/apt/lists/*
 
+# Optional: add corporate root CA certs for Docker builds.
+# Place one or more *.crt files in backend/certs/ and rebuild.
+COPY backend/certs/ /usr/local/share/ca-certificates/
+RUN update-ca-certificates || true
+
+# Ensure Node can use the system CA bundle (including any added certs).
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 # Handle TLS certificate issues in corporate environments
 ARG INSECURE_TLS=false
 
@@ -29,7 +37,11 @@ RUN if [ "$INSECURE_TLS" = "true" ]; then export NODE_TLS_REJECT_UNAUTHORIZED=0;
 # Development mode: source code is mounted via bind mount
 # We only copy the Prisma schema here to generate the client
 COPY backend/prisma ./prisma
-RUN npx prisma generate
+RUN if [ "$INSECURE_TLS" = "true" ]; then \
+		export NODE_TLS_REJECT_UNAUTHORIZED=0; \
+		export npm_config_strict_ssl=false; \
+	fi \
+	&& npx prisma generate
 
 # Expose dev server port
 EXPOSE 3000
