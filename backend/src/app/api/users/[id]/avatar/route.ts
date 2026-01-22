@@ -1,6 +1,7 @@
 import { corsHeaders, jsonResponse, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildUserAvatarKey, encodeKeyPath, uploadObject } from "@/lib/storage";
+import { getPublicOrigin } from "@/lib/urls";
 
 export const runtime = "nodejs";
 
@@ -10,21 +11,6 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 function isFile(x: unknown): x is File {
   return typeof File !== "undefined" && x instanceof File;
-}
-
-function getPublicOrigin(req: Request) {
-  const forwardedProto = req.headers.get("x-forwarded-proto");
-  const forwardedHost = req.headers.get("x-forwarded-host");
-  if (forwardedProto && forwardedHost) {
-    return `${forwardedProto}://${forwardedHost}`;
-  }
-
-  const host = req.headers.get("host");
-  if (host) {
-    return `http://${host}`;
-  }
-
-  return new URL(req.url).origin;
 }
 
 export async function OPTIONS() {

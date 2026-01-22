@@ -117,6 +117,10 @@ Common variables:
 - `MINIO_BUCKET`
 	- Bucket used for file uploads.
 
+- `PUBLIC_API_BASE_URL`
+	- Optional public base URL used by the backend when generating absolute upload URLs.
+	- Set this to the URL reachable from devices/emulators (ex: `http://10.0.2.2:3000`) so mobile clients can load images.
+
 Exact values are defined in `docker-compose.yml` for local usage.
 
 ### Frontend
