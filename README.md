@@ -47,19 +47,19 @@ This gives you:
 Development mode (with hot reload):
 
 ```bash
-docker compose up
+docker compose --env-file .env.development up
 ```
 
 Production mode (optimized builds):
 
 ```bash
-docker compose -f docker-compose.yml up --build
+docker compose --env-file .env.production -f docker-compose.yml up --build
 ```
 
 Stop containers:
 
 ```bash
-docker compose down
+docker compose --env-file .env.development down
 ```
 
 ## Seed the database (admin user + sample forms)
@@ -67,7 +67,7 @@ docker compose down
 Run the seed script inside the backend container:
 
 ```bash
-docker compose exec backend npm run seed
+docker compose --env-file .env.development exec backend npm run seed
 ```
 
 Default admin credentials (from seed):
@@ -93,7 +93,8 @@ All tasks run in the background except for the seed task, which will show output
 
 ## Environment configuration
 
-This repo expects environment variables to be supplied via Docker Compose or your shell.
+This repo expects environment variables to be supplied via Docker Compose or your shell. For convenience, you can use
+the root `.env.development` and `.env.production` files and pass them to Docker Compose via `--env-file`.
 
 ### Backend
 
@@ -116,6 +117,10 @@ Common variables:
 
 - `MINIO_BUCKET`
 	- Bucket used for file uploads.
+
+- `PUBLIC_API_BASE_URL`
+	- Optional public base URL used by the backend when generating absolute upload URLs.
+	- Set this to the URL reachable from devices/emulators (ex: `http://10.0.2.2:3000`) so mobile clients can load images.
 
 Exact values are defined in `docker-compose.yml` for local usage.
 

@@ -1,4 +1,4 @@
-import { apiFetch } from "./apiClient";
+import { apiFetch, normalizeUploadUrl } from "./apiClient";
 
 export type UserRow = {
   id: number;
@@ -55,6 +55,13 @@ export type UserProfileUpdate = Partial<{
   avatar_url: string;
 }>;
 
+function normalizeUser(user: UserRow): UserRow {
+  if (!user || typeof user !== "object") return user;
+  const avatar = typeof user.avatar_url === "string" ? normalizeUploadUrl(user.avatar_url) : user.avatar_url;
+  if (avatar === user.avatar_url) return user;
+  return { ...user, avatar_url: avatar };
+}
+
 export async function listUsers(opts?: {
   search?: string;
   roles?: Array<UserRow["role"]>;
@@ -70,7 +77,8 @@ export async function listUsers(opts?: {
 
   const qs = params.toString();
   const res = await apiFetch(`/api/users${qs ? `?${qs}` : ""}`);
-  return res.json();
+  const users = (await res.json()) as UserRow[];
+  return Array.isArray(users) ? users.map(normalizeUser) : users;
 }
 
 export async function createUser(
@@ -85,7 +93,8 @@ export async function createUser(
 
 export async function getUserById(id: number): Promise<UserRow> {
   const res = await apiFetch(`/api/users/${id}`);
-  return res.json();
+  const user = (await res.json()) as UserRow;
+  return normalizeUser(user);
 }
 
 export async function updateUser(
@@ -108,7 +117,8 @@ export async function deleteUser(id: number) {
 
 export async function getMyProfile(): Promise<UserRow> {
   const res = await apiFetch("/api/users/me");
-  return res.json();
+  const user = (await res.json()) as UserRow;
+  return normalizeUser(user);
 }
 
 export async function updateMyProfile(payload: UserProfileUpdate) {
@@ -127,7 +137,12 @@ export async function uploadMyAvatar(file: File): Promise<{ success: true; user:
     method: "POST",
     body: form,
   });
-  return res.json();
+  const payload = (await res.json()) as { success: true; user: UserRow; avatar_url: string };
+  return {
+    ...payload,
+    avatar_url: normalizeUploadUrl(payload.avatar_url),
+    user: normalizeUser(payload.user),
+  };
 }
 
 export async function uploadUserAvatar(
@@ -141,5 +156,10 @@ export async function uploadUserAvatar(
     method: "POST",
     body: form,
   });
-  return res.json();
+  const payload = (await res.json()) as { success: true; user: UserRow; avatar_url: string };
+  return {
+    ...payload,
+    avatar_url: normalizeUploadUrl(payload.avatar_url),
+    user: normalizeUser(payload.user),
+  };
 }

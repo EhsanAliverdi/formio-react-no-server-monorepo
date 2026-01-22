@@ -1,4 +1,4 @@
-import { apiFetch } from "./apiClient";
+import { apiFetch, normalizeUploadUrl } from "./apiClient";
 
 export type AdminActivityActor = {
   id: number;
@@ -30,5 +30,21 @@ export type AdminActivityResponse = {
 export async function getAdminActivity(limit: number = 10): Promise<AdminActivityResponse> {
   const sp = new URLSearchParams({ limit: String(limit) });
   const res = await apiFetch(`/api/admin/activity?${sp.toString()}`);
-  return res.json();
+  const payload = (await res.json()) as AdminActivityResponse;
+  if (Array.isArray(payload.items)) {
+    payload.items = payload.items.map((item) => {
+      if (!item.actor) return item;
+      const avatarUrl =
+        typeof item.actor.avatar_url === "string" ? normalizeUploadUrl(item.actor.avatar_url) : item.actor.avatar_url;
+      if (avatarUrl === item.actor.avatar_url) return item;
+      return {
+        ...item,
+        actor: {
+          ...item.actor,
+          avatar_url: avatarUrl,
+        },
+      };
+    });
+  }
+  return payload;
 }

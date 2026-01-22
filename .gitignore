@@ -6,6 +6,8 @@ _reference/
 # Environment files
 .env
 .env.*
+!.env.development
+!.env.production
 
 # Docker / local artifacts
 docker-pdf-test.pdf

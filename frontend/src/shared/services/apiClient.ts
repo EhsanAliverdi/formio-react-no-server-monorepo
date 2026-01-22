@@ -34,6 +34,63 @@ function logApiBase(message: string, details: Record<string, unknown>) {
   console.info(`[SurveyFlow] ${message}`, details);
 }
 
+function normalizeBase(value: string) {
+  return value.replace(/\/+$/, "");
+}
+
+export function normalizeUploadUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+
+  const base = normalizeBase(getApiBaseUrl());
+  if (!base) return value;
+
+  if (trimmed.startsWith("/api/uploads/")) {
+    return `${base}${trimmed}`;
+  }
+
+  if (!trimmed.startsWith("http")) return value;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (!parsed.pathname.startsWith("/api/uploads/")) return value;
+    if (!LOOPBACK_HOSTS.has(parsed.hostname)) return value;
+    const baseUrl = new URL(base);
+    return `${baseUrl.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return value;
+  }
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object") return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+export function normalizeUploadUrlsDeep<T>(value: T, seen = new WeakSet<object>()): T {
+  if (typeof value === "string") {
+    return normalizeUploadUrl(value) as T;
+  }
+
+  if (!value || typeof value !== "object") return value;
+
+  if (seen.has(value as object)) return value;
+  seen.add(value as object);
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeUploadUrlsDeep(item, seen)) as T;
+  }
+
+  if (!isPlainObject(value)) return value;
+
+  const out: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    out[key] = normalizeUploadUrlsDeep(item, seen);
+  }
+  return out as T;
+}
+
 export function getApiBaseUrl() {
   const env = (import.meta as any).env ?? {};
   const webEnvBase = typeof env.VITE_API_BASE_URL === "string" ? env.VITE_API_BASE_URL.trim() : "";

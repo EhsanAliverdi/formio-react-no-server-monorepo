@@ -58,6 +58,9 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-minioadmin}}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-minioadmin}}
 
+      # Public base URL for generating upload links (use emulator-reachable host when needed)
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-}
+
       # Version metadata for /api/version
       APP_VERSION: ${BACKEND_APP_VERSION:-}
       BUILD_TIME: ${BUILD_TIME:-}

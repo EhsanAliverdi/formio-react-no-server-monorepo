@@ -1,4 +1,4 @@
-import { apiFetch, clearAuthToken, setAuthToken } from "./apiClient";
+import { apiFetch, clearAuthToken, normalizeUploadUrl, setAuthToken } from "./apiClient";
 
 export type AuthUser = {
   id: number;
@@ -19,7 +19,9 @@ export async function login(email: string, password: string): Promise<AuthUser> 
 
   const payload = (await res.json()) as { token: string; user: AuthUser };
   setAuthToken(payload.token);
-  return payload.user;
+  const avatarUrl =
+    typeof payload.user.avatar_url === "string" ? normalizeUploadUrl(payload.user.avatar_url) : payload.user.avatar_url;
+  return { ...payload.user, avatar_url: avatarUrl };
 }
 
 export async function logout(): Promise<void> {
@@ -33,5 +35,7 @@ export async function logout(): Promise<void> {
 export async function me(): Promise<AuthUser> {
   const res = await apiFetch("/api/auth/me");
   const payload = (await res.json()) as { user: AuthUser };
-  return payload.user;
+  const avatarUrl =
+    typeof payload.user.avatar_url === "string" ? normalizeUploadUrl(payload.user.avatar_url) : payload.user.avatar_url;
+  return { ...payload.user, avatar_url: avatarUrl };
 }
