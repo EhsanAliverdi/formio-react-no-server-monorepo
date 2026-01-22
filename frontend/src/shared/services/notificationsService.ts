@@ -1,4 +1,4 @@
-import { apiFetch } from "./apiClient";
+import { apiFetch, normalizeUploadUrl } from "./apiClient";
 
 export type NotificationLevel = "low" | "normal" | "high" | "critical";
 
@@ -30,7 +30,15 @@ export async function getMyNotifications(opts?: { unreadOnly?: boolean; limit?: 
 
   const qs = params.toString();
   const res = await apiFetch(`/api/notifications${qs ? `?${qs}` : ""}`);
-  return (await res.json()) as MyNotificationsResponse;
+  const payload = (await res.json()) as MyNotificationsResponse;
+  if (Array.isArray(payload.items)) {
+    payload.items = payload.items.map((item) => ({
+      ...item,
+      created_by_avatar_url:
+        typeof item.created_by_avatar_url === "string" ? normalizeUploadUrl(item.created_by_avatar_url) : item.created_by_avatar_url,
+    }));
+  }
+  return payload;
 }
 
 export async function markNotificationRead(notificationId: number) {
@@ -60,7 +68,15 @@ export async function listAdminNotifications(opts?: { limit?: number; offset?: n
   const qs = params.toString();
 
   const res = await apiFetch(`/api/admin/notifications${qs ? `?${qs}` : ""}`);
-  return res.json() as Promise<{ items: AdminNotificationListItem[]; limit: number; offset: number }>;
+  const payload = (await res.json()) as { items: AdminNotificationListItem[]; limit: number; offset: number };
+  if (Array.isArray(payload.items)) {
+    payload.items = payload.items.map((item) => ({
+      ...item,
+      created_by_avatar_url:
+        typeof item.created_by_avatar_url === "string" ? normalizeUploadUrl(item.created_by_avatar_url) : item.created_by_avatar_url,
+    }));
+  }
+  return payload;
 }
 
 export async function createAdminNotification(payload: {

@@ -10,10 +10,10 @@ Development mode uses hot reload for both frontend and backend. Code changes are
 
 ```bash
 # Start everything in development mode
-docker compose up
+docker compose --env-file .env.development up
 
 # Or with detached mode
-docker compose up -d
+docker compose --env-file .env.development up -d
 ```
 
 ### What Happens in Dev Mode
@@ -59,10 +59,10 @@ Production mode builds optimized, immutable Docker images suitable for deploymen
 
 ```bash
 # Build production images
-docker compose -f docker-compose.yml build
+docker compose --env-file .env.production -f docker-compose.yml build
 
 # Or start production containers
-docker compose -f docker-compose.yml up
+docker compose --env-file .env.production -f docker-compose.yml up
 ```
 
 ### What Happens in Prod Mode
@@ -133,9 +133,9 @@ docker compose up -d
 - Postgres: localhost:5432
 - MinIO: localhost:9002, console at 9003
 
-**Production (without override, using .env.prod):**
+**Production (without override, using .env.production):**
 ```bash
-docker compose -p surveyflow-prod --env-file .env.prod -f docker-compose.yml up -d
+docker compose -p surveyflow-prod --env-file .env.production -f docker-compose.yml up -d
 ```
 - Project: `surveyflow-prod`  
 - Containers: `surveyflow-*-prod`
@@ -152,7 +152,7 @@ Both environments use separate Docker Compose projects, containers, and ports, s
 
 ### Hot Reload Not Working on Windows/WSL?
 
-Enable polling in `.env`:
+Enable polling in `.env.development`:
 
 ```env
 CHOKIDAR_USEPOLLING=true
@@ -167,12 +167,22 @@ docker compose restart frontend backend
 
 ### Port Conflicts
 
-If ports 3000 or 5173 are already in use, override them in `.env`:
+If ports 3000 or 5173 are already in use, override them in `.env.development`:
 
 ```env
 FRONTEND_PORT=5174
 BACKEND_PORT=3001
 ```
+
+### Android Emulator Image URLs
+
+If images load from `http://localhost:3000` inside the Android emulator, set the backend public base URL in `.env.development`:
+
+```env
+PUBLIC_API_BASE_URL=http://10.0.2.2:3000
+```
+
+Then restart the backend container.
 
 ### Node Modules Conflicts
 
@@ -205,19 +215,19 @@ Or restart the backend (it runs `prisma generate` on startup in dev mode).
 
 ```bash
 # Development mode (default)
-docker compose up                    # Start dev servers
-docker compose up -d                 # Start in background
-docker compose logs -f backend       # View backend logs
-docker compose logs -f frontend      # View frontend logs
-docker compose restart backend       # Restart backend only
-docker compose down                  # Stop all containers
+docker compose --env-file .env.development up                    # Start dev servers
+docker compose --env-file .env.development up -d                 # Start in background
+docker compose --env-file .env.development logs -f backend       # View backend logs
+docker compose --env-file .env.development logs -f frontend      # View frontend logs
+docker compose --env-file .env.development restart backend       # Restart backend only
+docker compose --env-file .env.development down                  # Stop all containers
 
 # Production mode
-docker compose -f docker-compose.yml up --build
+docker compose --env-file .env.production -f docker-compose.yml up --build
 
 # Database operations
-docker compose exec backend npx prisma db push
-docker compose exec backend npm run seed
+docker compose --env-file .env.development exec backend npx prisma db push
+docker compose --env-file .env.development exec backend npm run seed
 
 # Clean up
 docker compose down -v              # Stop and remove volumes

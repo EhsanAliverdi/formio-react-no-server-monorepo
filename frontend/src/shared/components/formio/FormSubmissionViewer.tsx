@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Formio } from "formiojs";
+import { normalizeUploadUrlsDeep } from "../../services/apiClient";
 import { installImageUploadComponent } from "./components/installImageUploadComponent";
 
 type Props = {
@@ -82,7 +83,7 @@ export default function FormSubmissionViewer({ form, data }: Props) {
     Formio.createForm(containerRef.current, schemaForView as any, { readOnly: true }).then((formInstance: any) => {
       instance = formInstance;
 
-      const submission = { data: isObject(data) ? data : {} };
+      const submission = { data: normalizeUploadUrlsDeep(isObject(data) ? data : {}) };
       if (typeof formInstance.setSubmission === "function") {
         formInstance.setSubmission(submission);
       } else {
