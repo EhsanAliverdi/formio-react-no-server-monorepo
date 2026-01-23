@@ -236,65 +236,6 @@
       ],
       "isBackground": false,
       "problemMatcher": []
-    },
-    // Mobile (Capacitor) Tasks
-    {
-      "label": "Mobile: Build Frontend (Capacitor)",
-      "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "build"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/frontend"
-      },
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Mobile: Capacitor Sync",
-      "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "cap:sync"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/frontend"
-      },
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Mobile: Run Android (Capacitor)",
-      "type": "shell",
-      "command": "npx",
-      "args": [
-        "cap",
-        "run",
-        "android"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/frontend"
-      },
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Mobile: Run iOS (Capacitor)",
-      "type": "shell",
-      "command": "npx",
-      "args": [
-        "cap",
-        "run",
-        "ios"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/frontend"
-      },
-      "isBackground": false,
-      "problemMatcher": []
     }
   ]
 }
