@@ -43,6 +43,8 @@ services:
       NEXT_TELEMETRY_DISABLED: 1
       # Remove WASM binding override in dev mode - let Next.js use native bindings
       NEXT_TEST_WASM: ""
+      # Public base URL for mobile access
+      PUBLIC_API_BASE_URL: http://192.168.240.1:3000
     command: sh -c "npx prisma generate && npm run dev -- -H 0.0.0.0 -p 3000"
 
   frontend:

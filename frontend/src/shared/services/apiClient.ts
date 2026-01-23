@@ -1,28 +1,9 @@
 type ApiErrorPayload = { error?: string };
 
 const DEFAULT_API_BASE = "http://localhost:3000";
-const ANDROID_EMULATOR_DEFAULT_BASE = "http://10.0.2.2:3000";
-const IOS_SIMULATOR_DEFAULT_BASE = "http://localhost:3000";
-const ANDROID_EMULATOR_LOOPBACK_HOST = "10.0.2.2";
-const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 function stripTrailingSlash(value: string) {
   return value.endsWith("/") ? value.replace(/\/+$/, "") : value;
-}
-
-function adjustAndroidLoopback(value: string) {
-  if (!value) return value;
-  try {
-    const url = new URL(value);
-    if (LOOPBACK_HOSTS.has(url.hostname)) {
-      url.hostname = ANDROID_EMULATOR_LOOPBACK_HOST;
-      return stripTrailingSlash(url.toString());
-    }
-  } catch {
-    // ignore invalid URL inputs
-  }
-
-  return stripTrailingSlash(value);
 }
 
 function logApiBase(message: string, details: Record<string, unknown>) {
@@ -34,19 +15,6 @@ function logApiBase(message: string, details: Record<string, unknown>) {
 
 function normalizeBase(value: string) {
   return value.replace(/\/+$/, "");
-}
-
-type CapacitorLike = {
-  isNativePlatform?: () => boolean;
-  getPlatform?: () => string;
-};
-
-function getCapacitor(): CapacitorLike | null {
-  if (typeof window === "undefined") return null;
-  const candidate = (window as any).Capacitor as CapacitorLike | undefined;
-  if (!candidate) return null;
-  if (typeof candidate !== "object" && typeof candidate !== "function") return null;
-  return candidate;
 }
 
 export function normalizeUploadUrl(value: string) {
@@ -65,7 +33,6 @@ export function normalizeUploadUrl(value: string) {
   try {
     const parsed = new URL(trimmed);
     if (!parsed.pathname.startsWith("/api/uploads/")) return value;
-    if (!LOOPBACK_HOSTS.has(parsed.hostname)) return value;
     const baseUrl = new URL(base);
     return `${baseUrl.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
@@ -105,57 +72,7 @@ export function normalizeUploadUrlsDeep<T>(value: T, seen = new WeakSet<object>(
 export function getApiBaseUrl() {
   const env = (import.meta as any).env ?? {};
   const webEnvBase = typeof env.VITE_API_BASE_URL === "string" ? env.VITE_API_BASE_URL.trim() : "";
-  const nativeEnvBase =
-    typeof env.VITE_CAPACITOR_API_BASE_URL === "string" ? env.VITE_CAPACITOR_API_BASE_URL.trim() : "";
-  const androidEmulatorBase =
-    typeof env.VITE_ANDROID_EMULATOR_API_BASE_URL === "string"
-      ? env.VITE_ANDROID_EMULATOR_API_BASE_URL.trim()
-      : "";
-  const iosSimulatorBase =
-    typeof env.VITE_IOS_SIMULATOR_API_BASE_URL === "string" ? env.VITE_IOS_SIMULATOR_API_BASE_URL.trim() : "";
-
-  const origin =
-    typeof window !== "undefined" && typeof window.location?.origin === "string"
-      ? window.location.origin
-      : "";
-
-  const capacitor = getCapacitor();
-  if (capacitor?.isNativePlatform?.()) {
-    const platform = capacitor.getPlatform?.() ?? "web";
-    if (platform === "android") {
-      const candidate = androidEmulatorBase || nativeEnvBase || ANDROID_EMULATOR_DEFAULT_BASE;
-      const resolved = adjustAndroidLoopback(candidate);
-      logApiBase("Resolved Android API base URL", {
-        platform,
-        androidEmulatorBase,
-        nativeEnvBase,
-        candidate,
-        resolved,
-      });
-      return resolved;
-    }
-    if (platform === "ios") {
-      const resolved = nativeEnvBase || iosSimulatorBase || IOS_SIMULATOR_DEFAULT_BASE;
-      logApiBase("Resolved iOS API base URL", {
-        platform,
-        iosSimulatorBase,
-        nativeEnvBase,
-        resolved,
-      });
-      return resolved;
-    }
-    const resolved = nativeEnvBase || DEFAULT_API_BASE;
-    logApiBase("Resolved native API base URL", {
-      platform,
-      nativeEnvBase,
-      resolved,
-    });
-    return resolved;
-  }
-
-  if (webEnvBase) return webEnvBase;
-  if (origin.startsWith("http")) return origin;
-  return DEFAULT_API_BASE;
+  return webEnvBase || DEFAULT_API_BASE;
 }
 
 const TOKEN_KEY = "authToken";
