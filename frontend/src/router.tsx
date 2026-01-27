@@ -16,11 +16,29 @@ import AdminSubmissionsPage from "./admin/pages/AdminSubmissionsPage";
 import AdminNotificationsPage from "./admin/pages/AdminNotificationsPage";
 import AdminSettingsPage from "./admin/pages/AdminSettingsPage";
 import AdminMexMaintenancePage from "./admin/pages/AdminMexMaintenancePage";
+import AdminMexMaintenanceSdkPage from "./admin/pages/AdminMexMaintenanceSdkPage";
 import AdminMexSettingsPage from "./admin/pages/AdminMexSettingsPage";
-import AdminMexWorkOrdersPage from "./admin/pages/AdminMexWorkOrdersPage";
-import AdminMexEmployeesPage from "./admin/pages/AdminMexEmployeesPage";
-import AdminMexWorkManagementPage from "./admin/pages/AdminMexWorkManagementPage";
-import AdminMexOrganizationPeoplePage from "./admin/pages/AdminMexOrganizationPeoplePage";
+import MexMaintenanceOverview from "./shared/components/mex-maintenance/ui/MexMaintenanceOverview";
+import MexMaintenanceMaintenance from "./shared/components/mex-maintenance/ui/MexMaintenanceMaintenance";
+import MexMaintenanceWorkOrders from "./shared/components/mex-maintenance/ui/MexMaintenanceWorkOrders";
+import MexMaintenanceRequests from "./shared/components/mex-maintenance/ui/MexMaintenanceRequests";
+import MexMaintenanceStandardJobs from "./shared/components/mex-maintenance/ui/MexMaintenanceStandardJobs";
+import MexMaintenanceAssetsInventory from "./shared/components/mex-maintenance/ui/MexMaintenanceAssetsInventory";
+import MexMaintenanceAssets from "./shared/components/mex-maintenance/ui/MexMaintenanceAssets";
+import MexMaintenanceCatalogue from "./shared/components/mex-maintenance/ui/MexMaintenanceCatalogue";
+import MexMaintenanceGoodsReceipts from "./shared/components/mex-maintenance/ui/MexMaintenanceGoodsReceipts";
+import MexMaintenanceProcurement from "./shared/components/mex-maintenance/ui/MexMaintenanceProcurement";
+import MexMaintenancePurchaseOrders from "./shared/components/mex-maintenance/ui/MexMaintenancePurchaseOrders";
+import MexMaintenanceRequisitions from "./shared/components/mex-maintenance/ui/MexMaintenanceRequisitions";
+import MexMaintenanceSupplierInvoices from "./shared/components/mex-maintenance/ui/MexMaintenanceSupplierInvoices";
+import MexMaintenancePeople from "./shared/components/mex-maintenance/ui/MexMaintenancePeople";
+import MexMaintenanceEmployees from "./shared/components/mex-maintenance/ui/MexMaintenanceEmployees";
+import MexMaintenanceSuppliers from "./shared/components/mex-maintenance/ui/MexMaintenanceSuppliers";
+import MexMaintenanceAdministration from "./shared/components/mex-maintenance/ui/MexMaintenanceAdministration";
+import MexMaintenanceAdministrationDetail from "./shared/components/mex-maintenance/ui/MexMaintenanceAdministrationDetail";
+import MexMaintenanceReports from "./shared/components/mex-maintenance/ui/MexMaintenanceReports";
+import MexMaintenanceReportsDetail from "./shared/components/mex-maintenance/ui/MexMaintenanceReportsDetail";
+import MexMaintenanceSdkHelp from "./shared/components/mex-maintenance/ui/MexMaintenanceSdkHelp";
 import SignIn from "./template/tailAdmin/pages/AuthPages/SignIn";
 import { ThemeProvider } from "./template/tailAdmin/context/ThemeContext";
 import NotificationsPage from "./public/pages/NotificationsPage";
@@ -62,13 +80,40 @@ const router = createBrowserRouter([
       { path: 'users', element: <AdminUsersPage /> },
       { path: 'notifications', element: <AdminNotificationsPage /> },
       { path: 'settings', element: <AdminSettingsPage /> },
-      { path: 'mex', element: <AdminMexMaintenancePage /> },
-      { path: 'mex/work-orders', element: <AdminMexWorkOrdersPage /> },
-      { path: 'mex/work-management', element: <AdminMexWorkManagementPage /> },
-      { path: 'mex/employees', element: <AdminMexEmployeesPage /> },
-      { path: 'mex/organization-people', element: <AdminMexOrganizationPeoplePage /> },
-      { path: 'mex/settings', element: <AdminMexSettingsPage /> },
-      { path: 'mex/:moduleId', element: <AdminMexMaintenancePage /> },
+      {
+        path: 'mex',
+        element: <AdminMexMaintenancePage />,
+        children: [
+          { index: true, element: <Navigate to="/admin/mex/overview" replace /> },
+          {
+            path: 'overview',
+            element: <MexMaintenanceOverview basePath="/admin/mex" settingsPath="/admin/mex/settings" />,
+          },
+          { path: 'maintenance', element: <MexMaintenanceMaintenance basePath="/admin/mex" /> },
+          { path: 'maintenance/work-orders', element: <MexMaintenanceWorkOrders /> },
+          { path: 'maintenance/requests', element: <MexMaintenanceRequests /> },
+          { path: 'maintenance/standard-jobs', element: <MexMaintenanceStandardJobs /> },
+          { path: 'assets-inventory', element: <MexMaintenanceAssetsInventory basePath="/admin/mex" /> },
+          { path: 'assets-inventory/assets', element: <MexMaintenanceAssets /> },
+          { path: 'assets-inventory/catalogue', element: <MexMaintenanceCatalogue /> },
+          { path: 'assets-inventory/goods-receipts', element: <MexMaintenanceGoodsReceipts /> },
+          { path: 'procurement', element: <MexMaintenanceProcurement basePath="/admin/mex" /> },
+          { path: 'procurement/purchase-orders', element: <MexMaintenancePurchaseOrders /> },
+          { path: 'procurement/requisitions', element: <MexMaintenanceRequisitions /> },
+          { path: 'procurement/supplier-invoices', element: <MexMaintenanceSupplierInvoices /> },
+          { path: 'people', element: <MexMaintenancePeople basePath="/admin/mex" /> },
+          { path: 'people/employees', element: <MexMaintenanceEmployees /> },
+          { path: 'people/suppliers', element: <MexMaintenanceSuppliers /> },
+          { path: 'administration', element: <MexMaintenanceAdministration basePath="/admin/mex" /> },
+          { path: 'administration/:section', element: <MexMaintenanceAdministrationDetail /> },
+          { path: 'reports', element: <MexMaintenanceReports basePath="/admin/mex" /> },
+          { path: 'reports/:reportId', element: <MexMaintenanceReportsDetail /> },
+          { path: 'sdk-help', element: <MexMaintenanceSdkHelp basePath="/admin/mex" /> },
+          { path: 'sdk-help/:moduleId', element: <AdminMexMaintenanceSdkPage /> },
+          { path: 'settings', element: <AdminMexSettingsPage /> },
+          { path: ':moduleId', element: <AdminMexMaintenanceSdkPage /> },
+        ],
+      },
       { path: 'profile', element: <AdminProfilePage /> },
     ],
   },

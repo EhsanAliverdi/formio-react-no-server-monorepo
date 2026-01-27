@@ -281,16 +281,6 @@ export default function MexMaintenanceSettingsForm() {
           </div>
         )}
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Button variant="outline" onClick={handleSave}>
-            Save settings
-          </Button>
-          {savedAt && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Saved {savedAt}
-            </span>
-          )}
-        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
@@ -311,6 +301,29 @@ export default function MexMaintenanceSettingsForm() {
               }))
             }
           />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
+              Save configuration
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Persist authentication, base URL, and navigation preferences.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" onClick={handleSave}>
+              Save settings
+            </Button>
+            {savedAt && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Saved {savedAt}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

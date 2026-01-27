@@ -3,56 +3,56 @@ import Button from "../../../../template/tailAdmin/components/ui/button/Button";
 import Input from "../../../../template/tailAdmin/components/form/input/InputField";
 import Label from "../../../../template/tailAdmin/components/form/Label";
 import MexMaintenanceDrawer from "./MexMaintenanceDrawer";
-import type { EmployeeDTO } from "../services/modules/employee";
+import type { SupplierDTO } from "../services/modules/supplier";
 import { useMexMaintenanceServices } from "./mexMaintenanceServices";
 
-const emptyEmployee: EmployeeDTO = {
-  employeeNumber: "",
-  firstName: "",
-  lastName: "",
-  fullName: "",
-  email: "",
+const emptySupplier: SupplierDTO = {
+  supplierCode: "",
+  supplierName: "",
+  companyName: "",
+  contactName: "",
   phone: "",
+  email: "",
   isActive: true,
 };
 
-export default function MexMaintenanceEmployees() {
+export default function MexMaintenanceSuppliers() {
   const { isReady, config, services } = useMexMaintenanceServices();
-  const [employees, setEmployees] = useState<EmployeeDTO[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierDTO[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
-  const [formState, setFormState] = useState<EmployeeDTO>(emptyEmployee);
+  const [formState, setFormState] = useState<SupplierDTO>(emptySupplier);
   const [actionedByContactId, setActionedByContactId] = useState("");
-  const [employeeId, setEmployeeId] = useState("");
+  const [supplierId, setSupplierId] = useState("");
 
-  const loadEmployees = async () => {
+  const loadSuppliers = async () => {
     if (!services) return;
-    const result = await services.employees.getAll();
+    const result = await services.suppliers.getAll();
     if (!result.ok) {
       setError(result.error.message);
       return;
     }
-    setEmployees(result.value ?? []);
+    setSuppliers(result.value ?? []);
   };
 
   useEffect(() => {
     if (!isReady || !services) return;
     setError(null);
-    void loadEmployees();
+    void loadSuppliers();
   }, [isReady, services]);
 
   const openCreate = () => {
     setMode("create");
-    setFormState(emptyEmployee);
-    setEmployeeId("");
+    setFormState(emptySupplier);
+    setSupplierId("");
     setDrawerOpen(true);
   };
 
-  const openEdit = (employee: EmployeeDTO) => {
+  const openEdit = (supplier: SupplierDTO) => {
     setMode("edit");
-    setFormState(employee);
-    setEmployeeId(String(employee.employeeId ?? ""));
+    setFormState(supplier);
+    setSupplierId(String(supplier.supplierId ?? ""));
     setDrawerOpen(true);
   };
 
@@ -68,23 +68,18 @@ export default function MexMaintenanceEmployees() {
       return;
     }
 
-    const payload: EmployeeDTO = {
-      ...formState,
-      fullName: formState.fullName || `${formState.firstName ?? ""} ${formState.lastName ?? ""}`.trim(),
-    };
-
     if (mode === "create") {
-      const result = await services.employees.create(actionedId, payload);
+      const result = await services.suppliers.create(actionedId, formState);
       if (!result.ok) {
         setError(result.error.message);
         return;
       }
     } else {
-      if (!employeeId.trim()) {
-        setError("Employee ID is required for updates.");
+      if (!supplierId.trim()) {
+        setError("Supplier ID is required for updates.");
         return;
       }
-      const result = await services.employees.update(Number(employeeId), actionedId, payload);
+      const result = await services.suppliers.update(Number(supplierId), actionedId, formState);
       if (!result.ok) {
         setError(result.error.message);
         return;
@@ -92,7 +87,7 @@ export default function MexMaintenanceEmployees() {
     }
 
     setDrawerOpen(false);
-    await loadEmployees();
+    await loadSuppliers();
   };
 
   if (!isReady) {
@@ -107,13 +102,13 @@ export default function MexMaintenanceEmployees() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Employees</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Suppliers</h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Maintain employee records, trades, and department assignments.
+            Manage supplier profiles and primary contacts.
           </p>
         </div>
         <Button size="sm" onClick={openCreate}>
-          Add Employee
+          Add Supplier
         </Button>
       </div>
 
@@ -127,34 +122,31 @@ export default function MexMaintenanceEmployees() {
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-gray-800/40 dark:text-gray-400">
             <tr>
-              <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-left">Trade</th>
-              <th className="px-4 py-3 text-left">Department</th>
+              <th className="px-4 py-3 text-left">Supplier Code</th>
+              <th className="px-4 py-3 text-left">Company Name</th>
+              <th className="px-4 py-3 text-left">Contact</th>
               <th className="px-4 py-3 text-left">Active</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {employees.map((employee) => (
+            {suppliers.map((supplier) => (
               <tr
-                key={employee.employeeId ?? employee.employeeNumber}
+                key={supplier.supplierId ?? supplier.supplierCode}
                 className="cursor-pointer text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-900/50"
-                onClick={() => openEdit(employee)}
+                onClick={() => openEdit(supplier)}
               >
                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-white/90">
-                  {(employee.fullName ??
-                    `${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim()) ||
-                    employee.employeeNumber ||
-                    "—"}
+                  {supplier.supplierCode ?? "—"}
                 </td>
-                <td className="px-4 py-3">—</td>
-                <td className="px-4 py-3">—</td>
-                <td className="px-4 py-3">{employee.isActive ? "Yes" : "No"}</td>
+                <td className="px-4 py-3">{supplier.companyName ?? supplier.supplierName ?? "—"}</td>
+                <td className="px-4 py-3">{supplier.contactName ?? "—"}</td>
+                <td className="px-4 py-3">{supplier.isActive ? "Yes" : "No"}</td>
               </tr>
             ))}
-            {employees.length === 0 && (
+            {suppliers.length === 0 && (
               <tr>
                 <td className="px-4 py-6 text-center text-gray-500" colSpan={4}>
-                  No employees returned from the SDK.
+                  No suppliers returned from the SDK.
                 </td>
               </tr>
             )}
@@ -164,7 +156,7 @@ export default function MexMaintenanceEmployees() {
 
       <MexMaintenanceDrawer
         isOpen={drawerOpen}
-        title={mode === "create" ? "Add employee" : "Edit employee"}
+        title={mode === "create" ? "Add supplier" : "Edit supplier"}
         onClose={() => setDrawerOpen(false)}
         footer={
           <div className="flex items-center justify-end gap-3">
@@ -188,29 +180,29 @@ export default function MexMaintenanceEmployees() {
           </div>
           {mode === "edit" && (
             <div>
-              <Label>Employee ID</Label>
-              <Input value={employeeId} onChange={(event) => setEmployeeId(event.target.value)} />
+              <Label>Supplier ID</Label>
+              <Input value={supplierId} onChange={(event) => setSupplierId(event.target.value)} />
             </div>
           )}
           <div>
-            <Label>First Name</Label>
+            <Label>Supplier Code</Label>
             <Input
-              value={formState.firstName ?? ""}
-              onChange={(event) => setFormState((prev) => ({ ...prev, firstName: event.target.value }))}
+              value={formState.supplierCode ?? ""}
+              onChange={(event) => setFormState((prev) => ({ ...prev, supplierCode: event.target.value }))}
             />
           </div>
           <div>
-            <Label>Last Name</Label>
+            <Label>Company Name</Label>
             <Input
-              value={formState.lastName ?? ""}
-              onChange={(event) => setFormState((prev) => ({ ...prev, lastName: event.target.value }))}
+              value={formState.companyName ?? ""}
+              onChange={(event) => setFormState((prev) => ({ ...prev, companyName: event.target.value }))}
             />
           </div>
           <div>
-            <Label>Email</Label>
+            <Label>Contact Name</Label>
             <Input
-              value={formState.email ?? ""}
-              onChange={(event) => setFormState((prev) => ({ ...prev, email: event.target.value }))}
+              value={formState.contactName ?? ""}
+              onChange={(event) => setFormState((prev) => ({ ...prev, contactName: event.target.value }))}
             />
           </div>
           <div>
@@ -218,6 +210,13 @@ export default function MexMaintenanceEmployees() {
             <Input
               value={formState.phone ?? ""}
               onChange={(event) => setFormState((prev) => ({ ...prev, phone: event.target.value }))}
+            />
+          </div>
+          <div>
+            <Label>Email</Label>
+            <Input
+              value={formState.email ?? ""}
+              onChange={(event) => setFormState((prev) => ({ ...prev, email: event.target.value }))}
             />
           </div>
           <div>
