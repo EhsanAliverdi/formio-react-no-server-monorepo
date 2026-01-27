@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { getMexMaintenanceSubmenus } from "./mexMaintenanceSubnav";
+import { useMexMaintenanceConfig } from "./useMexMaintenanceConfig";
 
 interface MexMaintenanceLayoutProps {
   basePath: string;
@@ -14,6 +15,7 @@ const linkClass = (isActive: boolean) =>
 
 export default function MexMaintenanceLayout({ basePath }: MexMaintenanceLayoutProps) {
   const submenus = getMexMaintenanceSubmenus(basePath);
+  const { config } = useMexMaintenanceConfig();
 
   return (
     <div className="w-full space-y-6">
@@ -34,12 +36,14 @@ export default function MexMaintenanceLayout({ basePath }: MexMaintenanceLayoutP
             >
               Settings
             </NavLink>
-            <NavLink
-              to={`${basePath}/sdk-help`}
-              className={({ isActive }) => linkClass(isActive)}
-            >
-              SDK Help
-            </NavLink>
+            {(config.showSdkHelp ?? true) && (
+              <NavLink
+                to={`${basePath}/sdk-help`}
+                className={({ isActive }) => linkClass(isActive)}
+              >
+                SDK Help
+              </NavLink>
+            )}
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-3">

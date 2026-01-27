@@ -288,11 +288,11 @@ export default function MexMaintenanceSettingsForm() {
           Navigation preferences
         </h2>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          Control whether SDK Help endpoints appear in the MEX Maintenance submenu.
+          Choose whether the SDK Help menu appears in the MEX Maintenance navigation.
         </p>
         <div className="mt-4">
           <Switch
-            label="Show SDK Help in navigation"
+            label="Show SDK Help menu"
             checked={config.showSdkHelp ?? true}
             onChange={(checked) =>
               setConfig((prev) => ({
