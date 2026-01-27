@@ -2,6 +2,7 @@ import type { MexAuthConfig, MexConfig } from "../core/config";
 import type { MexEnvironment } from "../core/config/MexEnvironment";
 
 const STORAGE_KEY = "mexMaintenance.config";
+const CONFIG_EVENT = "mex-maintenance-config-changed";
 
 const defaultAuthConfig: MexAuthConfig = {
   type: "apiKey",
@@ -61,4 +62,11 @@ export const loadMexConfig = (): MexConfig => {
 export const saveMexConfig = (config: MexConfig) => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  window.dispatchEvent(new Event(CONFIG_EVENT));
+};
+
+export const onMexConfigChanged = (handler: () => void) => {
+  if (typeof window === "undefined") return () => undefined;
+  window.addEventListener(CONFIG_EVENT, handler);
+  return () => window.removeEventListener(CONFIG_EVENT, handler);
 };

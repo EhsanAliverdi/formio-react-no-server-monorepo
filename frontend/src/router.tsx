@@ -17,6 +17,8 @@ import AdminNotificationsPage from "./admin/pages/AdminNotificationsPage";
 import AdminSettingsPage from "./admin/pages/AdminSettingsPage";
 import AdminMexMaintenancePage from "./admin/pages/AdminMexMaintenancePage";
 import AdminMexSettingsPage from "./admin/pages/AdminMexSettingsPage";
+import AdminMexWorkOrdersPage from "./admin/pages/AdminMexWorkOrdersPage";
+import AdminMexEmployeesPage from "./admin/pages/AdminMexEmployeesPage";
 import SignIn from "./template/tailAdmin/pages/AuthPages/SignIn";
 import { ThemeProvider } from "./template/tailAdmin/context/ThemeContext";
 import NotificationsPage from "./public/pages/NotificationsPage";
@@ -59,6 +61,8 @@ const router = createBrowserRouter([
       { path: 'notifications', element: <AdminNotificationsPage /> },
       { path: 'settings', element: <AdminSettingsPage /> },
       { path: 'mex', element: <AdminMexMaintenancePage /> },
+      { path: 'mex/work-orders', element: <AdminMexWorkOrdersPage /> },
+      { path: 'mex/employees', element: <AdminMexEmployeesPage /> },
       { path: 'mex/settings', element: <AdminMexSettingsPage /> },
       { path: 'mex/:moduleId', element: <AdminMexMaintenancePage /> },
       { path: 'profile', element: <AdminProfilePage /> },
