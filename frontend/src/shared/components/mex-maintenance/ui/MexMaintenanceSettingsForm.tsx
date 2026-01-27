@@ -3,7 +3,7 @@ import Button from "../../../../template/tailAdmin/components/ui/button/Button";
 import Input from "../../../../template/tailAdmin/components/form/input/InputField";
 import Label from "../../../../template/tailAdmin/components/form/Label";
 import Select from "../../../../template/tailAdmin/components/form/Select";
-import type { MexAuthConfig, MexConfig } from "../core/config";
+import type { MexAuthConfig, MexConfig } from "../services/core/config";
 import { defaultMexConfig, loadMexConfig, saveMexConfig } from "./mexMaintenanceSettings";
 
 const authTypeOptions = [

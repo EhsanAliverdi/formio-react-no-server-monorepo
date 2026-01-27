@@ -1,4 +1,4 @@
-import MexMaintenanceWorkOrders from "../../shared/services/mex-maintenance/ui/MexMaintenanceWorkOrders";
+import { MexMaintenanceWorkOrders } from "../../shared/components/mex-maintenance";
 
 export default function AdminMexWorkOrdersPage() {
   return (

@@ -35,18 +35,3 @@ export * from './modules/trade-code';
 export * from './modules/work-order';
 export * from './modules/work-order-spare';
 export * from './modules/work-order-trade';
-
-// =========================
-// UI helpers
-// =========================
-export * from './ui/mexMaintenanceCatalog';
-export { default as MexMaintenanceOverview } from './ui/MexMaintenanceOverview';
-export { default as MexMaintenanceModuleDetails } from './ui/MexMaintenanceModuleDetails';
-export { default as MexMaintenanceSettingsForm } from './ui/MexMaintenanceSettingsForm';
-export { default as MexMaintenanceWorkOrders } from './ui/MexMaintenanceWorkOrders';
-export { default as MexMaintenanceEmployees } from './ui/MexMaintenanceEmployees';
-export { default as MexMaintenanceWorkManagement } from './ui/MexMaintenanceWorkManagement';
-export * from './ui/mexMaintenanceSettings';
-export * from './ui/mexMaintenanceNavigation';
-export * from './ui/mexMaintenanceServices';
-export * from './ui/useMexMaintenanceConfig';

@@ -1,5 +1,5 @@
-import type { MexAuthConfig, MexConfig } from "../core/config";
-import type { MexEnvironment } from "../core/config/MexEnvironment";
+import type { MexAuthConfig, MexConfig } from "../services/core/config";
+import type { MexEnvironment } from "../services/core/config/MexEnvironment";
 
 const STORAGE_KEY = "mexMaintenance.config";
 const CONFIG_EVENT = "mex-maintenance-config-changed";

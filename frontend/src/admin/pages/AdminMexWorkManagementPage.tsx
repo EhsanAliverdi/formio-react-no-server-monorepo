@@ -1,4 +1,4 @@
-import MexMaintenanceWorkManagement from "../../shared/services/mex-maintenance/ui/MexMaintenanceWorkManagement";
+import { MexMaintenanceWorkManagement } from "../../shared/components/mex-maintenance";
 
 export default function AdminMexWorkManagementPage() {
   return (

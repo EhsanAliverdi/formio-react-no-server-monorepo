@@ -10,10 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "../../../../template/tailAdmin/components/ui/table";
-import type { JobTypeDTO } from "../modules/job-type";
-import type { WorkOrderSpareDTO } from "../modules/work-order-spare";
-import type { WorkOrderTradeDTO } from "../modules/work-order-trade";
-import type { StandardJobActionDTO } from "../modules/standard-job";
+import type { JobTypeDTO } from "../services/modules/job-type";
+import type { WorkOrderSpareDTO } from "../services/modules/work-order-spare";
+import type { WorkOrderTradeDTO } from "../services/modules/work-order-trade";
+import type { StandardJobActionDTO } from "../services/modules/standard-job";
 import { useMexMaintenanceServices } from "./mexMaintenanceServices";
 
 export default function MexMaintenanceWorkManagement() {
