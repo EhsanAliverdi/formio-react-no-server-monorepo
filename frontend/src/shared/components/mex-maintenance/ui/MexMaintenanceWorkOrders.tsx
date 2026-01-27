@@ -2,156 +2,139 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "../../../../template/tailAdmin/components/ui/button/Button";
 import Input from "../../../../template/tailAdmin/components/form/input/InputField";
 import Label from "../../../../template/tailAdmin/components/form/Label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "../../../../template/tailAdmin/components/ui/table";
+import MexMaintenanceDrawer from "./MexMaintenanceDrawer";
+import type { JobTypeDTO } from "../services/modules/job-type";
+import type { PriorityDTO } from "../services/modules/priority";
 import type { WorkOrderDTO } from "../services/modules/work-order";
+import type { WorkOrderSpareDTO } from "../services/modules/work-order-spare";
+import type { WorkOrderTradeDTO } from "../services/modules/work-order-trade";
 import { useMexMaintenanceServices } from "./mexMaintenanceServices";
 
-const emptyWorkOrder: WorkOrderDTO = {
-  workOrderNumber: "",
-  description: "",
-  status: "",
-  requestedBy: "",
-  scheduledStartDate: "",
-  scheduledEndDate: "",
-  priorityId: undefined,
-  jobTypeId: undefined,
-  assetId: undefined,
-  departmentId: undefined,
+const tabs = ["Overview", "Trades", "Spares", "Documents"] as const;
+
+const formatDate = (value?: string) => {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString();
 };
 
 export default function MexMaintenanceWorkOrders() {
   const { isReady, config, services } = useMexMaintenanceServices();
   const [workOrders, setWorkOrders] = useState<WorkOrderDTO[]>([]);
+  const [priorities, setPriorities] = useState<PriorityDTO[]>([]);
+  const [jobTypes, setJobTypes] = useState<JobTypeDTO[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lookupId, setLookupId] = useState("");
-  const [lookupNumber, setLookupNumber] = useState("");
-  const [lookupResult, setLookupResult] = useState<WorkOrderDTO | null>(null);
-  const [actionedByContactId, setActionedByContactId] = useState("");
-  const [mode, setMode] = useState<"create" | "update">("create");
-  const [workOrderId, setWorkOrderId] = useState("");
-  const [formState, setFormState] = useState<WorkOrderDTO>(emptyWorkOrder);
-
-  const summary = useMemo(() => {
-    const total = workOrders.length;
-    const closed = workOrders.filter((item) => item.isClosed).length;
-    const open = total - closed;
-    return { total, open, closed };
-  }, [workOrders]);
-
-  const loadAll = async () => {
-    if (!services) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await services.workOrders.getAll();
-      if (!result.ok) {
-        setError(result.error.message);
-        return;
-      }
-      setWorkOrders(result.value ?? []);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState<WorkOrderDTO | null>(null);
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Overview");
+  const [trades, setTrades] = useState<WorkOrderTradeDTO[]>([]);
+  const [spares, setSpares] = useState<WorkOrderSpareDTO[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
-    if (!isReady) return;
-    void loadAll();
-    setLookupResult(null);
-  }, [isReady]);
+    if (!isReady || !services) return;
 
-  const handleLookupById = async () => {
-    if (!services) return;
-    if (!lookupId.trim()) {
-      setError("Enter a work order ID to search.");
-      return;
-    }
-    setError(null);
-    const id = Number(lookupId);
-    const result = await services.workOrders.getById(id);
-    if (!result.ok) {
-      setError(result.error.message);
-      setLookupResult(null);
-      return;
-    }
-    setLookupResult(result.value ?? null);
-  };
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [workOrderResult, priorityResult, jobTypeResult] = await Promise.all([
+          services.workOrders.getAll(),
+          services.priorities.getAll(),
+          services.jobTypes.getAll(),
+        ]);
 
-  const handleLookupByNumber = async () => {
-    if (!services) return;
-    if (!lookupNumber.trim()) {
-      setError("Enter a work order number to search.");
-      return;
-    }
-    setError(null);
-    const result = await services.workOrders.getByWorkOrderNumber(lookupNumber.trim());
-    if (!result.ok) {
-      setError(result.error.message);
-      setLookupResult(null);
-      return;
-    }
-    setLookupResult(result.value ?? null);
-  };
+        if (!workOrderResult.ok) throw new Error(workOrderResult.error.message);
+        if (!priorityResult.ok) throw new Error(priorityResult.error.message);
+        if (!jobTypeResult.ok) throw new Error(jobTypeResult.error.message);
 
-  const handleSubmit = async () => {
-    if (!services) return;
-    if (!actionedByContactId.trim()) {
-      setError("Actioned by contact ID is required.");
-      return;
-    }
-    const actionedId = Number(actionedByContactId);
-    if (!Number.isFinite(actionedId)) {
-      setError("Actioned by contact ID must be a number.");
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-
-    const payload: WorkOrderDTO = {
-      ...formState,
-      priorityId: formState.priorityId ? Number(formState.priorityId) : undefined,
-      jobTypeId: formState.jobTypeId ? Number(formState.jobTypeId) : undefined,
-      assetId: formState.assetId ? Number(formState.assetId) : undefined,
-      departmentId: formState.departmentId ? Number(formState.departmentId) : undefined,
+        setWorkOrders(workOrderResult.value ?? []);
+        setPriorities(priorityResult.value ?? []);
+        setJobTypes(jobTypeResult.value ?? []);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unable to load work orders.";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
     };
 
+    void load();
+  }, [isReady, services]);
+
+  const priorityLookup = useMemo(() => {
+    return priorities.reduce<Record<string, string>>((acc, priority) => {
+      if (priority.priorityId) {
+        acc[String(priority.priorityId)] =
+          priority.priorityDescription ?? `Priority ${priority.priorityId}`;
+      }
+      return acc;
+    }, {});
+  }, [priorities]);
+
+  const jobTypeLookup = useMemo(() => {
+    return jobTypes.reduce<Record<string, string>>((acc, jobType) => {
+      if (jobType.jobTypeId) {
+        acc[String(jobType.jobTypeId)] = jobType.jobTypeName ?? "Job Type";
+      }
+      return acc;
+    }, {});
+  }, [jobTypes]);
+
+  const filteredOrders = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return workOrders.filter((order) => {
+      const matchesSearch =
+        !query ||
+        [order.workOrderNumber, order.description, order.status]
+          .filter(Boolean)
+          .some((value) => value?.toLowerCase().includes(query));
+
+      const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+      const matchesPriority =
+        priorityFilter === "all" || String(order.priorityId ?? "") === priorityFilter;
+
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }, [priorityFilter, search, statusFilter, workOrders]);
+
+  const pageSize = 8;
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const paginatedOrders = filteredOrders.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, priorityFilter]);
+
+  const openDrawer = async (order: WorkOrderDTO) => {
+    if (!services) return;
+    setSelectedOrder(order);
+    setActiveTab("Overview");
+    setDetailLoading(true);
     try {
-      if (mode === "create") {
-        const result = await services.workOrders.create(actionedId, payload);
-        if (!result.ok) {
-          setError(result.error.message);
-          return;
-        }
-      } else {
-        if (!workOrderId.trim()) {
-          setError("Work order ID is required for updates.");
-          return;
-        }
-        const result = await services.workOrders.update(
-          Number(workOrderId),
-          actionedId,
-          payload
-        );
-        if (!result.ok) {
-          setError(result.error.message);
-          return;
-        }
+      const [tradeResult, spareResult] = await Promise.all([
+        order.workOrderId ? services.workOrderTrades.getByWorkOrderId(order.workOrderId) : null,
+        order.workOrderId ? services.workOrderSpares.getByWorkOrderId(order.workOrderId) : null,
+      ]);
+
+      if (tradeResult && tradeResult.ok) {
+        setTrades(tradeResult.value ?? []);
+      } else if (tradeResult && !tradeResult.ok) {
+        setTrades([]);
       }
 
-      setFormState(emptyWorkOrder);
-      setWorkOrderId("");
-      await loadAll();
+      if (spareResult && spareResult.ok) {
+        setSpares(spareResult.value ?? []);
+      } else if (spareResult && !spareResult.ok) {
+        setSpares([]);
+      }
     } finally {
-      setSaving(false);
+      setDetailLoading(false);
     }
   };
 
@@ -165,336 +148,247 @@ export default function MexMaintenanceWorkOrders() {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className="lg:col-span-2">
+            <Label>Search</Label>
+            <Input
+              placeholder="Search by work order number, description, or status"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+          <div>
+            <Label>Status</Label>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+            >
+              <option value="all">All statuses</option>
+              {[...new Set(workOrders.map((order) => order.status).filter(Boolean))].map(
+                (status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+          <div>
+            <Label>Priority</Label>
+            <select
+              value={priorityFilter}
+              onChange={(event) => setPriorityFilter(event.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+            >
+              <option value="all">All priorities</option>
+                  {priorities.map((priority) => (
+                    <option key={priority.priorityId} value={String(priority.priorityId)}>
+                      {priority.priorityDescription ?? `Priority ${priority.priorityId}`}
+                    </option>
+                  ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200">
           {error}
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {[
-          { label: "Total work orders", value: summary.total },
-          { label: "Open", value: summary.open },
-          { label: "Closed", value: summary.closed },
-        ].map((card) => (
-          <div
-            key={card.label}
-            className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/3"
-          >
-            <div className="text-xs uppercase tracking-wide text-gray-400">
-              {card.label}
-            </div>
-            <div className="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              {loading ? "…" : card.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
           <div>
             <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
-              Work order list
+              Work orders
             </h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              View all work orders pulled from the MEX Maintenance API.
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {filteredOrders.length} work orders matched
             </p>
           </div>
-          <Button variant="outline" onClick={loadAll} disabled={loading}>
-            {loading ? "Refreshing…" : "Refresh"}
+          <Button size="sm" variant="outline">
+            Export
           </Button>
         </div>
-
-        <div className="mt-4 overflow-x-auto">
-          <Table className="text-sm">
-            <TableHeader>
-              <TableRow className="border-b border-gray-200 text-left text-xs uppercase text-gray-400">
-                <TableCell isHeader className="pb-2">
-                  Work order #
-                </TableCell>
-                <TableCell isHeader className="pb-2">
-                  Description
-                </TableCell>
-                <TableCell isHeader className="pb-2">
-                  Status
-                </TableCell>
-                <TableCell isHeader className="pb-2">
-                  Requested by
-                </TableCell>
-                <TableCell isHeader className="pb-2">
-                  Scheduled
-                </TableCell>
-                <TableCell isHeader className="pb-2">
-                  Closed
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {workOrders.length === 0 ? (
-                <TableRow>
-                  <td className="py-4 text-gray-500" colSpan={6}>
-                    {loading ? "Loading work orders…" : "No work orders returned yet."}
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-gray-800/40 dark:text-gray-400">
+              <tr>
+                <th className="px-4 py-3 text-left">Work Order Number</th>
+                <th className="px-4 py-3 text-left">Description</th>
+                <th className="px-4 py-3 text-left">Asset</th>
+                <th className="px-4 py-3 text-left">Priority</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Scheduled Dates</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              {paginatedOrders.map((order) => (
+                <tr
+                  key={order.workOrderId ?? order.workOrderNumber}
+                  className="cursor-pointer text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-900/50"
+                  onClick={() => openDrawer(order)}
+                >
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white/90">
+                    {order.workOrderNumber ?? "—"}
                   </td>
-                </TableRow>
-              ) : (
-                workOrders.map((item) => (
-                  <TableRow key={item.workOrderId ?? item.workOrderNumber ?? Math.random()}>
-                    <TableCell className="py-3 font-medium text-gray-800 dark:text-white/90">
-                      {item.workOrderNumber ?? item.workOrderId ?? "—"}
-                    </TableCell>
-                    <TableCell className="py-3 text-gray-600 dark:text-gray-300">
-                      {item.description ?? "—"}
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <span className="rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-600 dark:bg-brand-500/10 dark:text-brand-300">
-                        {item.status ?? "Unknown"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="py-3 text-gray-600 dark:text-gray-300">
-                      {item.requestedBy ?? "—"}
-                    </TableCell>
-                    <TableCell className="py-3 text-gray-600 dark:text-gray-300">
-                      {item.scheduledStartDate ?? "—"}
-                    </TableCell>
-                    <TableCell className="py-3 text-gray-600 dark:text-gray-300">
-                      {item.isClosed ? "Yes" : "No"}
-                    </TableCell>
-                  </TableRow>
-                ))
+                  <td className="px-4 py-3">{order.description ?? "—"}</td>
+                  <td className="px-4 py-3">{order.assetId ? `Asset #${order.assetId}` : "—"}</td>
+                  <td className="px-4 py-3">
+                    {order.priorityId ? priorityLookup[String(order.priorityId)] : "—"}
+                  </td>
+                  <td className="px-4 py-3">{order.status ?? "Unspecified"}</td>
+                  <td className="px-4 py-3">
+                    {formatDate(order.scheduledStartDate)} → {formatDate(order.scheduledEndDate)}
+                  </td>
+                </tr>
+              ))}
+              {paginatedOrders.length === 0 && (
+                <tr>
+                  <td className="px-4 py-6 text-center text-gray-500" colSpan={6}>
+                    {loading ? "Loading work orders..." : "No work orders matched the filters."}
+                  </td>
+                </tr>
               )}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
-            Lookup work orders
-          </h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Use the SDK endpoints to pull a single work order by ID or number.
-          </p>
-
-          <div className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="mexWorkOrderId">Work order ID</Label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  id="mexWorkOrderId"
-                  type="number"
-                  placeholder="12345"
-                  value={lookupId}
-                  onChange={(e) => setLookupId(e.target.value)}
-                />
-                <Button variant="outline" onClick={handleLookupById}>
-                  Fetch by ID
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="mexWorkOrderNumber">Work order number</Label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  id="mexWorkOrderNumber"
-                  type="text"
-                  placeholder="WO-10001"
-                  value={lookupNumber}
-                  onChange={(e) => setLookupNumber(e.target.value)}
-                />
-                <Button variant="outline" onClick={handleLookupByNumber}>
-                  Fetch by number
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {lookupResult && (
-            <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-200">
-              <div className="font-semibold text-gray-800 dark:text-white/90">
-                {lookupResult.workOrderNumber ?? `Work order ${lookupResult.workOrderId}`}
-              </div>
-              <div className="mt-2 grid gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <div>Description: {lookupResult.description ?? "—"}</div>
-                <div>Status: {lookupResult.status ?? "—"}</div>
-                <div>Requested by: {lookupResult.requestedBy ?? "—"}</div>
-                <div>Scheduled start: {lookupResult.scheduledStartDate ?? "—"}</div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
-            {mode === "create" ? "Create work order" : "Update work order"}
-          </h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {mode === "create"
-              ? "Provide the work order details and the employee/contact ID taking action."
-              : "Update an existing work order using its ID and actioned-by employee/contact ID."}
-          </p>
-
-          <div className="mt-4 grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="mexWorkOrderMode">Mode</Label>
-              <div className="flex flex-wrap gap-2">
-                {(["create", "update"] as const).map((value) => (
-                  <Button
-                    key={value}
-                    variant={mode === value ? "primary" : "outline"}
-                    onClick={() => setMode(value)}
-                  >
-                    {value === "create" ? "Create" : "Update"}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {mode === "update" && (
-              <div className="space-y-2">
-                <Label htmlFor="mexWorkOrderUpdateId">Work order ID</Label>
-                <Input
-                  id="mexWorkOrderUpdateId"
-                  type="number"
-                  placeholder="12345"
-                  value={workOrderId}
-                  onChange={(e) => setWorkOrderId(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="mexWorkOrderActioned">Actioned by contact ID</Label>
-              <Input
-                id="mexWorkOrderActioned"
-                type="number"
-                placeholder="Employee/Contact ID"
-                value={actionedByContactId}
-                onChange={(e) => setActionedByContactId(e.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="mexWorkOrderNumberInput">Work order number</Label>
-                <Input
-                  id="mexWorkOrderNumberInput"
-                  type="text"
-                  placeholder="WO-10001"
-                  value={formState.workOrderNumber ?? ""}
-                  onChange={(e) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      workOrderNumber: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mexWorkOrderStatus">Status</Label>
-                <Input
-                  id="mexWorkOrderStatus"
-                  type="text"
-                  placeholder="Open"
-                  value={formState.status ?? ""}
-                  onChange={(e) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      status: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="mexWorkOrderDescription">Description</Label>
-              <Input
-                id="mexWorkOrderDescription"
-                type="text"
-                placeholder="Describe the work"
-                value={formState.description ?? ""}
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="mexWorkOrderRequested">Requested by</Label>
-                <Input
-                  id="mexWorkOrderRequested"
-                  type="text"
-                  placeholder="Requester"
-                  value={formState.requestedBy ?? ""}
-                  onChange={(e) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      requestedBy: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mexWorkOrderPriority">Priority ID</Label>
-                <Input
-                  id="mexWorkOrderPriority"
-                  type="number"
-                  placeholder="1"
-                  value={formState.priorityId ?? ""}
-                  onChange={(e) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      priorityId: e.target.value ? Number(e.target.value) : undefined,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="mexWorkOrderStart">Scheduled start</Label>
-                <Input
-                  id="mexWorkOrderStart"
-                  type="date"
-                  value={formState.scheduledStartDate ?? ""}
-                  onChange={(e) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      scheduledStartDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mexWorkOrderEnd">Scheduled end</Label>
-                <Input
-                  id="mexWorkOrderEnd"
-                  type="date"
-                  value={formState.scheduledEndDate ?? ""}
-                  onChange={(e) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      scheduledEndDate: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <Button onClick={handleSubmit} disabled={saving}>
-              {saving ? "Saving…" : mode === "create" ? "Create work order" : "Update work order"}
+        <div className="flex items-center justify-between border-t border-gray-200 px-5 py-4 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            >
+              Next
             </Button>
           </div>
         </div>
       </div>
+
+      <MexMaintenanceDrawer
+        isOpen={Boolean(selectedOrder)}
+        title={selectedOrder?.workOrderNumber ?? "Work order"}
+        onClose={() => setSelectedOrder(null)}
+        footer={
+          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+            <span>Job type: {selectedOrder?.jobTypeId ? jobTypeLookup[String(selectedOrder.jobTypeId)] : "—"}</span>
+            <span>Status: {selectedOrder?.status ?? "Unspecified"}</span>
+          </div>
+        }
+      >
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+                activeTab === tab
+                  ? "bg-brand-600 text-white"
+                  : "border border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:text-gray-300"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "Overview" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900/30">
+              <div className="text-xs uppercase text-gray-400">Description</div>
+              <div className="mt-2 text-gray-700 dark:text-gray-200">
+                {selectedOrder?.description ?? "No description provided."}
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900/30">
+              <div className="text-xs uppercase text-gray-400">Schedule</div>
+              <div className="mt-2 text-gray-700 dark:text-gray-200">
+                {formatDate(selectedOrder?.scheduledStartDate)} → {formatDate(selectedOrder?.scheduledEndDate)}
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900/30">
+              <div className="text-xs uppercase text-gray-400">Requested by</div>
+              <div className="mt-2 text-gray-700 dark:text-gray-200">
+                {selectedOrder?.requestedBy ?? "—"}
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900/30">
+              <div className="text-xs uppercase text-gray-400">Priority</div>
+              <div className="mt-2 text-gray-700 dark:text-gray-200">
+                {selectedOrder?.priorityId ? priorityLookup[String(selectedOrder.priorityId)] : "—"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Trades" && (
+          <div className="space-y-3">
+            {detailLoading && <div className="text-sm text-gray-500">Loading trades…</div>}
+            {!detailLoading && trades.length === 0 && (
+              <div className="text-sm text-gray-500">No trades assigned.</div>
+            )}
+            {trades.map((trade) => (
+              <div
+                key={trade.workOrderTradeId ?? trade.tradeCodeId}
+                className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900/30"
+              >
+                <div className="font-semibold text-gray-800 dark:text-white/90">
+                  Trade #{trade.tradeCodeId ?? "—"}
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  Hours: {trade.hoursWorked ?? "—"} · Cost: {trade.labourCost ?? "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "Spares" && (
+          <div className="space-y-3">
+            {detailLoading && <div className="text-sm text-gray-500">Loading spares…</div>}
+            {!detailLoading && spares.length === 0 && (
+              <div className="text-sm text-gray-500">No spares recorded.</div>
+            )}
+            {spares.map((spare) => (
+              <div
+                key={spare.workOrderSpareId ?? spare.catalogueId}
+                className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900/30"
+              >
+                <div className="font-semibold text-gray-800 dark:text-white/90">
+                  Catalogue #{spare.catalogueId ?? "—"}
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  Quantity: {spare.quantity ?? "—"} · Cost: {spare.totalCost ?? "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "Documents" && (
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900/30 dark:text-gray-300">
+            Document metadata is managed via the MEX document service. Use the SDK Help section for
+            document operations linked to work orders.
+          </div>
+        )}
+      </MexMaintenanceDrawer>
     </div>
   );
 }
