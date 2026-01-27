@@ -1,6 +1,16 @@
-import { FiBell, FiClipboard, FiFileText, FiHome, FiUsers, FiSettings } from "react-icons/fi";
+import { FiBell, FiClipboard, FiFileText, FiHome, FiUsers, FiSettings, FiTool } from "react-icons/fi";
 
 import type { NavItem } from "../template/tailAdmin/layout/AppSidebar";
+import { getMexMaintenanceMenu } from "../shared/services/mex-maintenance/ui/mexMaintenanceNavigation";
+
+const mexMaintenanceNavItems: NavItem[] = getMexMaintenanceMenu("/admin/mex").map((section) => ({
+  icon: <FiTool className="size-5" />,
+  name: section.label,
+  subItems: section.items.map((item) => ({
+    name: item.label,
+    path: item.path,
+  })),
+}));
 
 export const adminNavItems: NavItem[] = [
   {
@@ -33,6 +43,7 @@ export const adminNavItems: NavItem[] = [
     icon: <FiSettings className="size-5" />,
     path: "/admin/settings",
   },
+  ...mexMaintenanceNavItems,
 ];
 
 export const adminOthersItems: NavItem[] = [
