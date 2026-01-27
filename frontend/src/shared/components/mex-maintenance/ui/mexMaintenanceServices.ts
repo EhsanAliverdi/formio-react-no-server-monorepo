@@ -6,6 +6,8 @@ import { JobTypeClient, JobTypeService } from "../services/modules/job-type";
 import { WorkOrderSpareClient, WorkOrderSpareService } from "../services/modules/work-order-spare";
 import { WorkOrderTradeClient, WorkOrderTradeService } from "../services/modules/work-order-trade";
 import { StandardJobClient, StandardJobService } from "../services/modules/standard-job";
+import { ContactClient, ContactService } from "../services/modules/contact";
+import { DepartmentClient, DepartmentService } from "../services/modules/department";
 import type { MexConfig } from "../services/core/config";
 import { useMexMaintenanceConfig } from "./useMexMaintenanceConfig";
 
@@ -16,6 +18,8 @@ export type MexMaintenanceServices = {
   workOrderSpares: WorkOrderSpareService;
   workOrderTrades: WorkOrderTradeService;
   standardJobs: StandardJobService;
+  contacts: ContactService;
+  departments: DepartmentService;
 };
 
 const buildServices = (config: MexConfig): MexMaintenanceServices => {
@@ -27,6 +31,8 @@ const buildServices = (config: MexConfig): MexMaintenanceServices => {
     workOrderSpares: new WorkOrderSpareService(new WorkOrderSpareClient(httpClient)),
     workOrderTrades: new WorkOrderTradeService(new WorkOrderTradeClient(httpClient)),
     standardJobs: new StandardJobService(new StandardJobClient(httpClient)),
+    contacts: new ContactService(new ContactClient(httpClient)),
+    departments: new DepartmentService(new DepartmentClient(httpClient)),
   };
 };
 

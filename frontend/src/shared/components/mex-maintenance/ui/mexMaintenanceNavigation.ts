@@ -41,6 +41,12 @@ export const getMexMaintenanceMenu = (basePath: string): MexMaintenanceMenuSecti
         description: "Manage employee records for MEX actions.",
       },
       {
+        id: "organization-people",
+        label: "Organization & People",
+        path: `${basePath}/organization-people`,
+        description: "Browse contacts, departments, and employees.",
+      },
+      {
         id: "settings",
         label: "Settings",
         path: `${basePath}/settings`,
