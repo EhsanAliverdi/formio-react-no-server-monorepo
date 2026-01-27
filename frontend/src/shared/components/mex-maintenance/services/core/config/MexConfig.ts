@@ -27,4 +27,9 @@ export interface MexConfig {
    * Optional client identifier (useful for logs / headers)
    */
   clientName?: string;
+
+  /**
+   * Toggle SDK Help entries in the navigation.
+   */
+  showSdkHelp?: boolean;
 }

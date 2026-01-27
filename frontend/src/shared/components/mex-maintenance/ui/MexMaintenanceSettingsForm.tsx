@@ -3,6 +3,7 @@ import Button from "../../../../template/tailAdmin/components/ui/button/Button";
 import Input from "../../../../template/tailAdmin/components/form/input/InputField";
 import Label from "../../../../template/tailAdmin/components/form/Label";
 import Select from "../../../../template/tailAdmin/components/form/Select";
+import Switch from "../../../../template/tailAdmin/components/form/switch/Switch";
 import type { MexAuthConfig, MexConfig } from "../services/core/config";
 import { defaultMexConfig, loadMexConfig, saveMexConfig } from "./mexMaintenanceSettings";
 
@@ -289,6 +290,27 @@ export default function MexMaintenanceSettingsForm() {
               Saved {savedAt}
             </span>
           )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3">
+        <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
+          Navigation preferences
+        </h2>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          Control whether SDK Help endpoints appear in the MEX Maintenance submenu.
+        </p>
+        <div className="mt-4">
+          <Switch
+            label="Show SDK Help in navigation"
+            checked={config.showSdkHelp ?? true}
+            onChange={(checked) =>
+              setConfig((prev) => ({
+                ...prev,
+                showSdkHelp: checked,
+              }))
+            }
+          />
         </div>
       </div>
     </div>
