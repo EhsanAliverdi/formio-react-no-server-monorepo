@@ -14,7 +14,8 @@ export default function AdminMexMaintenancePage() {
           MEX Maintenance
         </h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          Explore the MEX Maintenance API modules bundled with the SurveyFlow SDK.
+          Track endpoint results in the overview and browse the SDK Help submenu for full API
+          coverage.
         </p>
       </div>
 
