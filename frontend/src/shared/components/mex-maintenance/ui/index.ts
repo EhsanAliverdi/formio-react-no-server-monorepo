@@ -4,6 +4,7 @@ export { default as MexMaintenanceModuleDetails } from "./MexMaintenanceModuleDe
 export { default as MexMaintenanceSettingsForm } from "./MexMaintenanceSettingsForm";
 export { default as MexMaintenanceWorkOrders } from "./MexMaintenanceWorkOrders";
 export { default as MexMaintenanceEmployees } from "./MexMaintenanceEmployees";
+export { default as MexMaintenanceOrganizationPeople } from "./MexMaintenanceOrganizationPeople";
 export { default as MexMaintenanceWorkManagement } from "./MexMaintenanceWorkManagement";
 export * from "./mexMaintenanceSettings";
 export * from "./mexMaintenanceNavigation";
