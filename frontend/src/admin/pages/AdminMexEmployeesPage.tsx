@@ -1,4 +1,4 @@
-import MexMaintenanceEmployees from "../../shared/services/mex-maintenance/ui/MexMaintenanceEmployees";
+import { MexMaintenanceEmployees } from "../../shared/components/mex-maintenance";
 
 export default function AdminMexEmployeesPage() {
   return (

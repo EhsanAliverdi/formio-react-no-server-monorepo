@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import { DefaultMexHttpClient } from "../core/http";
-import { WorkOrderClient, WorkOrderService } from "../modules/work-order";
-import { EmployeeClient, EmployeeService } from "../modules/employee";
-import { JobTypeClient, JobTypeService } from "../modules/job-type";
-import { WorkOrderSpareClient, WorkOrderSpareService } from "../modules/work-order-spare";
-import { WorkOrderTradeClient, WorkOrderTradeService } from "../modules/work-order-trade";
-import { StandardJobClient, StandardJobService } from "../modules/standard-job";
-import type { MexConfig } from "../core/config";
+import { DefaultMexHttpClient } from "../services/core/http";
+import { WorkOrderClient, WorkOrderService } from "../services/modules/work-order";
+import { EmployeeClient, EmployeeService } from "../services/modules/employee";
+import { JobTypeClient, JobTypeService } from "../services/modules/job-type";
+import { WorkOrderSpareClient, WorkOrderSpareService } from "../services/modules/work-order-spare";
+import { WorkOrderTradeClient, WorkOrderTradeService } from "../services/modules/work-order-trade";
+import { StandardJobClient, StandardJobService } from "../services/modules/standard-job";
+import type { MexConfig } from "../services/core/config";
 import { useMexMaintenanceConfig } from "./useMexMaintenanceConfig";
 
 export type MexMaintenanceServices = {

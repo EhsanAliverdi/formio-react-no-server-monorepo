@@ -1,4 +1,4 @@
-import MexMaintenanceSettingsForm from "../../shared/services/mex-maintenance/ui/MexMaintenanceSettingsForm";
+import { MexMaintenanceSettingsForm } from "../../shared/components/mex-maintenance";
 
 export default function AdminMexSettingsPage() {
   return (

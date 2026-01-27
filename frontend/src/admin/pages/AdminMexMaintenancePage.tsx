@@ -1,6 +1,8 @@
 import { useParams } from "react-router-dom";
-import MexMaintenanceModuleDetails from "../../shared/services/mex-maintenance/ui/MexMaintenanceModuleDetails";
-import MexMaintenanceOverview from "../../shared/services/mex-maintenance/ui/MexMaintenanceOverview";
+import {
+  MexMaintenanceModuleDetails,
+  MexMaintenanceOverview,
+} from "../../shared/components/mex-maintenance";
 
 export default function AdminMexMaintenancePage() {
   const { moduleId } = useParams();
