@@ -29,6 +29,12 @@ export const getMexMaintenanceMenu = (basePath: string): MexMaintenanceMenuSecti
         description: "Create, update, and browse work orders.",
       },
       {
+        id: "work-management",
+        label: "Work Management",
+        path: `${basePath}/work-management`,
+        description: "Job types, spares, trades, and standard jobs.",
+      },
+      {
         id: "employees",
         label: "Employees",
         path: `${basePath}/employees`,

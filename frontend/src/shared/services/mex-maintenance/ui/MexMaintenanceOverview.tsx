@@ -105,35 +105,14 @@ export default function MexMaintenanceOverview({
             </div>
             <div className="mt-4 space-y-3">
               {category.modules.map((module) => (
-                <div
+                <Link
                   key={module.id}
-                  className="flex flex-col gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30"
+                  to={`${basePath}/${module.id}`}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition hover:border-brand-200 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-200"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <Link
-                        to={`${basePath}/${module.id}`}
-                        className="text-sm font-semibold text-gray-800 hover:text-brand-600 dark:text-white/90"
-                      >
-                        {module.name}
-                      </Link>
-                      <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        {module.description}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-600 dark:bg-brand-500/10 dark:text-brand-300">
-                      {module.endpoints.length} endpoints
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {module.endpoints.map((endpoint, index) => (
-                      <span key={`${module.id}-${endpoint.method}-${endpoint.path}`}>
-                        {endpoint.method} {endpoint.path}
-                        {index < module.endpoints.length - 1 ? ", " : ""}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                  <span className="font-semibold">{module.name}</span>
+                  <span className="text-xs text-gray-500">{module.description}</span>
+                </Link>
               ))}
             </div>
           </div>

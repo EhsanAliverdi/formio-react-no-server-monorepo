@@ -45,6 +45,7 @@ export { default as MexMaintenanceModuleDetails } from './ui/MexMaintenanceModul
 export { default as MexMaintenanceSettingsForm } from './ui/MexMaintenanceSettingsForm';
 export { default as MexMaintenanceWorkOrders } from './ui/MexMaintenanceWorkOrders';
 export { default as MexMaintenanceEmployees } from './ui/MexMaintenanceEmployees';
+export { default as MexMaintenanceWorkManagement } from './ui/MexMaintenanceWorkManagement';
 export * from './ui/mexMaintenanceSettings';
 export * from './ui/mexMaintenanceNavigation';
 export * from './ui/mexMaintenanceServices';
