@@ -10,13 +10,14 @@ import {
   type NotificationRow,
 } from "../../shared/services/notificationsService";
 import AppLayout from "../../template/tailAdmin/layout/AppLayout";
-import { adminNavItems, adminOthersItems } from "../adminNav";
+import { adminOthersItems, buildAdminNavItems } from "../adminNav";
 import { adminSidebarBranding } from "../adminBranding";
 import {
   getAdminSiteSettings,
   onSiteSettingsChanged,
   type AdminSiteSettings,
 } from "../../shared/services/adminSettingsService";
+import { loadMexConfig, onMexConfigChanged } from "../../shared/components/mex-maintenance/ui/mexMaintenanceSettings";
 
 type HeaderNotification = {
   id: string | number;
@@ -70,6 +71,9 @@ export default function AdminLayout() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [headerNotifications, setHeaderNotifications] = useState<HeaderNotification[]>([]);
   const [siteSettings, setSiteSettings] = useState<AdminSiteSettings | null>(null);
+  const [showMexSdkHelp, setShowMexSdkHelp] = useState<boolean>(() => {
+    return loadMexConfig().showSdkHelp ?? true;
+  });
   const location = useLocation();
 
   useEffect(() => {
@@ -157,6 +161,19 @@ export default function AdminLayout() {
   }, [siteSettings?.siteName]);
 
   useEffect(() => {
+    const updateFromConfig = () => {
+      const config = loadMexConfig();
+      setShowMexSdkHelp(config.showSdkHelp ?? true);
+    };
+
+    updateFromConfig();
+    const stopListening = onMexConfigChanged(updateFromConfig);
+    return () => {
+      stopListening();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
     if (user.role !== "admin") return;
 
@@ -234,6 +251,8 @@ export default function AdminLayout() {
         ? siteSettings.logoCollapsedSize
         : adminSidebarBranding.collapsedSize,
   };
+
+  const adminNavItems = buildAdminNavItems({ showSdkHelp: showMexSdkHelp });
 
   return (
     <>

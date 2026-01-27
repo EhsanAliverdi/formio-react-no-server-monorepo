@@ -16,6 +16,7 @@ export const defaultMexConfig: MexConfig = {
   auth: defaultAuthConfig,
   timeoutMs: 10000,
   clientName: "SurveyFlow Admin",
+  showSdkHelp: true,
 };
 
 const isValidEnvironment = (value: unknown): value is MexEnvironment =>
@@ -53,6 +54,7 @@ export const loadMexConfig = (): MexConfig => {
       auth,
       timeoutMs: typeof parsed.timeoutMs === "number" ? parsed.timeoutMs : 10000,
       clientName: typeof parsed.clientName === "string" ? parsed.clientName : "SurveyFlow Admin",
+      showSdkHelp: typeof parsed.showSdkHelp === "boolean" ? parsed.showSdkHelp : true,
     };
   } catch {
     return defaultMexConfig;
