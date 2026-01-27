@@ -8,5 +8,5 @@ export default function AdminMexMaintenanceSdkPage() {
     return null;
   }
 
-  return <MexMaintenanceModuleDetails moduleId={moduleId} basePath="/admin/mex" />;
+  return <MexMaintenanceModuleDetails moduleId={moduleId} basePath="/admin/mex/sdk-help" />;
 }

@@ -38,6 +38,7 @@ import MexMaintenanceAdministration from "./shared/components/mex-maintenance/ui
 import MexMaintenanceAdministrationDetail from "./shared/components/mex-maintenance/ui/MexMaintenanceAdministrationDetail";
 import MexMaintenanceReports from "./shared/components/mex-maintenance/ui/MexMaintenanceReports";
 import MexMaintenanceReportsDetail from "./shared/components/mex-maintenance/ui/MexMaintenanceReportsDetail";
+import MexMaintenanceSdkHelp from "./shared/components/mex-maintenance/ui/MexMaintenanceSdkHelp";
 import SignIn from "./template/tailAdmin/pages/AuthPages/SignIn";
 import { ThemeProvider } from "./template/tailAdmin/context/ThemeContext";
 import NotificationsPage from "./public/pages/NotificationsPage";
@@ -107,6 +108,8 @@ const router = createBrowserRouter([
           { path: 'administration/:section', element: <MexMaintenanceAdministrationDetail /> },
           { path: 'reports', element: <MexMaintenanceReports basePath="/admin/mex" /> },
           { path: 'reports/:reportId', element: <MexMaintenanceReportsDetail /> },
+          { path: 'sdk-help', element: <MexMaintenanceSdkHelp basePath="/admin/mex" /> },
+          { path: 'sdk-help/:moduleId', element: <AdminMexMaintenanceSdkPage /> },
           { path: 'settings', element: <AdminMexSettingsPage /> },
           { path: ':moduleId', element: <AdminMexMaintenanceSdkPage /> },
         ],

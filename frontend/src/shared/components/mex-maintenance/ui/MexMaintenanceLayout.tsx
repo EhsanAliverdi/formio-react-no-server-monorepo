@@ -35,7 +35,7 @@ export default function MexMaintenanceLayout({ basePath }: MexMaintenanceLayoutP
               Settings
             </NavLink>
             <NavLink
-              to={`${basePath}/approval-path`}
+              to={`${basePath}/sdk-help`}
               className={({ isActive }) => linkClass(isActive)}
             >
               SDK Help
