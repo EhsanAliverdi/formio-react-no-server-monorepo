@@ -8,6 +8,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "up",
         "-d"
       ],
@@ -39,6 +41,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "up",
         "--build",
         "-d"
@@ -56,6 +60,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "down"
       ],
       "isBackground": false,
@@ -67,8 +73,10 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "restart",
-        "backend"
+        "dotnet-backend"
       ],
       "isBackground": false,
       "problemMatcher": []
@@ -79,8 +87,10 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "restart",
-        "frontend"
+        "angular-frontend"
       ],
       "isBackground": false,
       "problemMatcher": []
@@ -91,9 +101,11 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "logs",
         "-f",
-        "backend"
+        "dotnet-backend"
       ],
       "isBackground": true,
       "problemMatcher": [],
@@ -108,9 +120,11 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "logs",
         "-f",
-        "frontend"
+        "angular-frontend"
       ],
       "isBackground": true,
       "problemMatcher": [],
@@ -129,7 +143,7 @@
         "-p",
         "surveyflow-prod",
         "--env-file",
-        ".env.prod",
+        ".env.production",
         "-f",
         "docker-compose.yml",
         "build"
@@ -146,7 +160,7 @@
         "-p",
         "surveyflow-prod",
         "--env-file",
-        ".env.prod",
+        ".env.production",
         "-f",
         "docker-compose.yml",
         "up",
@@ -197,8 +211,10 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "exec",
-        "backend",
+        "dotnet-backend",
         "npm",
         "run",
         "seed"
@@ -212,8 +228,10 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "exec",
-        "backend",
+        "dotnet-backend",
         "npx",
         "prisma",
         "generate"
@@ -227,8 +245,10 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "exec",
-        "backend",
+        "dotnet-backend",
         "npx",
         "prisma",
         "db",
