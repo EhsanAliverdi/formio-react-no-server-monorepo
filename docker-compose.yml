@@ -80,6 +80,37 @@ services:
       minio:
         condition: service_started
 
+  # .NET 10 backend (new — runs alongside legacy backend during migration)
+  dotnet-backend:
+    container_name: surveyflow-dotnet-backend-prod
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile.dotnet-backend
+      args:
+        APP_VERSION: ${BACKEND_APP_VERSION:-}
+        BUILD_TIME: ${BUILD_TIME:-}
+        APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=surveyflow;Username=surveyflow;Password=surveyflow123"
+      Minio__Endpoint: ${MINIO_ENDPOINT:-http://minio:9000}
+      Minio__Region: ${MINIO_REGION:-us-east-1}
+      Minio__Bucket: ${MINIO_BUCKET:-uploads}
+      Minio__AccessKey: ${MINIO_ACCESS_KEY:-minioadmin}
+      Minio__SecretKey: ${MINIO_SECRET_KEY:-minioadmin}
+      Superuser__Email: ${SUPERUSER_EMAIL:-admin@example.com}
+      Superuser__Password: ${SUPERUSER_PASSWORD:-admin12345}
+      APP_VERSION: ${BACKEND_APP_VERSION:-}
+      BUILD_TIME: ${BUILD_TIME:-}
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
+    ports:
+      - "${DOTNET_BACKEND_PORT:-5000}:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
   frontend:
     container_name: surveyflow-frontend-prod
     pull_policy: build
