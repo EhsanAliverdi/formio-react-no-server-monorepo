@@ -29,6 +29,7 @@ import { ThemeService } from '../services/theme.service';
           [notifications]="notifications"
           [notificationsHref]="notificationsHref"
           [profileHref]="profileHref"
+          [loginHref]="loginHref"
           (notificationRead)="notificationRead.emit($event)"
           (signOut)="signOut.emit()"
         />
@@ -48,6 +49,7 @@ export class AppLayoutComponent {
   @Input() notifications?: HeaderNotification[];
   @Input() notificationsHref?: string;
   @Input() profileHref?: string;
+  @Input() loginHref?: string;
   @Output() notificationRead = new EventEmitter<string | number>();
   @Output() signOut = new EventEmitter<void>();
 

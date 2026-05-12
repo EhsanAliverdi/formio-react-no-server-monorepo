@@ -129,6 +129,14 @@ export interface HeaderNotification {
             </div>
           }
 
+          <!-- Sign In link (unauthenticated) -->
+          @if (!user && loginHref) {
+            <a [routerLink]="loginHref"
+               class="flex items-center gap-1.5 rounded-lg border border-brand-500 px-4 py-2 text-sm font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition">
+              Sign In
+            </a>
+          }
+
           <!-- User dropdown -->
           @if (user) {
             <div class="relative">
@@ -195,6 +203,7 @@ export class AppHeaderComponent {
   @Input() notifications?: HeaderNotification[];
   @Input() notificationsHref?: string;
   @Input() profileHref?: string;
+  @Input() loginHref?: string;
   @Output() notificationRead = new EventEmitter<string | number>();
   @Output() signOut = new EventEmitter<void>();
 

@@ -16,7 +16,6 @@ export const routes: Routes = [
   },
   {
     path: '',
-    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/public/public-layout.component').then(m => m.PublicLayoutComponent),
     loadChildren: () =>
