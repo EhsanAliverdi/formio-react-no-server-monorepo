@@ -8,7 +8,7 @@ WORKDIR /app/angular-frontend
 ARG ANGULAR_API_BASE_URL
 
 # Install dependencies using lockfile for reproducibility
-COPY angular-frontend/package.json angular-frontend/package-lock.json ./
+COPY angular-frontend/.npmrc angular-frontend/package.json angular-frontend/package-lock.json ./
 RUN npm ci
 
 # Copy source and build (defaults to production configuration)
