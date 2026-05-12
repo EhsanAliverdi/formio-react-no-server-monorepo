@@ -20,3 +20,13 @@ backend/var/*.db
 node_modules/
 backend/.next/
 frontend/dist/
+
+# .NET build outputs
+dotnet-backend/**/bin/
+dotnet-backend/**/obj/
+dotnet-backend/*.user
+dotnet-backend/**/.vs/
+
+# Angular build outputs
+angular-frontend/dist/
+angular-frontend/.angular/
