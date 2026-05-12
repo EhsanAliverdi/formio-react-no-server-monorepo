@@ -34,6 +34,7 @@ services:
     volumes:
       - minio_data:/data
 
+  # Legacy Next.js backend — kept for rollback. Remove after .NET backend is verified in production.
   backend:
     container_name: surveyflow-backend-prod
     pull_policy: build
@@ -111,24 +112,7 @@ services:
       minio:
         condition: service_started
 
-  frontend:
-    container_name: surveyflow-frontend-prod
-    pull_policy: build
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      pull: true
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
-        VITE_APP_VERSION: ${FRONTEND_APP_VERSION:-}
-        VITE_BUILD_TIME: ${BUILD_TIME:-}
-        VITE_APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
-    ports:
-      - "${FRONTEND_PORT:-5175}:80"
-    depends_on:
-      - backend
-
-  # Angular 19 frontend (Phase 2 migration)
+  # Angular 19 frontend (current — replaces legacy React/Vite frontend)
   angular-frontend:
     container_name: surveyflow-angular-frontend-prod
     pull_policy: build
