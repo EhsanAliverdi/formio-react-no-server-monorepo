@@ -68,7 +68,7 @@
       "args": [
         "compose",
         "restart",
-        "backend"
+        "dotnet-backend"
       ],
       "isBackground": false,
       "problemMatcher": []
@@ -80,7 +80,7 @@
       "args": [
         "compose",
         "restart",
-        "frontend"
+        "angular-frontend"
       ],
       "isBackground": false,
       "problemMatcher": []
@@ -93,7 +93,7 @@
         "compose",
         "logs",
         "-f",
-        "backend"
+        "dotnet-backend"
       ],
       "isBackground": true,
       "problemMatcher": [],
@@ -110,7 +110,7 @@
         "compose",
         "logs",
         "-f",
-        "frontend"
+        "angular-frontend"
       ],
       "isBackground": true,
       "problemMatcher": [],
@@ -192,47 +192,21 @@
     },
     // Database Tasks
     {
-      "label": "Docker: Seed Database",
+      "label": "Docker: EF Migrations Apply",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "exec",
-        "backend",
-        "npm",
-        "run",
-        "seed"
-      ],
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Prisma Generate",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "exec",
-        "backend",
-        "npx",
-        "prisma",
-        "generate"
-      ],
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Prisma DB Push",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "exec",
-        "backend",
-        "npx",
-        "prisma",
-        "db",
-        "push"
+        "dotnet-backend",
+        "dotnet",
+        "ef",
+        "database",
+        "update",
+        "--project",
+        "SurveyFlow.Infrastructure",
+        "--startup-project",
+        "SurveyFlow.Api"
       ],
       "isBackground": false,
       "problemMatcher": []
