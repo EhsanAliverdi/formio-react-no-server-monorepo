@@ -15,6 +15,13 @@ ENV ASPNETCORE_URLS=http://+:5000
 ENV DOTNET_USE_POLLING_FILE_WATCHER=true
 
 WORKDIR /app/dotnet-backend
+
+# Pre-restore NuGet packages (cached layer — only reruns when .csproj files change)
+COPY dotnet-backend/SurveyFlow.Api/SurveyFlow.Api.csproj SurveyFlow.Api/
+COPY dotnet-backend/SurveyFlow.Core/SurveyFlow.Core.csproj SurveyFlow.Core/
+COPY dotnet-backend/SurveyFlow.Infrastructure/SurveyFlow.Infrastructure.csproj SurveyFlow.Infrastructure/
+RUN dotnet restore SurveyFlow.Api/SurveyFlow.Api.csproj
+
 EXPOSE 5000
 
 CMD ["dotnet", "watch", "--project", "SurveyFlow.Api", "run", "--no-hot-reload", "--urls", "http://+:5000"]
