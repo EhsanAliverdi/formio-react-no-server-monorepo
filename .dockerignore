@@ -4,16 +4,14 @@ npm-debug.log
 .DS_Store
 .vscode
 
-# Backend
-backend/node_modules
-backend/.next
-backend/npm-debug.log
-
-# Frontend
-frontend/node_modules
-frontend/dist
-frontend/.vite
-frontend/npm-debug.log
+# Source build artifacts
+src/**/node_modules
+src/**/dist
+src/**/.angular
+src/**/bin
+src/**/obj
+src/**/.vs
+src/**/npm-debug.log
 
 # Git
 .git

@@ -13,20 +13,17 @@ _reference/
 docker-pdf-test.pdf
 
 # Local databases
-backend/data/*.db
-backend/var/*.db
+src/**/data/*.db
+src/**/var/*.db
 
 # Node / build outputs
 node_modules/
-backend/.next/
-frontend/dist/
+src/**/node_modules/
+src/**/dist/
+src/**/.angular/
 
 # .NET build outputs
-dotnet-backend/**/bin/
-dotnet-backend/**/obj/
-dotnet-backend/*.user
-dotnet-backend/**/.vs/
-
-# Angular build outputs
-angular-frontend/dist/
-angular-frontend/.angular/
+src/**/*.user
+src/**/bin/
+src/**/obj/
+src/**/.vs/

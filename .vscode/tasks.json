@@ -1,15 +1,18 @@
 {
   "version": "2.0.0",
   "tasks": [
-    // Development Mode Tasks (uses docker-compose.override.yml automatically)
     {
-      "label": "Docker: Start Dev Mode",
+      "label": "Docker: Dev Up",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "up",
         "-d"
       ],
@@ -21,11 +24,17 @@
       }
     },
     {
-      "label": "Docker: Start Dev Mode (Logs)",
+      "label": "Docker: Dev Up With Logs",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "up"
       ],
       "isBackground": true,
@@ -36,76 +45,89 @@
       }
     },
     {
-      "label": "Docker: Rebuild Dev Mode",
+      "label": "Docker: Dev Rebuild",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "up",
         "--build",
         "-d"
       ],
       "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      }
+      "problemMatcher": []
     },
     {
-      "label": "Docker: Stop Dev Mode",
+      "label": "Docker: Dev Down",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "down"
       ],
-      "isBackground": false,
       "problemMatcher": []
     },
     {
-      "label": "Docker: Restart Backend (Dev)",
+      "label": "Docker: Restart API",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "restart",
-        "dotnet-backend"
+        "api"
       ],
-      "isBackground": false,
       "problemMatcher": []
     },
     {
-      "label": "Docker: Restart Frontend (Dev)",
+      "label": "Docker: Restart Web",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "restart",
-        "angular-frontend"
+        "web"
       ],
-      "isBackground": false,
       "problemMatcher": []
     },
     {
-      "label": "Docker: View Backend Logs",
+      "label": "Docker: API Logs",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "logs",
         "-f",
-        "dotnet-backend"
+        "api"
       ],
       "isBackground": true,
       "problemMatcher": [],
@@ -115,16 +137,20 @@
       }
     },
     {
-      "label": "Docker: View Frontend Logs",
+      "label": "Docker: Web Logs",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "logs",
         "-f",
-        "angular-frontend"
+        "web"
       ],
       "isBackground": true,
       "problemMatcher": [],
@@ -133,36 +159,34 @@
         "panel": "dedicated"
       }
     },
-    // Production Mode Tasks
     {
-      "label": "Docker: Build Production",
+      "label": "Docker: Prod Build",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "-p",
-        "surveyflow-prod",
+        "hpa-surveyflow-prod",
         "--env-file",
         ".env.production",
         "-f",
-        "docker-compose.yml",
+        "Docker/docker-compose.yml",
         "build"
       ],
-      "isBackground": false,
       "problemMatcher": []
     },
     {
-      "label": "Docker: Start Production",
+      "label": "Docker: Prod Up",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "-p",
-        "surveyflow-prod",
+        "hpa-surveyflow-prod",
         "--env-file",
         ".env.production",
         "-f",
-        "docker-compose.yml",
+        "Docker/docker-compose.yml",
         "up",
         "-d"
       ],
@@ -170,84 +194,68 @@
       "problemMatcher": []
     },
     {
-      "label": "Docker: Stop Production",
+      "label": "Docker: Prod Down",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "-p",
-        "surveyflow-prod",
+        "hpa-surveyflow-prod",
         "-f",
-        "docker-compose.yml",
+        "Docker/docker-compose.yml",
         "down"
       ],
-      "isBackground": false,
       "problemMatcher": []
     },
     {
-      "label": "Docker: View Production Logs",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "-p",
-        "surveyflow-prod",
-        "-f",
-        "docker-compose.yml",
-        "logs",
-        "-f"
-      ],
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    // Database Tasks
-    {
-      "label": "Docker: EF Migrations Add",
+      "label": "EF: Add Migration",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "exec",
-        "dotnet-backend",
+        "api",
         "dotnet",
         "ef",
         "migrations",
         "add",
         "${input:migrationName}",
         "--project",
-        "SurveyFlow.Infrastructure",
+        "HPA.SurveyFlow.Infrastructure",
         "--startup-project",
-        "SurveyFlow.Api"
+        "HPA.SurveyFlow.Api"
       ],
-      "isBackground": false,
       "problemMatcher": []
     },
     {
-      "label": "Docker: EF Database Update",
+      "label": "EF: Update Database",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
         "--env-file",
         ".env.development",
+        "-f",
+        "Docker/docker-compose.yml",
+        "-f",
+        "Docker/docker-compose.override.yml",
         "exec",
-        "dotnet-backend",
+        "api",
         "dotnet",
         "ef",
         "database",
         "update",
         "--project",
-        "SurveyFlow.Infrastructure",
+        "HPA.SurveyFlow.Infrastructure",
         "--startup-project",
-        "SurveyFlow.Api"
+        "HPA.SurveyFlow.Api"
       ],
-      "isBackground": false,
       "problemMatcher": []
     }
   ],
@@ -255,7 +263,7 @@
     {
       "id": "migrationName",
       "type": "promptString",
-      "description": "Migration name (e.g. AddUserTable)"
+      "description": "Migration name, for example AddUserTable"
     }
   ]
 }

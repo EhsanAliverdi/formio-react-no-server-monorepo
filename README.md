@@ -1,77 +1,55 @@
-﻿# SurveyFlow
+﻿# HPA SurveyFlow
 
-A Docker-first survey and form management platform built with Angular 19 and .NET 10.
+Enterprise survey and form management platform built with Angular, ASP.NET Core, PostgreSQL, and MinIO.
 
-## Stack
+## Structure
 
-| Layer | Technology | Directory |
-|-------|-----------|-----------|
-| Frontend | Angular 19 + Tailwind CSS + Form.io | `angular-frontend/` |
-| Backend | .NET 10 ASP.NET Core Web API | `dotnet-backend/` |
-| Database | PostgreSQL 16 | — |
-| Object storage | MinIO (S3-compatible) | — |
+| Area | Project | Purpose |
+|------|---------|---------|
+| Web | `src/HPA.SurveyFlow.Web` | Angular application |
+| API | `src/HPA.SurveyFlow.Api` | ASP.NET Core HTTP API |
+| Domain | `src/HPA.SurveyFlow.Domain` | Entities, enums, and DTO contracts |
+| Infrastructure | `src/HPA.SurveyFlow.Infrastructure` | EF Core, persistence, storage, PDF, and application services |
+| Docker | `Docker/` | Compose files, image definitions, and Nginx config |
 
-## Quick Start
-
-**Development (hot reload):**
+## Development
 
 ```bash
-docker compose up --build
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml up --build
 ```
 
-- Angular frontend: http://localhost:4200
-- .NET API: http://localhost:5000
+- Web: http://localhost:4200
+- API: http://localhost:5000
 - MinIO console: http://localhost:9003
 - PostgreSQL: localhost:5432
 
-**Production:**
+## Production-style Docker
 
 ```bash
-docker compose -f docker-compose.yml up --build -d
+docker compose -p hpa-surveyflow-prod --env-file .env.production -f Docker/docker-compose.yml up --build -d
 ```
 
-- Angular frontend: http://localhost:4201
-- .NET API: http://localhost:5000
+- Web: http://localhost:4201
+- API: http://localhost:5000
 
-For detailed Docker docs see [DOCKER.md](DOCKER.md).
-
-## Seed the database
+## Database
 
 ```bash
-docker compose exec dotnet-backend dotnet run --seed
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml exec api dotnet run --project HPA.SurveyFlow.Api -- --seed
 ```
 
-Default admin credentials: `admin@example.com` / `admin12345`
-
-## Environment variables
-
-### .NET backend (`dotnet-backend/`)
-
-| Variable | Description |
-|----------|-------------|
-| `ConnectionStrings__Default` | PostgreSQL connection string |
-| `Minio__Endpoint` | MinIO S3 endpoint URL |
-| `Minio__AccessKey`, `Minio__SecretKey` | MinIO credentials |
-| `Minio__Bucket` | Upload bucket name |
-| `Superuser__Email`, `Superuser__Password` | Seed admin credentials |
-
-### Angular frontend
-
-No server-side env vars required in production — all API calls are relative URLs proxied by nginx.
-
-In dev mode `proxy.conf.json` forwards `/api` to `http://dotnet-backend:5000`.
-
-## MinIO
-
-- Console: http://localhost:9003
-- S3 API: http://localhost:9002
+Default admin credentials: `admin@example.com` / `admin12345`.
 
 ## VS Code Tasks
 
-`Ctrl+Shift+P` → **Tasks: Run Task**:
+Use `Tasks: Run Task` and choose from:
 
-- **Docker: Start Dev Mode** — `docker compose up -d`
-- **Docker: Rebuild Dev Mode** — `docker compose up --build -d`
-- **Docker: Stop Dev Mode** — `docker compose down`
-- **Docker: Prisma DB Push** — push schema changes
-- **Docker: View Backend Logs** / **Docker: View Frontend Logs**
+- `Docker: Dev Up`
+- `Docker: Dev Rebuild`
+- `Docker: Dev Down`
+- `Docker: API Logs`
+- `Docker: Web Logs`
+- `EF: Add Migration`
+- `EF: Update Database`
+
+See [DOCKER.md](DOCKER.md) for Docker details.

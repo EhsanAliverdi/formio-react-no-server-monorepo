@@ -1,8 +1,0 @@
-{
-  "/api": {
-    "target": "http://dotnet-backend:5000",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  }
-}

@@ -1,247 +1,72 @@
-# Development and Production Docker Workflows
+﻿# Docker Workflows
 
-This project supports two distinct Docker workflows:
+All Docker assets live under `Docker/`.
 
-## 🚀 Development Mode (Default)
+## Files
 
-Development mode uses hot reload for both frontend and backend. Code changes are reflected immediately without rebuilding Docker images.
+```text
+Docker/
+  docker-compose.yml           production-style base services
+  docker-compose.override.yml  development overrides
+  Dockerfile.Api               HPA.SurveyFlow.Api image
+  Dockerfile.Web               HPA.SurveyFlow.Web image
+  nginx.web.conf               production web server and /api proxy
+```
 
-### Quick Start
+## Development
 
 ```bash
-# Start everything in development mode
-docker compose --env-file .env.development up
-
-# Or with detached mode
-docker compose --env-file .env.development up -d
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml up --build
 ```
 
-### What Happens in Dev Mode
+Services:
 
-- **Backend (Next.js)**: Runs `npm run dev` with Fast Refresh enabled
-- **Frontend (Vite)**: Runs `npm run dev` with HMR enabled
-- **Source Code**: Mounted as bind mounts from your host
-- **node_modules**: Preserved in named Docker volumes (not from host)
-- **No Rebuilds**: Change code and see updates instantly
+- `web`: Angular dev server on http://localhost:4200
+- `api`: ASP.NET Core API on http://localhost:5000
+- `postgres`: PostgreSQL on localhost:5432
+- `minio`: S3-compatible storage, console on http://localhost:9003
+- `chromium`: browserless Chrome for PDF rendering
 
-### Development URLs
+The development override bind-mounts `src/` into the API container and `src/HPA.SurveyFlow.Web` into the web container.
 
-- Frontend: http://localhost:5174 (Vite dev server)
-- Backend: http://localhost:3000
-- MinIO Console: http://localhost:9003
-- PostgreSQL: localhost:5432
-
-> **Note:** The frontend uses port 5174 in development to avoid conflicts with the base production config which maps port 5173 to nginx (port 80).
-
-**Container Names:** All dev containers have `-dev` suffix (e.g., `surveyflow-backend-dev`, `surveyflow-frontend-dev`)
-
-### Stopping
+## Production-style
 
 ```bash
-docker compose down
+docker compose -p hpa-surveyflow-prod --env-file .env.production -f Docker/docker-compose.yml up --build -d
 ```
 
-### Rebuilding (Only if dependencies change)
+Production-style services build immutable images. The web image builds Angular and serves the static output through Nginx. Nginx also proxies `/api/` to the `api` service.
+
+## Common Commands
 
 ```bash
-# Rebuild images (e.g., after changing package.json)
-docker compose build
+# Start dev
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml up -d
 
-# Or rebuild and start
-docker compose up --build
+# Rebuild dev
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml up --build -d
+
+# View logs
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml logs -f api
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml logs -f web
+
+# Stop dev
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml down
+
+# Add EF migration
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml exec api dotnet ef migrations add AddSomething --project HPA.SurveyFlow.Infrastructure --startup-project HPA.SurveyFlow.Api
+
+# Update database
+docker compose --env-file .env.development -f Docker/docker-compose.yml -f Docker/docker-compose.override.yml exec api dotnet ef database update --project HPA.SurveyFlow.Infrastructure --startup-project HPA.SurveyFlow.Api
 ```
 
-## 📦 Production Mode
+## Ports
 
-Production mode builds optimized, immutable Docker images suitable for deployment.
-
-### Building for Production
-
-```bash
-# Build production images
-docker compose --env-file .env.production -f docker-compose.yml build
-
-# Or start production containers
-docker compose --env-file .env.production -f docker-compose.yml up
-```
-
-### What Happens in Prod Mode
-
-- **Backend**: Built with `npm run build`, runs `next start`
-- **Frontend**: Built with `npm run build`, served via nginx
-- **Source Code**: Copied into image at build time
-- **Immutable**: Images contain everything, no external mounts
-- **Optimized**: Production builds with minification, etc.
-
-### Production URLs
-
-- Frontend: http://localhost:8080 (nginx serves on port 80, mapped to 8080)
-- Backend: http://localhost:3001
-- MinIO Console: http://localhost:9005
-- PostgreSQL: localhost:5433
-
-**Container Names:** All prod containers have `-prod` suffix (e.g., `surveyflow-backend-prod`, `surveyflow-frontend-prod`)
-
-> **Note:** Production uses different ports than development, allowing both to run simultaneously.
-
-## 🛠️ How It Works
-
-### File Structure
-
-```
-├── docker-compose.yml              # Base configuration (production)
-├── docker-compose.override.yml     # Development overrides (auto-applied)
-├── Dockerfile.backend              # Production backend build
-├── Dockerfile.backend.dev          # Development backend (dependencies only)
-├── Dockerfile.frontend             # Production frontend build
-└── Dockerfile.frontend.dev         # Development frontend (dependencies only)
-```
-
-### Development Override Behavior
-
-Docker Compose automatically merges `docker-compose.override.yml` with `docker-compose.yml`.
-
-The override file:
-- Uses `*.dev` Dockerfiles
-- Mounts source code as volumes
-- Preserves `node_modules` in named volumes
-- Runs dev servers instead of production servers
-
-### To Disable Development Mode
-
-```bash
-# Option 1: Use only the base compose file
-docker compose -f docker-compose.yml up
-
-# Option 2: Rename the override file
-mv docker-compose.override.yml docker-compose.override.yml.disabled
-docker compose up
-```
-
-### Running Both Dev and Production Simultaneously
-
-You can run both development and production environments at the same time! They use different container names, ports, and project names:
-
-**Development (with override):**
-```bash
-docker compose up -d
-```
-- Project: `surveyflow-dev`
-- Containers: `surveyflow-*-dev`
-- Frontend: http://localhost:5174
-- Backend: http://localhost:3000
-- Postgres: localhost:5432
-- MinIO: localhost:9002, console at 9003
-
-**Production (without override, using .env.production):**
-```bash
-docker compose -p surveyflow-prod --env-file .env.production -f docker-compose.yml up -d
-```
-- Project: `surveyflow-prod`  
-- Containers: `surveyflow-*-prod`
-- Frontend: http://localhost:8080
-- Backend: http://localhost:3001
-- Postgres: localhost:5433
-- MinIO: localhost:9004, console at 9005
-
-Both environments use separate Docker Compose projects, containers, and ports, so they won't conflict!
-
-**VS Code Tasks**: Use "Docker: Start Dev Mode" and "Docker: Start Production" tasks to start both environments.
-
-## 🔧 Troubleshooting
-
-### Hot Reload Not Working on Windows/WSL?
-
-Enable polling in `.env.development`:
-
-```env
-CHOKIDAR_USEPOLLING=true
-WATCHPACK_POLLING=true
-```
-
-Then restart:
-
-```bash
-docker compose restart frontend backend
-```
-
-### Port Conflicts
-
-If ports 3000 or 5173 are already in use, override them in `.env.development`:
-
-```env
-FRONTEND_PORT=5174
-BACKEND_PORT=3001
-```
-
-### Android Emulator Image URLs
-
-If images load from `http://localhost:3000` inside the Android emulator, set the backend public base URL in `.env.development`:
-
-```env
-PUBLIC_API_BASE_URL=http://10.0.2.2:3000
-```
-
-Then restart the backend container.
-
-### Node Modules Conflicts
-
-If you have `node_modules` on your host and experience issues:
-
-```bash
-# Remove host node_modules
-rm -rf frontend/node_modules backend/node_modules
-
-# Rebuild containers
-docker compose build
-docker compose up
-```
-
-### Prisma Schema Changes
-
-After changing `backend/prisma/schema.prisma`:
-
-```bash
-# Regenerate client
-docker compose exec backend npx prisma generate
-
-# Apply migrations
-docker compose exec backend npx prisma db push
-```
-
-Or restart the backend (it runs `prisma generate` on startup in dev mode).
-
-## 📋 Common Commands
-
-```bash
-# Development mode (default)
-docker compose --env-file .env.development up                    # Start dev servers
-docker compose --env-file .env.development up -d                 # Start in background
-docker compose --env-file .env.development logs -f backend       # View backend logs
-docker compose --env-file .env.development logs -f frontend      # View frontend logs
-docker compose --env-file .env.development restart backend       # Restart backend only
-docker compose --env-file .env.development down                  # Stop all containers
-
-# Production mode
-docker compose --env-file .env.production -f docker-compose.yml up --build
-
-# Database operations
-docker compose --env-file .env.development exec backend npx prisma db push
-docker compose --env-file .env.development exec backend npm run seed
-
-# Clean up
-docker compose down -v              # Stop and remove volumes
-docker system prune -a              # Remove all unused Docker resources
-```
-
-## 🎯 VS Code Integration
-
-Use the provided tasks in `.vscode/tasks.json`:
-
-- **Docker: Compose Up (Dev)** - Start development mode
-- **Docker: Compose Up Frontend** - Start frontend only
-- **Docker: Compose Up Backend** - Start backend only
-- **Docker: Compose Down** - Stop all containers
-- **Docker: Rebuild Dev** - Rebuild development images
-
-Access tasks: `Ctrl+Shift+P` → "Tasks: Run Task"
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `WEB_DEV_PORT` | `4200` | Angular dev server |
+| `WEB_PORT` | `4201` | Production-style Nginx web port |
+| `API_PORT` | `5000` | ASP.NET Core API |
+| `POSTGRES_PORT` | `5432` | PostgreSQL |
+| `MINIO_PORT` | `9002` | MinIO S3 API |
+| `MINIO_CONSOLE_PORT` | `9003` | MinIO console |

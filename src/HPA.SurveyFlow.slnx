@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj" />
+  <Project Path="HPA.SurveyFlow.Domain/HPA.SurveyFlow.Domain.csproj" />
+  <Project Path="HPA.SurveyFlow.Infrastructure/HPA.SurveyFlow.Infrastructure.csproj" />
+</Solution>
