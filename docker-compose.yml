@@ -1,4 +1,4 @@
-name: surveyflow-prod
+﻿name: surveyflow-prod
 
 services:
   postgres:
@@ -28,60 +28,11 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
-      # Host port 9000 is often already taken; using environment variables for flexibility
       - "${MINIO_PORT:-9002}:9000"
       - "${MINIO_CONSOLE_PORT:-9003}:9001"
     volumes:
       - minio_data:/data
 
-  # Legacy Next.js backend — kept for rollback. Remove after .NET backend is verified in production.
-  backend:
-    container_name: surveyflow-backend-prod
-    pull_policy: build
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-      pull: true
-      args:
-        # INSECURE_TLS: ${INSECURE_TLS:-false}
-        INSECURE_TLS: "true"
-        APP_VERSION: ${BACKEND_APP_VERSION:-}
-        BUILD_TIME: ${BUILD_TIME:-}
-        APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
-    environment:
-      # Used by `npm run seed` (optional override)
-      SUPERUSER_EMAIL: ${SUPERUSER_EMAIL:-admin@example.com}
-      SUPERUSER_PASSWORD: ${SUPERUSER_PASSWORD:-admin12345}
-
-      # MinIO (S3-compatible) storage for image uploads
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
-      MINIO_REGION: ${MINIO_REGION:-us-east-1}
-      MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-${MINIO_ROOT_USER:-minioadmin}}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-minioadmin}}
-
-      # Public base URL for generating upload links (use emulator-reachable host when needed)
-      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-}
-
-      # Version metadata for /api/version
-      APP_VERSION: ${BACKEND_APP_VERSION:-}
-      BUILD_TIME: ${BUILD_TIME:-}
-      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-development}
-
-      # PostgreSQL connection
-      DATABASE_URL: postgresql://surveyflow:surveyflow123@postgres:5432/surveyflow
-
-      # Force SWC WASM bindings (native SWC can SIGBUS under Docker Desktop/WSL)
-      NEXT_TEST_WASM: "1"
-    ports:
-      - "${BACKEND_PORT:-3000}:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      minio:
-        condition: service_started
-
-  # .NET 10 backend (new — runs alongside legacy backend during migration)
   dotnet-backend:
     container_name: surveyflow-dotnet-backend-prod
     pull_policy: build
@@ -112,7 +63,6 @@ services:
       minio:
         condition: service_started
 
-  # Angular 19 frontend (current — replaces legacy React/Vite frontend)
   angular-frontend:
     container_name: surveyflow-angular-frontend-prod
     pull_policy: build

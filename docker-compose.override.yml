@@ -1,51 +1,26 @@
-# docker-compose.override.yml
-# 
-# This file is automatically merged with docker-compose.yml when you run:
+﻿# docker-compose.override.yml
+#
+# Automatically merged with docker-compose.yml when you run:
 #   docker compose up
 #
-# It overrides the production configuration to enable development mode:
-# - Uses dev Dockerfiles instead of production ones
-# - Mounts source code as bind mounts for hot reload
-# - Uses named volumes for node_modules to avoid host/container conflicts
-# - Runs dev servers instead of production builds
-# - Uses different container names (with -dev suffix) to allow running both environments simultaneously
-# - Uses different project name (surveyflow-dev) to avoid conflicts with production
+# Overrides production config for development:
+# - Dev Dockerfiles with hot reload
+# - Source code bind-mounts
+# - Named volumes for node_modules
+# - Different container names (-dev suffix)
+# - Project name surveyflow-dev (avoids conflicts with production)
 #
-# To use PRODUCTION mode instead:
-#   docker compose -f docker-compose.yml -p surveyflow-prod up --build
-#
-# Or rename this file temporarily to disable the override.
+# To use production mode instead:
+#   docker compose -f docker-compose.yml up --build
 
 name: surveyflow-dev
 
 services:
   postgres:
     container_name: surveyflow-postgres-dev
-  
+
   minio:
     container_name: surveyflow-minio-dev
-  backend:
-    container_name: surveyflow-backend-dev
-    build:
-      dockerfile: Dockerfile.backend.dev
-    volumes:
-      # Mount source code for hot reload
-      - ./backend:/app/backend
-      # Use a named volume for node_modules to preserve container's installed packages
-      # This prevents host node_modules (if any) from overwriting container's
-      - backend_node_modules:/app/backend/node_modules
-      # Also preserve Playwright browsers
-      - backend_playwright:/app/backend/.cache
-    environment:
-      # Override for development
-      NODE_ENV: development
-      # Enable Next.js Fast Refresh
-      NEXT_TELEMETRY_DISABLED: 1
-      # Remove WASM binding override in dev mode - let Next.js use native bindings
-      NEXT_TEST_WASM: ""
-      # Public base URL for local/dev access
-      PUBLIC_API_BASE_URL: http://192.168.240.1:3000
-    command: sh -c "npx prisma generate && npm run dev -- -H 0.0.0.0 -p 3000"
 
   dotnet-backend:
     container_name: surveyflow-dotnet-backend-dev
@@ -64,18 +39,14 @@ services:
     ports:
       - "${DOTNET_BACKEND_PORT:-5000}:5000"
 
-  # Angular 19 frontend — dev server with hot reload (Phase 2 migration)
   angular-frontend:
     container_name: surveyflow-angular-frontend-dev
     build:
       dockerfile: Dockerfile.angular-frontend.dev
     volumes:
-      # Mount source code for hot reload
       - ./angular-frontend:/app/angular-frontend
-      # Named volume to preserve container's node_modules
       - angular_node_modules:/app/angular-frontend/node_modules
     environment:
-      # File-watching polling required on Windows/Mac Docker Desktop hosts
       CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
     ports:
       - "4200:4200"
@@ -83,7 +54,4 @@ services:
       - dotnet-backend
 
 volumes:
-  # Named volumes to preserve node_modules and caches across restarts
-  backend_node_modules:
-  backend_playwright:
   angular_node_modules:
