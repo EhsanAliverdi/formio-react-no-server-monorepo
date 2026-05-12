@@ -6,7 +6,7 @@ FROM node:22-alpine
 WORKDIR /app/angular-frontend
 
 # Install dependencies (cached layer; source bind-mount overlays at runtime)
-COPY angular-frontend/package.json angular-frontend/package-lock.json ./
+COPY angular-frontend/.npmrc angular-frontend/package.json angular-frontend/package-lock.json ./
 RUN npm install
 
 # Development mode: source code is mounted via bind mount in docker-compose.override.yml
