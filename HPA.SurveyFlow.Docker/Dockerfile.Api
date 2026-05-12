@@ -7,11 +7,11 @@ ENV DOTNET_USE_POLLING_FILE_WATCHER=true
 RUN dotnet tool install --global dotnet-ef
 ENV PATH="$PATH:/root/.dotnet/tools"
 
-WORKDIR /app/src
+WORKDIR /app
 
-COPY src/HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj HPA.SurveyFlow.Api/
-COPY src/HPA.SurveyFlow.Domain/HPA.SurveyFlow.Domain.csproj HPA.SurveyFlow.Domain/
-COPY src/HPA.SurveyFlow.Infrastructure/HPA.SurveyFlow.Infrastructure.csproj HPA.SurveyFlow.Infrastructure/
+COPY HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj HPA.SurveyFlow.Api/
+COPY HPA.SurveyFlow.Domain/HPA.SurveyFlow.Domain.csproj HPA.SurveyFlow.Domain/
+COPY HPA.SurveyFlow.Infrastructure/HPA.SurveyFlow.Infrastructure.csproj HPA.SurveyFlow.Infrastructure/
 RUN dotnet restore HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj
 
 EXPOSE 5000
@@ -21,14 +21,16 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /workspace
 
-COPY src/HPA.SurveyFlow.slnx src/
-COPY src/HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj src/HPA.SurveyFlow.Api/
-COPY src/HPA.SurveyFlow.Domain/HPA.SurveyFlow.Domain.csproj src/HPA.SurveyFlow.Domain/
-COPY src/HPA.SurveyFlow.Infrastructure/HPA.SurveyFlow.Infrastructure.csproj src/HPA.SurveyFlow.Infrastructure/
-RUN dotnet restore src/HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj
+COPY HPA.SurveyFlow.slnx ./
+COPY HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj HPA.SurveyFlow.Api/
+COPY HPA.SurveyFlow.Domain/HPA.SurveyFlow.Domain.csproj HPA.SurveyFlow.Domain/
+COPY HPA.SurveyFlow.Infrastructure/HPA.SurveyFlow.Infrastructure.csproj HPA.SurveyFlow.Infrastructure/
+RUN dotnet restore HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj
 
-COPY src/ src/
-RUN dotnet publish src/HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj \
+COPY HPA.SurveyFlow.Api/ HPA.SurveyFlow.Api/
+COPY HPA.SurveyFlow.Domain/ HPA.SurveyFlow.Domain/
+COPY HPA.SurveyFlow.Infrastructure/ HPA.SurveyFlow.Infrastructure/
+RUN dotnet publish HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj \
     -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS prod

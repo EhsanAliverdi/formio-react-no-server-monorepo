@@ -1,9 +1,0 @@
-{
-  "name": "surveyflow-monorepo",
-  "version": "1.0.0",
-  "description": "SurveyFlow - A modern survey and form management platform",
-  "private": true,
-  "dependencies": {
-    "formiojs": "^4.21.7"
-  }
-}

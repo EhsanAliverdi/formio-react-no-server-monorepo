@@ -13,17 +13,17 @@ _reference/
 docker-pdf-test.pdf
 
 # Local databases
-src/**/data/*.db
-src/**/var/*.db
+HPA.SurveyFlow.*/**/data/*.db
+HPA.SurveyFlow.*/**/var/*.db
 
 # Node / build outputs
 node_modules/
-src/**/node_modules/
-src/**/dist/
-src/**/.angular/
+HPA.SurveyFlow.*/**/node_modules/
+HPA.SurveyFlow.*/**/dist/
+HPA.SurveyFlow.*/**/.angular/
 
 # .NET build outputs
-src/**/*.user
-src/**/bin/
-src/**/obj/
-src/**/.vs/
+HPA.SurveyFlow.*/*.user
+HPA.SurveyFlow.*/**/bin/
+HPA.SurveyFlow.*/**/obj/
+HPA.SurveyFlow.*/**/.vs/

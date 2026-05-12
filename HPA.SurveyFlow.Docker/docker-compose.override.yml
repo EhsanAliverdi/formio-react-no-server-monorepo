@@ -16,10 +16,10 @@ services:
   api:
     container_name: hpa-surveyflow-api-dev
     build:
-      dockerfile: Docker/Dockerfile.Api
+      dockerfile: HPA.SurveyFlow.Docker/Dockerfile.Api
       target: dev
     volumes:
-      - ../src:/app/src
+      - ..:/app
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       APP_ENVIRONMENT: development
@@ -38,11 +38,11 @@ services:
   web:
     container_name: hpa-surveyflow-web-dev
     build:
-      dockerfile: Docker/Dockerfile.Web
+      dockerfile: HPA.SurveyFlow.Docker/Dockerfile.Web
       target: dev
     volumes:
-      - ../src/HPA.SurveyFlow.Web:/app/src/HPA.SurveyFlow.Web
-      - web_node_modules:/app/src/HPA.SurveyFlow.Web/node_modules
+      - ../HPA.SurveyFlow.Web:/app/HPA.SurveyFlow.Web
+      - web_node_modules:/app/HPA.SurveyFlow.Web/node_modules
     environment:
       CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
     ports: !override

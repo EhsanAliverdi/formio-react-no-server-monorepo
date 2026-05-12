@@ -43,7 +43,7 @@ services:
     pull_policy: build
     build:
       context: ..
-      dockerfile: Docker/Dockerfile.Api
+      dockerfile: HPA.SurveyFlow.Docker/Dockerfile.Api
       target: prod
       args:
         APP_VERSION: ${API_APP_VERSION:-}
@@ -77,7 +77,7 @@ services:
     pull_policy: build
     build:
       context: ..
-      dockerfile: Docker/Dockerfile.Web
+      dockerfile: HPA.SurveyFlow.Docker/Dockerfile.Web
       target: prod
       pull: true
       args:

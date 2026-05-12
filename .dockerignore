@@ -4,14 +4,14 @@ npm-debug.log
 .DS_Store
 .vscode
 
-# Source build artifacts
-src/**/node_modules
-src/**/dist
-src/**/.angular
-src/**/bin
-src/**/obj
-src/**/.vs
-src/**/npm-debug.log
+# Project build artifacts
+HPA.SurveyFlow.*/**/node_modules
+HPA.SurveyFlow.*/**/dist
+HPA.SurveyFlow.*/**/.angular
+HPA.SurveyFlow.*/**/bin
+HPA.SurveyFlow.*/**/obj
+HPA.SurveyFlow.*/**/.vs
+HPA.SurveyFlow.*/**/npm-debug.log
 
 # Git
 .git
