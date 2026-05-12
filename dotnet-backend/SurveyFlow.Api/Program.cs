@@ -87,8 +87,11 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(db, superuserEmail, superuserPassword);
 }
 
-app.MapOpenApi();
-app.MapScalarApiReference();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 app.UseCors();
 

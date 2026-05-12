@@ -33,12 +33,18 @@ services:
     volumes:
       - minio_data:/data
 
+  chromium:
+    container_name: surveyflow-chromium-prod
+    image: browserless/chrome:latest
+    pull_policy: always
+
   dotnet-backend:
     container_name: surveyflow-dotnet-backend-prod
     pull_policy: build
     build:
       context: .
       dockerfile: Dockerfile.dotnet-backend
+      target: prod
       args:
         APP_VERSION: ${BACKEND_APP_VERSION:-}
         BUILD_TIME: ${BUILD_TIME:-}
@@ -55,12 +61,15 @@ services:
       APP_VERSION: ${BACKEND_APP_VERSION:-}
       BUILD_TIME: ${BUILD_TIME:-}
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
+      CHROMIUM_WS_ENDPOINT: ws://chromium:3000
     ports:
       - "${DOTNET_BACKEND_PORT:-5000}:5000"
     depends_on:
       postgres:
         condition: service_healthy
       minio:
+        condition: service_started
+      chromium:
         condition: service_started
 
   angular-frontend:
@@ -69,6 +78,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.angular-frontend
+      target: prod
       pull: true
       args:
         ANGULAR_API_BASE_URL: ${ANGULAR_API_BASE_URL:-}

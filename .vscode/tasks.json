@@ -8,6 +8,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "up",
         "-d"
       ],
@@ -39,6 +41,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "up",
         "--build",
         "-d"
@@ -56,6 +60,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "down"
       ],
       "isBackground": false,
@@ -67,6 +73,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "restart",
         "dotnet-backend"
       ],
@@ -79,6 +87,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "restart",
         "angular-frontend"
       ],
@@ -91,6 +101,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "logs",
         "-f",
         "dotnet-backend"
@@ -108,6 +120,8 @@
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
         "logs",
         "-f",
         "angular-frontend"
@@ -129,7 +143,7 @@
         "-p",
         "surveyflow-prod",
         "--env-file",
-        ".env.prod",
+        ".env.production",
         "-f",
         "docker-compose.yml",
         "build"
@@ -146,7 +160,7 @@
         "-p",
         "surveyflow-prod",
         "--env-file",
-        ".env.prod",
+        ".env.production",
         "-f",
         "docker-compose.yml",
         "up",
@@ -192,11 +206,36 @@
     },
     // Database Tasks
     {
-      "label": "Docker: EF Migrations Apply",
+      "label": "Docker: EF Migrations Add",
       "type": "shell",
       "command": "docker",
       "args": [
         "compose",
+        "--env-file",
+        ".env.development",
+        "exec",
+        "dotnet-backend",
+        "dotnet",
+        "ef",
+        "migrations",
+        "add",
+        "${input:migrationName}",
+        "--project",
+        "SurveyFlow.Infrastructure",
+        "--startup-project",
+        "SurveyFlow.Api"
+      ],
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: EF Database Update",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "--env-file",
+        ".env.development",
         "exec",
         "dotnet-backend",
         "dotnet",
@@ -210,6 +249,13 @@
       ],
       "isBackground": false,
       "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "migrationName",
+      "type": "promptString",
+      "description": "Migration name (e.g. AddUserTable)"
     }
   ]
 }

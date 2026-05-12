@@ -40,13 +40,21 @@ public class PdfService
         {
             if (_browser != null && _browser.IsConnected) return _browser;
 
-            var fetcher = new BrowserFetcher();
-            await fetcher.DownloadAsync();
-            _browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            var wsEndpoint = Environment.GetEnvironmentVariable("CHROMIUM_WS_ENDPOINT");
+            if (!string.IsNullOrEmpty(wsEndpoint))
             {
-                Headless = true,
-                Args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-            });
+                _browser = await Puppeteer.ConnectAsync(new ConnectOptions { BrowserWSEndpoint = wsEndpoint });
+            }
+            else
+            {
+                var fetcher = new BrowserFetcher();
+                await fetcher.DownloadAsync();
+                _browser = await Puppeteer.LaunchAsync(new LaunchOptions
+                {
+                    Headless = true,
+                    Args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+                });
+            }
             return _browser;
         }
         finally

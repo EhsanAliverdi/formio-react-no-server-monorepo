@@ -22,10 +22,17 @@ services:
   minio:
     container_name: surveyflow-minio-dev
 
+  chromium:
+    container_name: surveyflow-chromium-dev
+    image: browserless/chrome:latest
+    ports:
+      - "3000:3000"
+
   dotnet-backend:
     container_name: surveyflow-dotnet-backend-dev
     build:
-      dockerfile: Dockerfile.dotnet-backend.dev
+      dockerfile: Dockerfile.dotnet-backend
+      target: dev
     volumes:
       - ./dotnet-backend:/app/dotnet-backend
     environment:
@@ -36,13 +43,17 @@ services:
       Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-minioadmin}
       Superuser__Email: ${SUPERUSER_EMAIL:-admin@example.com}
       Superuser__Password: ${SUPERUSER_PASSWORD:-admin12345}
+      CHROMIUM_WS_ENDPOINT: ws://chromium:3000
+    depends_on:
+      - chromium
     ports:
       - "${DOTNET_BACKEND_PORT:-5000}:5000"
 
   angular-frontend:
     container_name: surveyflow-angular-frontend-dev
     build:
-      dockerfile: Dockerfile.angular-frontend.dev
+      dockerfile: Dockerfile.angular-frontend
+      target: dev
     volumes:
       - ./angular-frontend:/app/angular-frontend
       - angular_node_modules:/app/angular-frontend/node_modules

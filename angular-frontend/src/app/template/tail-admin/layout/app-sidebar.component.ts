@@ -1,4 +1,4 @@
-import { Component, Input, computed, inject } from '@angular/core';
+import { Component, Input, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { SidebarService } from '../services/sidebar.service';
@@ -155,6 +155,15 @@ export class AppSidebarComponent {
 
     return `fixed top-0 left-0 px-5 h-screen flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out z-50 ${width} ${mobileTranslate}`;
   });
+
+  constructor() {
+    effect(() => {
+      const expanded = this.sidebar.isExpanded();
+      const hovered = this.sidebar.isHovered();
+      const w = expanded || hovered ? '290px' : '90px';
+      document.documentElement.style.setProperty('--sidebar-width', w);
+    });
+  }
 
   onMouseEnter(): void {
     if (!this.sidebar.isExpanded()) {
