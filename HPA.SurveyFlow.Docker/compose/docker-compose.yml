@@ -71,6 +71,8 @@ services:
       pull: true
       args:
         ANGULAR_API_BASE_URL: ${ANGULAR_API_BASE_URL:-}
+        APP_VERSION: ${API_APP_VERSION:-local}
+        APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
     depends_on:
       - api
 

@@ -2,6 +2,7 @@ import { Component, Input, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { SidebarService } from '../services/sidebar.service';
+import { environment } from '../../../../environments/environment';
 
 export interface NavItem {
   name: string;
@@ -123,6 +124,27 @@ export interface SidebarBranding {
             </div>
           </div>
         </nav>
+
+        <div
+          class="mt-auto border-t border-gray-200 pt-4 text-gray-500 dark:border-gray-800 dark:text-gray-400"
+          [class.text-center]="!showLabels()"
+          [title]="versionTitle()"
+        >
+          @if (showLabels()) {
+            <div class="text-xs font-medium leading-5">
+              v{{ appVersion }}
+            </div>
+            @if (showEnvironment()) {
+              <div class="text-[11px] leading-4 uppercase tracking-wide">
+                {{ appEnvironment }}
+              </div>
+            }
+          } @else {
+            <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-[11px] font-semibold text-gray-600 dark:bg-white/5 dark:text-gray-300">
+              v
+            </div>
+          }
+        </div>
       </div>
     </aside>
 
@@ -140,10 +162,19 @@ export class AppSidebarComponent {
   @Input() branding?: SidebarBranding;
 
   sidebar = inject(SidebarService);
+  readonly appVersion = environment.appVersion?.trim() || 'local';
+  readonly appEnvironment = environment.appEnvironment?.trim() || 'development';
 
   showLabels = computed(() =>
     this.sidebar.isExpanded() || this.sidebar.isHovered() || this.sidebar.isMobileOpen()
   );
+
+  showEnvironment = computed(() => this.appEnvironment.toLowerCase() !== 'production');
+
+  versionTitle = computed(() => {
+    const environmentSuffix = this.showEnvironment() ? ` (${this.appEnvironment})` : '';
+    return `Version ${this.appVersion}${environmentSuffix}`;
+  });
 
   sidebarClass = computed(() => {
     const expanded = this.sidebar.isExpanded();
