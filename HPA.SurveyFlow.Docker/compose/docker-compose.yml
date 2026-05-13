@@ -46,8 +46,10 @@ services:
       Minio__Bucket: ${MINIO_BUCKET:-uploads}
       Minio__AccessKey: ${MINIO_ACCESS_KEY:-minioadmin}
       Minio__SecretKey: ${MINIO_SECRET_KEY:-minioadmin}
-      Superuser__Email: ${SUPERUSER_EMAIL:-admin@example.com}
-      Superuser__Password: ${SUPERUSER_PASSWORD:-admin12345}
+      Seed__AdminUser: ${SEED_ADMIN_USER:-false}
+      Seed__Forms: ${SEED_FORMS:-false}
+      Admin__Email: ${ADMIN_EMAIL:-}
+      Admin__Password: ${ADMIN_PASSWORD:-}
       APP_VERSION: ${API_APP_VERSION:-}
       BUILD_TIME: ${BUILD_TIME:-}
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}

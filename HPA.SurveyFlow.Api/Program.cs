@@ -76,15 +76,15 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var superuserEmail = builder.Configuration["Superuser:Email"]
-        ?? Environment.GetEnvironmentVariable("SUPERUSER_EMAIL")
-        ?? "admin@example.com";
-    var superuserPassword = builder.Configuration["Superuser:Password"]
-        ?? Environment.GetEnvironmentVariable("SUPERUSER_PASSWORD")
-        ?? "admin12345";
+    var seedAdminUser = GetFlag(builder.Configuration, "Seed:AdminUser", "SEED_ADMIN_USER", defaultValue: false);
+    var seedForms = GetFlag(builder.Configuration, "Seed:Forms", "SEED_FORMS", defaultValue: false);
+    var adminEmail = builder.Configuration["Admin:Email"]
+        ?? Environment.GetEnvironmentVariable("ADMIN_EMAIL");
+    var adminPassword = builder.Configuration["Admin:Password"]
+        ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
     var storage = app.Services.GetRequiredService<StorageService>();
     await storage.EnsureBucketAsync();
-    await DbSeeder.SeedAsync(db, superuserEmail, superuserPassword);
+    await DbSeeder.SeedAsync(db, seedAdminUser, adminEmail, adminPassword, seedForms);
 }
 
 if (app.Environment.IsDevelopment())
@@ -102,3 +102,18 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static bool GetFlag(IConfiguration configuration, string configurationKey, string environmentVariableName, bool defaultValue)
+{
+    var rawValue = configuration[configurationKey]
+        ?? Environment.GetEnvironmentVariable(environmentVariableName);
+
+    if (string.IsNullOrWhiteSpace(rawValue))
+    {
+        return defaultValue;
+    }
+
+    return bool.TryParse(rawValue, out var flag)
+        ? flag
+        : throw new InvalidOperationException($"{configurationKey} must be either true or false.");
+}

@@ -19,7 +19,13 @@ Required sensitive variables:
 - `POSTGRES_PASSWORD`
 - `MINIO_ROOT_PASSWORD`
 - `MINIO_SECRET_KEY`
-- `SUPERUSER_PASSWORD`
+- `ADMIN_PASSWORD`
+
+Required seed variables:
+
+- `SEED_ADMIN_USER`
+- `SEED_FORMS`
+- `ADMIN_EMAIL`
 
 Required environment routing variables:
 
