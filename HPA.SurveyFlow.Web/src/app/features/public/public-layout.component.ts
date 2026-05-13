@@ -15,7 +15,7 @@ import type { HeaderUser } from '../../template/tail-admin/layout/app-header.com
   template: `
     <app-layout
       [navItems]="navItems()"
-      [branding]="branding"
+      [branding]="branding()"
       [user]="headerUser()"
       notificationsHref="/notifications"
       profileHref="/myProfile"
@@ -62,16 +62,20 @@ export class PublicLayoutComponent implements OnInit {
     this.user() ? [...this.publicNavItems, ...this.authNavItems] : this.publicNavItems
   );
 
-  branding: SidebarBranding = {
-    href: '/',
-    expandedLightSrc: '/images/logo/logo.svg',
-    expandedDarkSrc: '/images/logo/logo-dark.svg',
-    collapsedSrc: '/images/logo/logo-icon.svg',
-    alt: 'SurveyFlow',
-    expandedWidth: 150,
-    expandedHeight: 40,
-    collapsedSize: 32,
-  };
+  branding = computed<SidebarBranding>(() => {
+    const settings = this.siteSettings();
+
+    return {
+      href: '/',
+      expandedLightSrc: settings?.logoExpandedLightUrl?.trim() || '/images/logo/logo.svg',
+      expandedDarkSrc: settings?.logoExpandedDarkUrl?.trim() || '/images/logo/logo-dark.svg',
+      collapsedSrc: settings?.logoCollapsedUrl?.trim() || '/images/logo/logo-icon.svg',
+      alt: settings?.siteName?.trim() || 'SurveyFlow',
+      expandedWidth: Number(settings?.logoExpandedWidth) || 170,
+      expandedHeight: Number(settings?.logoExpandedHeight) || 40,
+      collapsedSize: Number(settings?.logoCollapsedSize) || 40,
+    };
+  });
 
   ngOnInit(): void {
     this.settingsService.getSiteSettings().subscribe({ next: s => this.siteSettings.set(s), error: () => {} });

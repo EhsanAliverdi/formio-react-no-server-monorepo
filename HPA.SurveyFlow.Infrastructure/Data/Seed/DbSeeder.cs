@@ -19,19 +19,29 @@ public static class DbSeeder
         var defaultSettings = new Dictionary<string, string>
         {
             ["siteName"] = "SurveyFlow",
-            ["faviconUrl"] = "",
-            ["logoExpandedLightUrl"] = "",
-            ["logoExpandedDarkUrl"] = "",
-            ["logoCollapsedUrl"] = "",
-            ["logoExpandedWidth"] = "160",
+            ["faviconUrl"] = "/images/logo/favicon.svg",
+            ["logoExpandedLightUrl"] = "/images/logo/logo.svg",
+            ["logoExpandedDarkUrl"] = "/images/logo/logo-dark.svg",
+            ["logoCollapsedUrl"] = "/images/logo/logo-icon.svg",
+            ["logoExpandedWidth"] = "170",
             ["logoExpandedHeight"] = "40",
-            ["logoCollapsedSize"] = "32",
+            ["logoCollapsedSize"] = "40",
         };
 
         foreach (var (key, value) in defaultSettings)
         {
-            if (!await db.SiteSettings.AnyAsync(s => s.Key == key))
+            var existingSetting = await db.SiteSettings.FindAsync(key);
+
+            if (existingSetting is null)
+            {
                 db.SiteSettings.Add(new SiteSetting { Key = key, Value = value });
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(existingSetting.Value))
+            {
+                existingSetting.Value = value;
+            }
         }
 
         // Seed superuser

@@ -1,0 +1,6 @@
+<svg width="170" height="40" viewBox="0 0 170 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">SurveyFlow</title>
+  <rect x="2" y="4" width="32" height="32" rx="8" fill="#34D399"/>
+  <path d="M12 20.5L16.2 24.7L25 15.3" stroke="#052E2B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="42" y="27" fill="#F9FAFB" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">SurveyFlow</text>
+</svg>
