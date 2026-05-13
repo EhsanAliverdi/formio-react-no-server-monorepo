@@ -450,6 +450,127 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
         });
     }
 
+    [HttpPost("settings/integrations/test/email")]
+    public async Task<IActionResult> TestEmailIntegration([FromBody] TestEmailRequest body)
+    {
+        try { HttpContext.RequireRole(UserRole.Admin); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var settings = (await db.SiteSettings.ToListAsync()).ToDictionary(s => s.Key, s => s.Value);
+
+        var provider = body.Provider ?? settings.GetValueOrDefault("integration.email.provider") ?? "smtp";
+        var fromEmail = body.FromEmail ?? settings.GetValueOrDefault("integration.email.fromEmail") ?? "noreply@surveyflow.local";
+        var fromName = body.FromName ?? settings.GetValueOrDefault("integration.email.fromName") ?? "SurveyFlow";
+        var toEmail = body.ToEmail;
+
+        if (string.IsNullOrWhiteSpace(toEmail))
+            return BadRequest(new { error = "Recipient email (toEmail) is required." });
+
+        try
+        {
+            if (provider == "sendgrid")
+            {
+                var apiKey = body.SendgridApiKey ?? settings.GetValueOrDefault("integration.email.sendgridApiKey");
+                if (string.IsNullOrWhiteSpace(apiKey))
+                    return BadRequest(new { error = "SendGrid API key is not configured." });
+
+                using var http = new System.Net.Http.HttpClient();
+                http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+                var payload = new
+                {
+                    personalizations = new[] { new { to = new[] { new { email = toEmail } } } },
+                    from = new { email = fromEmail, name = fromName },
+                    subject = "SurveyFlow – Email integration test",
+                    content = new[] { new { type = "text/plain", value = "This is a test email from SurveyFlow. Your email integration is working correctly." } }
+                };
+                var response = await http.PostAsJsonAsync("https://api.sendgrid.com/v3/mail/send", payload);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var detail = await response.Content.ReadAsStringAsync();
+                    return BadRequest(new { error = $"SendGrid returned {(int)response.StatusCode}: {detail}" });
+                }
+            }
+            else
+            {
+                var host = body.SmtpHost ?? settings.GetValueOrDefault("integration.email.smtpHost");
+                var portStr = body.SmtpPort ?? settings.GetValueOrDefault("integration.email.smtpPort") ?? "587";
+                var username = body.SmtpUsername ?? settings.GetValueOrDefault("integration.email.smtpUsername");
+                var password = body.SmtpPassword ?? settings.GetValueOrDefault("integration.email.smtpPassword");
+                var tlsStr = body.SmtpTls ?? settings.GetValueOrDefault("integration.email.smtpTls") ?? "true";
+
+                if (string.IsNullOrWhiteSpace(host))
+                    return BadRequest(new { error = "SMTP host is not configured." });
+
+                if (!int.TryParse(portStr, out var port)) port = 587;
+                var tls = tlsStr != "false";
+
+                using var client = new System.Net.Mail.SmtpClient(host, port)
+                {
+                    EnableSsl = tls,
+                    DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
+                };
+
+                if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+                    client.Credentials = new System.Net.NetworkCredential(username, password);
+
+                var message = new System.Net.Mail.MailMessage(
+                    new System.Net.Mail.MailAddress(fromEmail, fromName),
+                    new System.Net.Mail.MailAddress(toEmail))
+                {
+                    Subject = "SurveyFlow – Email integration test",
+                    Body = "This is a test email from SurveyFlow. Your email integration is working correctly.",
+                };
+
+                await client.SendMailAsync(message);
+            }
+
+            return Ok(new { success = true, message = $"Test email sent to {toEmail}." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("settings/integrations/test/mex")]
+    public async Task<IActionResult> TestMexIntegration([FromBody] TestMexRequest body)
+    {
+        try { HttpContext.RequireRole(UserRole.Admin); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var settings = (await db.SiteSettings.ToListAsync()).ToDictionary(s => s.Key, s => s.Value);
+
+        var baseUrl = body.BaseUrl ?? settings.GetValueOrDefault("integration.mex.baseUrl");
+        var apiKey = body.ApiKey ?? settings.GetValueOrDefault("integration.mex.apiKey");
+
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            return BadRequest(new { error = "MEX base URL is not configured." });
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return BadRequest(new { error = "MEX API key is not configured." });
+
+        try
+        {
+            var url = baseUrl.TrimEnd('/') + "/Department/GetAll";
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            http.DefaultRequestHeaders.Add("XApiKey", apiKey);
+            var response = await http.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+                return Ok(new { success = true, message = $"Connected to MEX successfully (HTTP {(int)response.StatusCode})." });
+
+            return BadRequest(new { error = $"MEX API returned HTTP {(int)response.StatusCode}." });
+        }
+        catch (System.Net.Http.HttpRequestException ex)
+        {
+            return BadRequest(new { error = $"Could not reach MEX API: {ex.Message}" });
+        }
+        catch (TaskCanceledException)
+        {
+            return BadRequest(new { error = "Connection timed out after 10 seconds." });
+        }
+    }
+
     [HttpGet("settings/site")]
     public async Task<IActionResult> GetSiteSettings()
     {

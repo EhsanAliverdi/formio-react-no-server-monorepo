@@ -16,4 +16,16 @@ export class IntegrationsService {
   updateIntegrations(data: object): Observable<Integrations> {
     return this.http.put<Integrations>(this.api.apiUrl('/api/admin/settings/integrations'), data);
   }
+
+  testEmail(payload: object): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      this.api.apiUrl('/api/admin/settings/integrations/test/email'), payload
+    );
+  }
+
+  testMex(payload: object): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      this.api.apiUrl('/api/admin/settings/integrations/test/mex'), payload
+    );
+  }
 }

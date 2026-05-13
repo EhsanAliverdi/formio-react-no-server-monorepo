@@ -61,3 +61,23 @@ public class MexIntegrationRequest
     [JsonPropertyName("apiKey")] public string? ApiKey { get; set; }
     [JsonPropertyName("enabled")] public string? Enabled { get; set; }
 }
+
+public class TestEmailRequest
+{
+    [JsonPropertyName("toEmail")] public string? ToEmail { get; set; }
+    [JsonPropertyName("provider")] public string? Provider { get; set; }
+    [JsonPropertyName("smtpHost")] public string? SmtpHost { get; set; }
+    [JsonPropertyName("smtpPort")] public string? SmtpPort { get; set; }
+    [JsonPropertyName("smtpUsername")] public string? SmtpUsername { get; set; }
+    [JsonPropertyName("smtpPassword")] public string? SmtpPassword { get; set; }
+    [JsonPropertyName("smtpTls")] public string? SmtpTls { get; set; }
+    [JsonPropertyName("sendgridApiKey")] public string? SendgridApiKey { get; set; }
+    [JsonPropertyName("fromEmail")] public string? FromEmail { get; set; }
+    [JsonPropertyName("fromName")] public string? FromName { get; set; }
+}
+
+public class TestMexRequest
+{
+    [JsonPropertyName("baseUrl")] public string? BaseUrl { get; set; }
+    [JsonPropertyName("apiKey")] public string? ApiKey { get; set; }
+}
