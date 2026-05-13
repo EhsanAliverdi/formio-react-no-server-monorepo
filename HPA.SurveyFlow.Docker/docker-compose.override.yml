@@ -23,6 +23,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       APP_ENVIRONMENT: development
+      HPA_DOCKER_DEV: "true"
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=surveyflow;Username=surveyflow;Password=surveyflow123"
       Minio__Endpoint: http://minio:9000
       Minio__AccessKey: ${MINIO_ROOT_USER:-minioadmin}
