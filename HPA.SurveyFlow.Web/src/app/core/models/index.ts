@@ -137,6 +137,30 @@ export interface ActivityItem {
   details?: any;
 }
 
+export interface EmailIntegration {
+  enabled: boolean;
+  provider: 'smtp' | 'sendgrid';
+  smtpHost?: string;
+  smtpPort?: string;
+  smtpUsername?: string;
+  smtpPasswordSet: boolean;
+  smtpTls: boolean;
+  sendgridApiKeySet: boolean;
+  fromEmail?: string;
+  fromName?: string;
+}
+
+export interface MexIntegration {
+  enabled: boolean;
+  baseUrl?: string;
+  apiKeySet: boolean;
+}
+
+export interface Integrations {
+  email: EmailIntegration;
+  mex: MexIntegration;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   total?: number;

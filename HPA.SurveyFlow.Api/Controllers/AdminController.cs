@@ -489,6 +489,88 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
         return Ok(BuildSiteSettingsDto(allSettings));
     }
 
+    [HttpGet("settings/integrations")]
+    public async Task<IActionResult> GetIntegrations()
+    {
+        try { HttpContext.RequireRole(UserRole.Admin); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var settings = await db.SiteSettings.ToListAsync();
+        return Ok(BuildIntegrationsDto(settings));
+    }
+
+    [HttpPut("settings/integrations")]
+    public async Task<IActionResult> UpdateIntegrations([FromBody] UpdateIntegrationsRequest body)
+    {
+        try { HttpContext.RequireRole(UserRole.Admin); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var updates = new Dictionary<string, string?>();
+
+        if (body.Email != null)
+        {
+            if (body.Email.Enabled != null) updates["integration.email.enabled"] = body.Email.Enabled;
+            if (body.Email.Provider != null) updates["integration.email.provider"] = body.Email.Provider;
+            if (body.Email.SmtpHost != null) updates["integration.email.smtpHost"] = body.Email.SmtpHost;
+            if (body.Email.SmtpPort != null) updates["integration.email.smtpPort"] = body.Email.SmtpPort;
+            if (body.Email.SmtpUsername != null) updates["integration.email.smtpUsername"] = body.Email.SmtpUsername;
+            if (body.Email.SmtpPassword != null) updates["integration.email.smtpPassword"] = body.Email.SmtpPassword;
+            if (body.Email.SmtpTls != null) updates["integration.email.smtpTls"] = body.Email.SmtpTls;
+            if (body.Email.SendgridApiKey != null) updates["integration.email.sendgridApiKey"] = body.Email.SendgridApiKey;
+            if (body.Email.FromEmail != null) updates["integration.email.fromEmail"] = body.Email.FromEmail;
+            if (body.Email.FromName != null) updates["integration.email.fromName"] = body.Email.FromName;
+        }
+
+        if (body.Mex != null)
+        {
+            if (body.Mex.Enabled != null) updates["integration.mex.enabled"] = body.Mex.Enabled;
+            if (body.Mex.BaseUrl != null) updates["integration.mex.baseUrl"] = body.Mex.BaseUrl;
+            if (body.Mex.ApiKey != null) updates["integration.mex.apiKey"] = body.Mex.ApiKey;
+        }
+
+        foreach (var (key, value) in updates)
+        {
+            if (value == null) continue;
+            var existing = await db.SiteSettings.FindAsync(key);
+            if (existing != null)
+                existing.Value = value;
+            else
+                db.SiteSettings.Add(new SiteSetting { Key = key, Value = value });
+        }
+
+        await db.SaveChangesAsync();
+
+        var allSettings = await db.SiteSettings.ToListAsync();
+        return Ok(BuildIntegrationsDto(allSettings));
+    }
+
+    private static IntegrationsDto BuildIntegrationsDto(List<SiteSetting> settings)
+    {
+        var dict = settings.ToDictionary(s => s.Key, s => s.Value);
+        return new IntegrationsDto
+        {
+            Email = new EmailIntegrationDto
+            {
+                Enabled = dict.GetValueOrDefault("integration.email.enabled") == "true",
+                Provider = dict.GetValueOrDefault("integration.email.provider") ?? "smtp",
+                SmtpHost = dict.GetValueOrDefault("integration.email.smtpHost"),
+                SmtpPort = dict.GetValueOrDefault("integration.email.smtpPort"),
+                SmtpUsername = dict.GetValueOrDefault("integration.email.smtpUsername"),
+                SmtpPasswordSet = !string.IsNullOrEmpty(dict.GetValueOrDefault("integration.email.smtpPassword")),
+                SmtpTls = dict.GetValueOrDefault("integration.email.smtpTls") != "false",
+                SendgridApiKeySet = !string.IsNullOrEmpty(dict.GetValueOrDefault("integration.email.sendgridApiKey")),
+                FromEmail = dict.GetValueOrDefault("integration.email.fromEmail"),
+                FromName = dict.GetValueOrDefault("integration.email.fromName"),
+            },
+            Mex = new MexIntegrationDto
+            {
+                Enabled = dict.GetValueOrDefault("integration.mex.enabled") == "true",
+                BaseUrl = dict.GetValueOrDefault("integration.mex.baseUrl"),
+                ApiKeySet = !string.IsNullOrEmpty(dict.GetValueOrDefault("integration.mex.apiKey")),
+            }
+        };
+    }
+
     private static SiteSettingsDto BuildSiteSettingsDto(List<SiteSetting> settings)
     {
         var dict = settings.ToDictionary(s => s.Key, s => s.Value);

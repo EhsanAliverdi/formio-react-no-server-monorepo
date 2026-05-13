@@ -47,6 +47,11 @@ export const adminRoutes: Routes = [
       import('./pages/settings.component').then(m => m.SettingsComponent),
   },
   {
+    path: 'integrations',
+    loadComponent: () =>
+      import('./pages/integrations.component').then(m => m.IntegrationsComponent),
+  },
+  {
     path: 'profile',
     loadComponent: () =>
       import('./pages/profile.component').then(m => m.ProfileComponent),
