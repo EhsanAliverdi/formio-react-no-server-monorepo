@@ -5,38 +5,15 @@
       "label": "Docker: Dev Up",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "up",
-        "-d"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "up", "-d"],
       "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      }
+      "problemMatcher": []
     },
     {
       "label": "Docker: Dev Up With Logs",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "up"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "up"],
       "isBackground": true,
       "problemMatcher": [],
       "presentation": {
@@ -48,18 +25,7 @@
       "label": "Docker: Dev Rebuild",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "up",
-        "--build",
-        "-d"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "up", "--build", "-d"],
       "isBackground": true,
       "problemMatcher": []
     },
@@ -67,195 +33,49 @@
       "label": "Docker: Dev Down",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "down"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "down"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: UAT Config",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/uat.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.uat.yml", "config"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Prod Config",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/production.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.production.yml", "config"],
       "problemMatcher": []
     },
     {
       "label": "Docker: Restart API",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "restart",
-        "api"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "restart", "api"],
       "problemMatcher": []
     },
     {
       "label": "Docker: Restart Web",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "restart",
-        "web"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: API Logs",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "logs",
-        "-f",
-        "api"
-      ],
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "Docker: Web Logs",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "logs",
-        "-f",
-        "web"
-      ],
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "Docker: Prod Build",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "-p",
-        "hpa-surveyflow-prod",
-        "--env-file",
-        ".env.production",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "build"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Prod Up",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "-p",
-        "hpa-surveyflow-prod",
-        "--env-file",
-        ".env.production",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "up",
-        "-d"
-      ],
-      "isBackground": true,
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Prod Down",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "-p",
-        "hpa-surveyflow-prod",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "down"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "restart", "web"],
       "problemMatcher": []
     },
     {
       "label": "EF: Add Migration",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "exec",
-        "api",
-        "dotnet",
-        "ef",
-        "migrations",
-        "add",
-        "${input:migrationName}",
-        "--project",
-        "HPA.SurveyFlow.Infrastructure",
-        "--startup-project",
-        "HPA.SurveyFlow.Api"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "exec", "api", "dotnet", "ef", "migrations", "add", "${input:migrationName}", "--project", "HPA.SurveyFlow.Infrastructure", "--startup-project", "HPA.SurveyFlow.Api"],
       "problemMatcher": []
     },
     {
       "label": "EF: Update Database",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.yml",
-        "-f",
-        "HPA.SurveyFlow.Docker/docker-compose.override.yml",
-        "exec",
-        "api",
-        "dotnet",
-        "ef",
-        "database",
-        "update",
-        "--project",
-        "HPA.SurveyFlow.Infrastructure",
-        "--startup-project",
-        "HPA.SurveyFlow.Api"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "exec", "api", "dotnet", "ef", "database", "update", "--project", "HPA.SurveyFlow.Infrastructure", "--startup-project", "HPA.SurveyFlow.Api"],
       "problemMatcher": []
     }
   ],

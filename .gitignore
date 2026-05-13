@@ -6,8 +6,7 @@ _reference/
 # Environment files
 .env
 .env.*
-!.env.development
-!.env.production
+!HPA.SurveyFlow.Docker/env/*.env
 
 # Docker / local artifacts
 docker-pdf-test.pdf

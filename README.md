@@ -1,6 +1,6 @@
 # HPA SurveyFlow
 
-Enterprise survey and form management platform built with Angular, ASP.NET Core, PostgreSQL, and MinIO.
+Enterprise survey and form management platform built with Angular, ASP.NET Core, PostgreSQL, MinIO, and Docker.
 
 ## Solution Structure
 
@@ -12,14 +12,31 @@ The repository root is the solution boundary. Each top-level `HPA.*` directory i
 | `HPA.SurveyFlow.Api` | ASP.NET Core HTTP API |
 | `HPA.SurveyFlow.Domain` | Entities, enums, and DTO contracts |
 | `HPA.SurveyFlow.Infrastructure` | EF Core, persistence, storage, PDF, and application services |
-| `HPA.SurveyFlow.Docker` | Compose files, Dockerfiles, and Nginx config |
+| `HPA.SurveyFlow.Docker` | Dockerfiles, compose files, environment files, Traefik overlays, and Octopus notes |
 
 Solution file: `HPA.SurveyFlow.slnx`
+
+## Docker Layout
+
+Docker configuration lives under `HPA.SurveyFlow.Docker`:
+
+| Path | Purpose |
+|------|---------|
+| `compose/docker-compose.yml` | Shared service definitions |
+| `compose/docker-compose.development.yml` | Local development ports, bind mounts, and hot reload |
+| `compose/docker-compose.uat.yml` | UAT VM overlay with Traefik routing |
+| `compose/docker-compose.production.yml` | Production VM overlay with Traefik routing |
+| `env/development.env` | Local development variables |
+| `env/uat.env` | UAT variable template |
+| `env/production.env` | Production variable template |
+| `octopus/deployment-process.md` | Octopus deployment notes |
+
+`.dockerignore` remains at the repository root because the Docker build context is the repository root.
 
 ## Development
 
 ```bash
-docker compose --env-file .env.development -f HPA.SurveyFlow.Docker/docker-compose.yml -f HPA.SurveyFlow.Docker/docker-compose.override.yml up --build
+docker compose --env-file HPA.SurveyFlow.Docker/env/development.env -f HPA.SurveyFlow.Docker/compose/docker-compose.yml -f HPA.SurveyFlow.Docker/compose/docker-compose.development.yml up --build
 ```
 
 - Web: http://localhost:4200
@@ -27,14 +44,17 @@ docker compose --env-file .env.development -f HPA.SurveyFlow.Docker/docker-compo
 - MinIO console: http://localhost:9003
 - PostgreSQL: localhost:5432
 
-## Production-style Docker
+## UAT
 
 ```bash
-docker compose -p hpa-surveyflow-prod --env-file .env.production -f HPA.SurveyFlow.Docker/docker-compose.yml up --build -d
+docker compose --env-file HPA.SurveyFlow.Docker/env/uat.env -f HPA.SurveyFlow.Docker/compose/docker-compose.yml -f HPA.SurveyFlow.Docker/compose/docker-compose.uat.yml up --build -d
 ```
 
-- Web: http://localhost:4201
-- API: http://localhost:5000
+## Production
+
+```bash
+docker compose --env-file HPA.SurveyFlow.Docker/env/production.env -f HPA.SurveyFlow.Docker/compose/docker-compose.yml -f HPA.SurveyFlow.Docker/compose/docker-compose.production.yml up --build -d
+```
 
 ## Build Locally
 

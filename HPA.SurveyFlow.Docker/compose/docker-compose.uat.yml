@@ -1,0 +1,48 @@
+name: hpa-surveyflow-uat
+
+services:
+  traefik:
+    container_name: hpa-surveyflow-traefik-uat
+    image: traefik:v3.3
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --api.dashboard=${TRAEFIK_DASHBOARD:-false}
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  postgres:
+    container_name: hpa-surveyflow-postgres-uat
+    restart: unless-stopped
+
+  minio:
+    container_name: hpa-surveyflow-minio-uat
+    restart: unless-stopped
+
+  chromium:
+    container_name: hpa-surveyflow-chromium-uat
+    restart: unless-stopped
+
+  api:
+    container_name: hpa-surveyflow-api-uat
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.surveyflow-api-uat.rule=Host(`${API_HOST}`)
+      - traefik.http.routers.surveyflow-api-uat.entrypoints=web
+      - traefik.http.services.surveyflow-api-uat.loadbalancer.server.port=5000
+
+  web:
+    container_name: hpa-surveyflow-web-uat
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.surveyflow-web-uat.rule=Host(`${WEB_HOST}`)
+      - traefik.http.routers.surveyflow-web-uat.entrypoints=web
+      - traefik.http.services.surveyflow-web-uat.loadbalancer.server.port=80

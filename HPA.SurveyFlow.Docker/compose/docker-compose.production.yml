@@ -1,0 +1,48 @@
+name: hpa-surveyflow-production
+
+services:
+  traefik:
+    container_name: hpa-surveyflow-traefik-prod
+    image: traefik:v3.3
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --api.dashboard=${TRAEFIK_DASHBOARD:-false}
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  postgres:
+    container_name: hpa-surveyflow-postgres-prod
+    restart: unless-stopped
+
+  minio:
+    container_name: hpa-surveyflow-minio-prod
+    restart: unless-stopped
+
+  chromium:
+    container_name: hpa-surveyflow-chromium-prod
+    restart: unless-stopped
+
+  api:
+    container_name: hpa-surveyflow-api-prod
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.surveyflow-api-prod.rule=Host(`${API_HOST}`)
+      - traefik.http.routers.surveyflow-api-prod.entrypoints=web
+      - traefik.http.services.surveyflow-api-prod.loadbalancer.server.port=5000
+
+  web:
+    container_name: hpa-surveyflow-web-prod
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.surveyflow-web-prod.rule=Host(`${WEB_HOST}`)
+      - traefik.http.routers.surveyflow-web-prod.entrypoints=web
+      - traefik.http.services.surveyflow-web-prod.loadbalancer.server.port=80

@@ -1,55 +1,53 @@
-name: hpa-surveyflow-dev
+name: hpa-surveyflow-development
 
 services:
   postgres:
     container_name: hpa-surveyflow-postgres-dev
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
 
   minio:
     container_name: hpa-surveyflow-minio-dev
+    ports:
+      - "${MINIO_PORT:-9002}:9000"
+      - "${MINIO_CONSOLE_PORT:-9003}:9001"
 
   chromium:
     container_name: hpa-surveyflow-chromium-dev
-    image: browserless/chrome:latest
     ports:
-      - "3000:3000"
+      - "${CHROMIUM_PORT:-3000}:3000"
 
   api:
     container_name: hpa-surveyflow-api-dev
     build:
-      dockerfile: HPA.SurveyFlow.Docker/Dockerfile.Api
       target: dev
     volumes:
-      - ..:/app
+      - ../..:/app
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       APP_ENVIRONMENT: development
       HPA_DOCKER_DEV: "true"
-      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=surveyflow;Username=surveyflow;Password=surveyflow123"
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-surveyflow};Username=${POSTGRES_USER:-surveyflow};Password=${POSTGRES_PASSWORD:-surveyflow123}"
       Minio__Endpoint: http://minio:9000
       Minio__AccessKey: ${MINIO_ROOT_USER:-minioadmin}
       Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-minioadmin}
       Superuser__Email: ${SUPERUSER_EMAIL:-admin@example.com}
       Superuser__Password: ${SUPERUSER_PASSWORD:-admin12345}
       CHROMIUM_WS_ENDPOINT: ws://chromium:3000
-    depends_on:
-      - chromium
     ports:
       - "${API_PORT:-5000}:5000"
 
   web:
     container_name: hpa-surveyflow-web-dev
     build:
-      dockerfile: HPA.SurveyFlow.Docker/Dockerfile.Web
       target: dev
     volumes:
-      - ../HPA.SurveyFlow.Web:/app/HPA.SurveyFlow.Web
+      - ../../HPA.SurveyFlow.Web:/app/HPA.SurveyFlow.Web
       - web_node_modules:/app/HPA.SurveyFlow.Web/node_modules
     environment:
       CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
-    ports: !override
+    ports:
       - "${WEB_DEV_PORT:-4200}:4200"
-    depends_on:
-      - api
 
 volumes:
   web_node_modules:
