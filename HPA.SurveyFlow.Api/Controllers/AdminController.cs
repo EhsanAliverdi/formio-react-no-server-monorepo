@@ -533,6 +533,98 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
         }
     }
 
+    [HttpPost("settings/integrations/test/mex/request")]
+    public async Task<IActionResult> TestMexRequest([FromBody] TestMexRequest body)
+    {
+        try { HttpContext.RequireRole(UserRole.Admin); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var settings = (await db.SiteSettings.ToListAsync()).ToDictionary(s => s.Key, s => s.Value);
+
+        var baseUrl = body.BaseUrl ?? settings.GetValueOrDefault("integration.mex.baseUrl");
+        var apiKey = body.ApiKey ?? settings.GetValueOrDefault("integration.mex.apiKey");
+
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            return BadRequest(new { error = "MEX base URL is not configured." });
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return BadRequest(new { error = "MEX API key is not configured." });
+
+        var appEnvironment = System.Environment.GetEnvironmentVariable("APP_ENVIRONMENT") ?? "production";
+        var isProduction = appEnvironment.Equals("production", StringComparison.OrdinalIgnoreCase);
+
+        // Return environment info so the client can show the warning (double-check server side too)
+        if (body.ConfirmedProduction != true && isProduction)
+            return Ok(new { requiresConfirmation = true, environment = appEnvironment });
+
+        try
+        {
+            // Resolve contactId: use the first available contact as the actioned-by user
+            var currentUser = HttpContext.Items["CurrentUser"] as HPA.SurveyFlow.Domain.Entities.User;
+            int? contactId = null;
+
+            var contactUrl = baseUrl.TrimEnd('/') + "/Contact/GetByUsername/admin";
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            http.DefaultRequestHeaders.Add("XApiKey", apiKey);
+
+            // Try to find a contact; fall back to contactId = 1 if not found
+            try
+            {
+                var contactResp = await http.GetAsync(contactUrl);
+                if (contactResp.IsSuccessStatusCode)
+                {
+                    var contactJson = await contactResp.Content.ReadAsStringAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(contactJson);
+                    if (doc.RootElement.TryGetProperty("contactId", out var cid))
+                        contactId = cid.GetInt32();
+                }
+            }
+            catch { }
+
+            contactId ??= 1;
+
+            var requestPayload = new
+            {
+                requestNumber = 0,
+                estimatedCost = 0,
+                jobTypeName = "TEST",
+                requesterDetails = "SurveyFlow integration test request — safe to delete.",
+                jobDescription = $"Automated test from SurveyFlow admin at {DateTime.UtcNow:u}. Environment: {appEnvironment}.",
+            };
+
+            var createUrl = baseUrl.TrimEnd('/') + $"/Request/{contactId}";
+            var response = await http.PostAsJsonAsync(createUrl, requestPayload);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                int? newRequestNumber = null;
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(responseBody);
+                    if (doc.RootElement.TryGetProperty("requestNumber", out var rn))
+                        newRequestNumber = rn.GetInt32();
+                }
+                catch { }
+
+                var msg = newRequestNumber.HasValue
+                    ? $"Test request created successfully (Request #{newRequestNumber})."
+                    : "Test request created successfully.";
+
+                return Ok(new { success = true, message = msg, environment = appEnvironment });
+            }
+
+            return BadRequest(new { error = $"MEX returned HTTP {(int)response.StatusCode}: {responseBody}" });
+        }
+        catch (System.Net.Http.HttpRequestException ex)
+        {
+            return BadRequest(new { error = $"Could not reach MEX API: {ex.Message}" });
+        }
+        catch (TaskCanceledException)
+        {
+            return BadRequest(new { error = "Connection timed out after 10 seconds." });
+        }
+    }
+
     [HttpPost("settings/integrations/test/mex")]
     public async Task<IActionResult> TestMexIntegration([FromBody] TestMexRequest body)
     {

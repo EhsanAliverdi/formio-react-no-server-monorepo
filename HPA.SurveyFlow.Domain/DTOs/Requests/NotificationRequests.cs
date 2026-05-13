@@ -80,4 +80,5 @@ public class TestMexRequest
 {
     [JsonPropertyName("baseUrl")] public string? BaseUrl { get; set; }
     [JsonPropertyName("apiKey")] public string? ApiKey { get; set; }
+    [JsonPropertyName("confirmedProduction")] public bool? ConfirmedProduction { get; set; }
 }

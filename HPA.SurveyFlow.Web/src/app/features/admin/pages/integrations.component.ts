@@ -2,6 +2,7 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IntegrationsService } from '../../../core/services/integrations.service';
+import { environment } from '../../../../environments/environment';
 
 type Tab = 'email' | 'mex';
 type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok'; message: string } | { status: 'fail'; message: string };
@@ -250,25 +251,47 @@ type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok'; me
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 Verify the MEX API is reachable using the current credentials. Unsaved values typed above will be used if provided.
               </p>
-              <button
-                class="rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center gap-2"
-                (click)="testMex()"
-                [disabled]="mexTestState().status === 'testing'"
-              >
-                @if (mexTestState().status === 'testing') {
-                  <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
-                  Testing…
-                } @else {
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
-                  </svg>
-                  Test connection
-                }
-              </button>
+              <div class="flex flex-wrap gap-3">
+                <button
+                  class="rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center gap-2"
+                  (click)="testMex()"
+                  [disabled]="mexTestState().status === 'testing'"
+                >
+                  @if (mexTestState().status === 'testing') {
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Testing…
+                  } @else {
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                    </svg>
+                    Test connection
+                  }
+                </button>
+
+                <button
+                  class="rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center gap-2"
+                  (click)="initiateMexRequestTest()"
+                  [disabled]="mexRequestTestState().status === 'testing'"
+                >
+                  @if (mexRequestTestState().status === 'testing') {
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Creating…
+                  } @else {
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Create test request
+                  }
+                </button>
+              </div>
               <ng-container *ngTemplateOutlet="testResult; context: { $implicit: mexTestState() }"></ng-container>
+              <ng-container *ngTemplateOutlet="testResult; context: { $implicit: mexRequestTestState() }"></ng-container>
             </div>
 
             <!-- MEX capabilities reference -->
@@ -290,6 +313,42 @@ type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok'; me
 
       }
     </div>
+
+    <!-- Production confirmation modal -->
+    @if (showProdConfirm()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" (click)="showProdConfirm.set(false)"></div>
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 shadow-xl p-6 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+              <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">You are about to create a test request in Production</h3>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            This will create a real <strong>Request</strong> record in your live MEX Maintenance environment.
+            The request will be marked as a test and can be deleted manually afterwards.
+          </p>
+          <p class="text-sm font-medium text-amber-700 dark:text-amber-400">
+            Are you sure you want to proceed?
+          </p>
+          <div class="flex justify-end gap-3 pt-2">
+            <button
+              class="rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+              (click)="showProdConfirm.set(false)"
+            >Cancel</button>
+            <button
+              class="rounded-lg bg-amber-600 hover:bg-amber-700 px-4 py-2 text-sm font-medium text-white"
+              (click)="confirmMexRequestTest()"
+            >Yes, create test request</button>
+          </div>
+        </div>
+      </div>
+    }
 
     <!-- Shared test result banner -->
     <ng-template #testResult let-state>
@@ -351,6 +410,10 @@ export class IntegrationsComponent implements OnInit {
   mexApiKey = '';
   mexApiKeySet = signal(false);
   mexTestState = signal<TestState>({ status: 'idle' });
+  mexRequestTestState = signal<TestState>({ status: 'idle' });
+  showProdConfirm = signal(false);
+
+  readonly isProduction = environment.production;
 
   readonly tabs = [
     {
@@ -478,6 +541,40 @@ export class IntegrationsComponent implements OnInit {
     this.svc.testMex(payload).subscribe({
       next: res => this.mexTestState.set({ status: 'ok', message: res.message }),
       error: err => this.mexTestState.set({ status: 'fail', message: err?.error?.error || 'Test failed.' }),
+    });
+  }
+
+  initiateMexRequestTest(): void {
+    this.mexRequestTestState.set({ status: 'idle' });
+    if (this.isProduction) {
+      this.showProdConfirm.set(true);
+    } else {
+      this.executeMexRequestTest(false);
+    }
+  }
+
+  confirmMexRequestTest(): void {
+    this.showProdConfirm.set(false);
+    this.executeMexRequestTest(true);
+  }
+
+  private executeMexRequestTest(confirmedProduction: boolean): void {
+    this.mexRequestTestState.set({ status: 'testing' });
+    const payload: any = { confirmedProduction };
+    if (this.mexBaseUrl) payload.baseUrl = this.mexBaseUrl;
+    if (this.mexApiKey) payload.apiKey = this.mexApiKey;
+
+    this.svc.testMexRequest(payload).subscribe({
+      next: res => {
+        if (res.requiresConfirmation) {
+          // Server says production but client didn't confirm — show modal
+          this.mexRequestTestState.set({ status: 'idle' });
+          this.showProdConfirm.set(true);
+        } else {
+          this.mexRequestTestState.set({ status: 'ok', message: res.message || 'Test request created successfully.' });
+        }
+      },
+      error: err => this.mexRequestTestState.set({ status: 'fail', message: err?.error?.error || 'Failed to create test request.' }),
     });
   }
 }

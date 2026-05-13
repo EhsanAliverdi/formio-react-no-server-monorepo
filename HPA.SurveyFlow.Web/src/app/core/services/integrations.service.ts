@@ -28,4 +28,10 @@ export class IntegrationsService {
       this.api.apiUrl('/api/admin/settings/integrations/test/mex'), payload
     );
   }
+
+  testMexRequest(payload: object): Observable<{ success?: boolean; message?: string; requiresConfirmation?: boolean; environment?: string; error?: string }> {
+    return this.http.post<any>(
+      this.api.apiUrl('/api/admin/settings/integrations/test/mex/request'), payload
+    );
+  }
 }
