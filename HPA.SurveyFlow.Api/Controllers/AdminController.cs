@@ -558,40 +558,66 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
 
         try
         {
-            // Resolve contactId: use the first available contact as the actioned-by user
-            var currentUser = HttpContext.Items["CurrentUser"] as HPA.SurveyFlow.Domain.Entities.User;
-            int? contactId = null;
-
-            var contactUrl = baseUrl.TrimEnd('/') + "/Contact/GetByUsername/admin";
-            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
             http.DefaultRequestHeaders.Add("XApiKey", apiKey);
+            var base_ = baseUrl.TrimEnd('/');
 
-            // Try to find a contact; fall back to contactId = 1 if not found
+            // 1. Resolve a real contactId from MEX
+            int contactId = 1;
             try
             {
-                var contactResp = await http.GetAsync(contactUrl);
+                var contactResp = await http.GetAsync(base_ + "/Contact/GetByUsername/admin");
                 if (contactResp.IsSuccessStatusCode)
                 {
-                    var contactJson = await contactResp.Content.ReadAsStringAsync();
-                    using var doc = System.Text.Json.JsonDocument.Parse(contactJson);
+                    var json = await contactResp.Content.ReadAsStringAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
                     if (doc.RootElement.TryGetProperty("contactId", out var cid))
                         contactId = cid.GetInt32();
                 }
             }
             catch { }
 
-            contactId ??= 1;
+            // 2. Fetch the first available job type from MEX
+            string? jobTypeName = null;
+            try
+            {
+                var jtResp = await http.GetAsync(base_ + "/JobType/GetAll");
+                if (jtResp.IsSuccessStatusCode)
+                {
+                    var json = await jtResp.Content.ReadAsStringAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
+                    if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var item in doc.RootElement.EnumerateArray())
+                        {
+                            if (item.TryGetProperty("isActive", out var active) && active.GetBoolean() &&
+                                item.TryGetProperty("jobTypeName", out var name))
+                            {
+                                jobTypeName = name.GetString();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            if (jobTypeName == null)
+                return BadRequest(new { error = "Could not retrieve any active Job Types from MEX. Cannot create test request." });
+
+            // 3. Use a timestamp-based request number to avoid collisions
+            var requestNumber = int.Parse(DateTime.UtcNow.ToString("HHmmss"));
 
             var requestPayload = new
             {
-                requestNumber = 0,
+                requestNumber,
                 estimatedCost = 0,
-                jobTypeName = "TEST",
-                requesterDetails = "SurveyFlow integration test request — safe to delete.",
-                jobDescription = $"Automated test from SurveyFlow admin at {DateTime.UtcNow:u}. Environment: {appEnvironment}.",
+                jobTypeName,
+                requesterDetails = "SurveyFlow integration test — safe to delete.",
+                jobDescription = $"Automated connectivity test from SurveyFlow admin ({DateTime.UtcNow:u}). Environment: {appEnvironment}.",
             };
 
-            var createUrl = baseUrl.TrimEnd('/') + $"/Request/{contactId}";
+            var createUrl = base_ + $"/Request/{contactId}";
             var response = await http.PostAsJsonAsync(createUrl, requestPayload);
             var responseBody = await response.Content.ReadAsStringAsync();
 
