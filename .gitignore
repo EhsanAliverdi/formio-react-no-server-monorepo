@@ -10,6 +10,7 @@ _reference/
 
 # Docker / local artifacts
 docker-pdf-test.pdf
+HPA.SurveyFlow.Api/logs/
 
 # Local databases
 HPA.SurveyFlow.*/**/data/*.db

@@ -4,7 +4,9 @@
       "Bash(git ls-tree *)",
       "Bash(grep -E \"frontend/src.*\\\\.\\(tsx|ts\\)$\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); scripts=d['projects']['angular-frontend']['architect']['build']['options'].get\\('scripts',[]\\); print\\('scripts:', scripts\\); styles=d['projects']['angular-frontend']['architect']['build']['options'].get\\('styles',[]\\); print\\('styles:', styles\\)\")",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(Get-ChildItem -Path \"c:\\\\My GitHub\\\\formio-react-no-server-monorepo\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
