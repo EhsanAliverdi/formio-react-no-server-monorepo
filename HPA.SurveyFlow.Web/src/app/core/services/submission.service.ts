@@ -54,4 +54,19 @@ export class SubmissionService {
       data
     );
   }
+
+  exportAdminPdf(html: string, fileName: string): Observable<Blob> {
+    return this.http.post(
+      this.api.apiUrl('/api/admin/pdf'),
+      { html, fileName },
+      { responseType: 'blob' as const }
+    );
+  }
+
+  triggerSecondarySubmit(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      this.api.apiUrl(`/api/admin/submissions/${id}/secondary-submit`),
+      {}
+    );
+  }
 }

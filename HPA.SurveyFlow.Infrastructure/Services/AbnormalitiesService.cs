@@ -4,7 +4,7 @@ namespace HPA.SurveyFlow.Infrastructure.Services;
 
 public static class AbnormalitiesService
 {
-    public record Abnormality(string Key, string? Type, string? Label, object? NormalValue);
+    public record Abnormality(string Key, string? Type, string? Label, object? NormalValue, string Level = "error");
 
     public static List<Abnormality> Compute(string formJson, string submissionDataJson)
     {
@@ -48,10 +48,13 @@ public static class AbnormalitiesService
         comp.TryGetProperty("label", out var labelEl);
         var label = labelEl.GetString();
 
+        props.TryGetProperty("abnormal_level", out var levelEl);
+        var level = levelEl.ValueKind == JsonValueKind.Undefined ? "error" : (levelEl.GetString() ?? "error");
+
         if (!data.TryGetProperty(key, out var actual)) return;
         var actualRaw = actual.GetRawText();
 
         if (actualRaw != normalValueEl.GetRawText())
-            result.Add(new Abnormality(key, type, label, normalValue));
+            result.Add(new Abnormality(key, type, label, normalValue, level));
     }
 }

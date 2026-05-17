@@ -238,7 +238,9 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
                 UserEmail = s.User?.Email,
                 SubmittedAt = s.SubmittedAt,
                 HasAbnormalities = abnormalities.Count > 0,
-                AbnormalCount = abnormalities.Count
+                ErrorCount = abnormalities.Count(a => a.Level == "error"),
+                WarningCount = abnormalities.Count(a => a.Level == "warning"),
+                SecondarySubmitStatus = s.SecondarySubmitStatus
             };
         }).ToList();
 
@@ -316,7 +318,7 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
     [HttpPost("pdf")]
     public async Task<IActionResult> ExportPdf([FromBody] PdfExportRequest body)
     {
-        try { HttpContext.RequireRole(UserRole.Admin); }
+        try { HttpContext.RequireRole(UserRole.Admin, UserRole.Editor); }
         catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
 
         if (string.IsNullOrWhiteSpace(body.Html))
@@ -845,8 +847,8 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
         }
 
         var abnormalities = AbnormalitiesService.Compute(submission.Form.Json, submission.Data);
-        var abnormalityObjects = abnormalities
-            .Select(a => (object)new { key = a.Key, type = a.Type, label = a.Label, normalValue = a.NormalValue })
+        var abnormalityDtos = abnormalities
+            .Select(a => new AbnormalityDto { Key = a.Key, Type = a.Type, Label = a.Label, NormalValue = a.NormalValue, Level = a.Level })
             .ToList();
 
         return new AdminSubmissionDetailDto
@@ -864,7 +866,55 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
             Form = formObj,
             Data = dataObj,
             HasAbnormalities = abnormalities.Count > 0,
-            Abnormalities = abnormalityObjects
+            ErrorCount = abnormalities.Count(a => a.Level == "error"),
+            WarningCount = abnormalities.Count(a => a.Level == "warning"),
+            Abnormalities = abnormalityDtos,
+            SecondarySubmitStatus = submission.SecondarySubmitStatus,
+            SecondarySubmitAt = submission.SecondarySubmitAt,
+            SecondarySubmitResponse = ParseJsonOrString(submission.SecondarySubmitResponse),
         };
+    }
+
+    [HttpPost("submissions/{id:int}/secondary-submit")]
+    public async Task<IActionResult> TriggerSecondarySubmit(int id, [FromServices] SecondarySubmitService secondarySubmitService)
+    {
+        try { HttpContext.RequireRole(UserRole.Admin); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var submission = await db.FormSubmissions
+            .Include(s => s.Form)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (submission == null)
+            return NotFound(new { error = "Submission not found." });
+
+        // Parse secondarySubmit config from form's appSettings
+        string integration, action;
+        try
+        {
+            var formSchema = JsonDocument.Parse(submission.Form.Json).RootElement;
+            if (!formSchema.TryGetProperty("appSettings", out var appSettingsEl)
+                || !appSettingsEl.TryGetProperty("secondarySubmit", out var secEl)
+                || !secEl.TryGetProperty("enabled", out var enabledEl)
+                || enabledEl.ValueKind != JsonValueKind.True)
+                return BadRequest(new { error = "Secondary submit is not configured or not enabled for this form." });
+
+            integration = secEl.TryGetProperty("integration", out var intEl) ? intEl.GetString() ?? "" : "";
+            action = secEl.TryGetProperty("action", out var actEl) ? actEl.GetString() ?? "" : "";
+        }
+        catch { return BadRequest(new { error = "Could not parse form configuration." }); }
+
+        if (string.IsNullOrWhiteSpace(integration) || string.IsNullOrWhiteSpace(action))
+            return BadRequest(new { error = "Integration or action is not configured." });
+
+        secondarySubmitService.DispatchAsync(integration, action, submission.Data, submission.Id);
+        return Ok(new { success = true, message = "Secondary submit triggered." });
+    }
+
+    private static object? ParseJsonOrString(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw)) return null;
+        try { return JsonDocument.Parse(raw).RootElement; }
+        catch { return raw; }
     }
 }

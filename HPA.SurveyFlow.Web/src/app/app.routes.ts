@@ -8,6 +8,11 @@ export const routes: Routes = [
       import('./features/auth/login.component').then(m => m.LoginComponent),
   },
   {
+    path: 'form-public/:id',
+    loadComponent: () =>
+      import('./features/public/pages/public-form-page.component').then(m => m.PublicFormPageComponent),
+  },
+  {
     path: 'admin/login',
     loadComponent: () =>
       import('./features/auth/login.component').then(m => m.LoginComponent),

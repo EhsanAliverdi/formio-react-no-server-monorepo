@@ -13,7 +13,7 @@ namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/forms")]
-public class FormsController(AppDbContext db, FormAccessService formAccessService) : ControllerBase
+public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> ListForms([FromQuery] string? mode)
@@ -204,7 +204,37 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
 
         db.FormSubmissions.Add(submission);
         await db.SaveChangesAsync();
-        return Ok(new { success = true, id = submission.Id });
+
+        var abnormalities = AbnormalitiesService.Compute(form.Json, dataJson);
+        var errorCount = abnormalities.Count(a => a.Level == "error");
+        var warningCount = abnormalities.Count(a => a.Level == "warning");
+
+        // Dispatch secondary submit in background — does not block the response
+        try
+        {
+            var formSchema = JsonDocument.Parse(form.Json).RootElement;
+            if (formSchema.TryGetProperty("appSettings", out var appSettingsEl)
+                && appSettingsEl.TryGetProperty("secondarySubmit", out var secEl)
+                && secEl.TryGetProperty("enabled", out var enabledEl)
+                && enabledEl.ValueKind == JsonValueKind.True)
+            {
+                var integration = secEl.TryGetProperty("integration", out var intEl) ? intEl.GetString() ?? "" : "";
+                var action = secEl.TryGetProperty("action", out var actEl) ? actEl.GetString() ?? "" : "";
+                if (!string.IsNullOrWhiteSpace(integration) && !string.IsNullOrWhiteSpace(action))
+                    secondarySubmitService.DispatchAsync(integration, action, dataJson, submission.Id);
+            }
+        }
+        catch { /* never fail primary submit */ }
+
+        return Ok(new
+        {
+            success = true,
+            id = submission.Id,
+            has_errors = errorCount > 0,
+            has_warnings = warningCount > 0,
+            error_count = errorCount,
+            warning_count = warningCount
+        });
     }
 
     private static FormDto MapFormDto(Form f, bool includeRestricted)

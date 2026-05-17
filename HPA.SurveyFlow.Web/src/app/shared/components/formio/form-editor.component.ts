@@ -12,9 +12,12 @@ import {
   inject,
   NgZone,
 } from '@angular/core';
+import { take } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { ApiService } from '../../../core/services/api.service';
 import { Formio } from 'formiojs';
+import { registerDataSourceBuilderComponent } from './surveyflow-datasource.component';
 
 let abnormalitiesInstalled = false;
 
@@ -87,6 +90,16 @@ function installAbnormalitiesTab(): void {
             data: { custom: "const vals = (data && Array.isArray(data.values)) ? data.values : []; values = vals.map(v => ({ label: (v && (v.label || v.value)) || '', value: (v && v.value) }));" },
             conditional: { when: 'properties.abnormal_enabled', eq: true },
             customConditional: "show = (data && data.type && ['radio','select','selectboxes'].includes(data.type));",
+          },
+          {
+            type: 'select', input: true,
+            key: 'properties.abnormal_level',
+            label: 'Abnormality Level',
+            tooltip: 'Choose whether a deviation from normal is treated as an Error or a Warning.',
+            defaultValue: 'error',
+            dataSrc: 'values',
+            data: { values: [{ label: 'Error', value: 'error' }, { label: 'Warning', value: 'warning' }] },
+            conditional: { when: 'properties.abnormal_enabled', eq: true },
           },
         ],
       },
@@ -161,6 +174,7 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
   @Output() schemaChange = new EventEmitter<any>();
 
   private api = inject(ApiService);
+  private http = inject(HttpClient);
   private zone = inject(NgZone);
 
   private builder: any = null;
@@ -170,7 +184,11 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
   private lastAppliedJson: string | null = null;
 
   ngAfterViewInit(): void {
-    this.zone.runOutsideAngular(() => this.initBuilder());
+    this.zone.runOutsideAngular(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => this.initBuilder());
+      });
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -197,8 +215,28 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
   }
 
   private initBuilder(): void {
+    if (!this.containerRef?.nativeElement) {
+      requestAnimationFrame(() => this.initBuilder());
+      return;
+    }
+
     installAbnormalitiesTab();
 
+    // Fetch data sources FIRST, register them into the Formio sidebar,
+    // then start the builder so the sidebar group is visible immediately.
+    this.http.get<any[]>(this.api.apiUrl('/api/data-sources')).subscribe({
+      next: (sources) => {
+        const options = sources
+          .filter(s => s.is_enabled)
+          .map(s => ({ value: s.source_key, label: s.name }));
+        if (options.length > 0) registerDataSourceBuilderComponent(options, Formio);
+      },
+      error: () => { /* not fatal — builder continues without data source group */ },
+      complete: () => this.startBuilder(),
+    });
+  }
+
+  private startBuilder(): void {
     const schema = structuredClone(this.formSchema ?? {});
     if (!Array.isArray(schema.components)) schema.components = [];
     this.lastAppliedJson = JSON.stringify(schema);
@@ -226,8 +264,6 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
         this.zone.run(() => this.schemaChange.emit(s));
       });
 
-      // Watch for formio dialog being added/removed from body and toggle a class
-      // so CSS can block sidebar/header pointer events while dialog is open.
       this.dialogObserver = new MutationObserver(() => {
         const hasDialog = !!document.body.querySelector('.formio-dialog');
         document.body.classList.toggle('formio-dialog-open', hasDialog);

@@ -43,10 +43,18 @@ export class FormService {
     return this.http.delete<{ success: boolean }>(this.api.apiUrl(`/api/forms/${id}`));
   }
 
-  submit(id: number, data: any): Observable<{ success: boolean; id: number }> {
-    return this.http.post<{ success: boolean; id: number }>(
+  submit(id: number, data: any): Observable<{
+    success: boolean;
+    id: number;
+    has_errors: boolean;
+    has_warnings: boolean;
+    error_count: number;
+    warning_count: number;
+    secondary_submit?: { success: boolean; message?: string; error?: string } | null;
+  }> {
+    return this.http.post<any>(
       this.api.apiUrl(`/api/forms/${id}/submit`),
-      data
+      { data }
     );
   }
 }

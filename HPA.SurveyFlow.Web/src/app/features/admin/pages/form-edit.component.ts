@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, signal, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -127,6 +127,20 @@ function ensureWizardHasPage(schema: any): any {
           </div>
         }
 
+        <!-- Public link -->
+        <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
+          <h2 class="text-base font-semibold text-gray-800 mb-3">Public Link (No Layout)</h2>
+          <p class="text-xs text-gray-500 mb-2">Share this link to display the form without the site layout — suitable for embedding or direct distribution.</p>
+          <div class="flex items-center gap-2">
+            <input type="text" readonly [value]="publicFormUrl()"
+              class="flex-1 max-w-lg rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none"/>
+            <button type="button" (click)="copyPublicLink()"
+              class="px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-100 transition text-gray-700">
+              Copy
+            </button>
+          </div>
+        </div>
+
         <!-- App settings -->
         <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
           <h2 class="text-base font-semibold text-gray-800 mb-4">Form Settings</h2>
@@ -150,6 +164,75 @@ function ensureWizardHasPage(schema: any): any {
               <label class="block text-sm font-medium text-gray-700 mb-1">Public description</label>
               <textarea [(ngModel)]="appSettings.publicDescription" rows="2" placeholder="Shown to users on the forms list page"
                 class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+          </div>
+
+          <div class="mt-6 border-t pt-5">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Submission Result Messages</h3>
+            <p class="text-xs text-gray-500 mb-4">Messages shown after a form is submitted based on abnormality outcome. Leave blank to use defaults.</p>
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-green-700 mb-1">Success message (no issues)</label>
+                  <textarea [(ngModel)]="appSettings.messageOnSuccess" rows="2" placeholder="Thank you for your submission."
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-green-700 mb-1">Redirect URL on success</label>
+                  <input type="url" [(ngModel)]="appSettings.redirectOnSuccess" placeholder="https://example.com/thank-you"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-amber-700 mb-1">Warning message</label>
+                  <textarea [(ngModel)]="appSettings.messageOnWarning" rows="2" placeholder="Submission received with warnings."
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-amber-700 mb-1">Redirect URL on warning</label>
+                  <input type="url" [(ngModel)]="appSettings.redirectOnWarning" placeholder="https://example.com/warning"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-red-700 mb-1">Error message</label>
+                  <textarea [(ngModel)]="appSettings.messageOnError" rows="2" placeholder="Your submission contains errors, please review."
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"></textarea>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-red-700 mb-1">Redirect URL on error</label>
+                  <input type="url" [(ngModel)]="appSettings.redirectOnError" placeholder="https://example.com/error"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 border-t pt-5">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Secondary Submit</h3>
+            <p class="text-xs text-gray-500 mb-4">Forward the submitted form data to an external integration after a successful primary submission.</p>
+            <div class="space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="secondarySubmitEnabled"
+                  class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                <span class="text-sm text-gray-700">Enable secondary submit</span>
+              </label>
+              @if (secondarySubmitEnabled) {
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
+                    <select [(ngModel)]="secondarySubmitIntegration"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <option value="mex">MEX Maintenance</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
+                    <select [(ngModel)]="secondarySubmitAction"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <option value="create_request">Create Request</option>
+                    </select>
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -260,6 +343,9 @@ export class FormEditComponent implements OnInit {
   allowedRoles: string[] = [];
   allowedUserIds: number[] = [];
   appSettings: any = {};
+  secondarySubmitEnabled = false;
+  secondarySubmitIntegration = 'mex';
+  secondarySubmitAction = 'create_request';
   currentSchema: any = {};
 
   availableRoles = [
@@ -269,6 +355,10 @@ export class FormEditComponent implements OnInit {
   ];
 
   private formId!: number;
+
+  publicFormUrl = computed(() =>
+    this.formId ? `${window.location.origin}/form-public/${this.formId}` : ''
+  );
 
   ngOnInit(): void {
     const idStr = this.route.snapshot.paramMap.get('id');
@@ -285,6 +375,10 @@ export class FormEditComponent implements OnInit {
         let schema = f.json ?? {};
         if (typeof schema === 'string') { try { schema = JSON.parse(schema); } catch { schema = {}; } }
         this.appSettings = { ...(schema.appSettings ?? {}) };
+        const sec = schema.appSettings?.secondarySubmit;
+        this.secondarySubmitEnabled = !!sec?.enabled;
+        this.secondarySubmitIntegration = sec?.integration || 'mex';
+        this.secondarySubmitAction = sec?.action || 'create_request';
         this.formDisplay = schema.display === 'wizard' ? 'wizard' : 'form';
         this.currentSchema = schema;
         this.wizardPanels.set(getPanels(schema));
@@ -367,6 +461,12 @@ export class FormEditComponent implements OnInit {
     this.activePageIndex.set(j);
   }
 
+  copyPublicLink(): void {
+    navigator.clipboard.writeText(this.publicFormUrl()).then(() => {
+      this.toastr.success('Link copied to clipboard.');
+    });
+  }
+
   toggleRole(role: string): void {
     this.allowedRoles = this.allowedRoles.includes(role)
       ? this.allowedRoles.filter(r => r !== role)
@@ -383,7 +483,14 @@ export class FormEditComponent implements OnInit {
     if (!this.name.trim()) { this.saveError.set('Form name is required.'); return; }
     this.saveError.set(null);
     const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
-    const finalSchema = { ...schema, display: this.formDisplay, appSettings: { ...this.appSettings } };
+    const secondarySubmit = this.secondarySubmitEnabled
+      ? { enabled: true, integration: this.secondarySubmitIntegration, action: this.secondarySubmitAction }
+      : { enabled: false };
+    const finalSchema = {
+      ...schema,
+      display: this.formDisplay,
+      appSettings: { ...this.appSettings, secondarySubmit },
+    };
     this.saving.set(true);
     this.formService.update(this.formId, {
       name: this.name.trim(),

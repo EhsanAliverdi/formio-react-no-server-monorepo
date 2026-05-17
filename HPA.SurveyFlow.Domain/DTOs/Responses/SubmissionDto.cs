@@ -2,6 +2,15 @@ using System.Text.Json.Serialization;
 
 namespace HPA.SurveyFlow.Domain.DTOs.Responses;
 
+public class AbnormalityDto
+{
+    [JsonPropertyName("key")] public string Key { get; set; } = null!;
+    [JsonPropertyName("type")] public string? Type { get; set; }
+    [JsonPropertyName("label")] public string? Label { get; set; }
+    [JsonPropertyName("normal_value")] public object? NormalValue { get; set; }
+    [JsonPropertyName("level")] public string Level { get; set; } = "error";
+}
+
 public class SubmissionListItemDto
 {
     [JsonPropertyName("id")] public int Id { get; set; }
@@ -34,7 +43,9 @@ public class AdminSubmissionListItemDto
     [JsonPropertyName("user_email")] public string? UserEmail { get; set; }
     [JsonPropertyName("submitted_at")] public DateTime SubmittedAt { get; set; }
     [JsonPropertyName("has_abnormalities")] public bool HasAbnormalities { get; set; }
-    [JsonPropertyName("abnormal_count")] public int AbnormalCount { get; set; }
+    [JsonPropertyName("error_count")] public int ErrorCount { get; set; }
+    [JsonPropertyName("warning_count")] public int WarningCount { get; set; }
+    [JsonPropertyName("secondary_submit_status")] public string? SecondarySubmitStatus { get; set; }
 }
 
 public class AdminSubmissionDetailDto
@@ -52,5 +63,10 @@ public class AdminSubmissionDetailDto
     [JsonPropertyName("form")] public object? Form { get; set; }
     [JsonPropertyName("data")] public object? Data { get; set; }
     [JsonPropertyName("has_abnormalities")] public bool HasAbnormalities { get; set; }
-    [JsonPropertyName("abnormalities")] public List<object> Abnormalities { get; set; } = [];
+    [JsonPropertyName("error_count")] public int ErrorCount { get; set; }
+    [JsonPropertyName("warning_count")] public int WarningCount { get; set; }
+    [JsonPropertyName("abnormalities")] public List<AbnormalityDto> Abnormalities { get; set; } = [];
+    [JsonPropertyName("secondary_submit_status")] public string? SecondarySubmitStatus { get; set; }
+    [JsonPropertyName("secondary_submit_response")] public object? SecondarySubmitResponse { get; set; }
+    [JsonPropertyName("secondary_submit_at")] public DateTime? SecondarySubmitAt { get; set; }
 }

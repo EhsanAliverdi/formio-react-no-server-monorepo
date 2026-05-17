@@ -1,19 +1,42 @@
 using Amazon.S3;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 using Scalar.AspNetCore;
+using Serilog;
+using HPA.SurveyFlow.Api.Middleware;
 using HPA.SurveyFlow.Infrastructure.Data;
 using HPA.SurveyFlow.Infrastructure.Data.Seed;
+using HPA.SurveyFlow.Domain.Events;
+using HPA.SurveyFlow.Infrastructure.Events;
+using HPA.SurveyFlow.Infrastructure.Jobs.Handlers;
+using HPA.SurveyFlow.Infrastructure.Jobs.Scheduling;
 using HPA.SurveyFlow.Infrastructure.Services;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+// Bootstrap Serilog from appsettings before the host is built so startup errors are captured.
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json", optional: false)
+        .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+        .AddEnvironmentVariables()
+        .Build())
+    .Enrich.FromLogContext()
+    .CreateBootstrapLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Replace default logging with Serilog
+builder.Host.UseSerilog((ctx, services, cfg) =>
+    cfg.ReadFrom.Configuration(ctx.Configuration)
+       .ReadFrom.Services(services)
+       .Enrich.FromLogContext());
 
 // Controllers with JSON options (snake_case handled via [JsonPropertyName] attributes)
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
-        opts.JsonSerializerOptions.PropertyNamingPolicy = null; // rely on [JsonPropertyName]
+        opts.JsonSerializerOptions.PropertyNamingPolicy = null;
         opts.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
     });
 
@@ -29,29 +52,19 @@ builder.Services.AddDbContext<AppDbContext>(opts =>
 
 // MinIO / S3
 var minioEndpoint = builder.Configuration["Minio:Endpoint"]
-    ?? Environment.GetEnvironmentVariable("MINIO_ENDPOINT")
-    ?? "http://localhost:9000";
+    ?? Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "http://localhost:9000";
 var minioAccessKey = builder.Configuration["Minio:AccessKey"]
     ?? Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY")
-    ?? Environment.GetEnvironmentVariable("MINIO_ROOT_USER")
-    ?? "minioadmin";
+    ?? Environment.GetEnvironmentVariable("MINIO_ROOT_USER") ?? "minioadmin";
 var minioSecretKey = builder.Configuration["Minio:SecretKey"]
     ?? Environment.GetEnvironmentVariable("MINIO_SECRET_KEY")
-    ?? Environment.GetEnvironmentVariable("MINIO_ROOT_PASSWORD")
-    ?? "minioadmin";
+    ?? Environment.GetEnvironmentVariable("MINIO_ROOT_PASSWORD") ?? "minioadmin";
 var minioBucket = builder.Configuration["Minio:Bucket"]
-    ?? Environment.GetEnvironmentVariable("MINIO_BUCKET")
-    ?? "uploads";
+    ?? Environment.GetEnvironmentVariable("MINIO_BUCKET") ?? "uploads";
 var minioRegion = builder.Configuration["Minio:Region"]
-    ?? Environment.GetEnvironmentVariable("MINIO_REGION")
-    ?? "us-east-1";
+    ?? Environment.GetEnvironmentVariable("MINIO_REGION") ?? "us-east-1";
 
-var s3Config = new AmazonS3Config
-{
-    ServiceURL = minioEndpoint,
-    ForcePathStyle = true,
-    AuthenticationRegion = minioRegion,
-};
+var s3Config = new AmazonS3Config { ServiceURL = minioEndpoint, ForcePathStyle = true, AuthenticationRegion = minioRegion };
 var s3Client = new AmazonS3Client(minioAccessKey, minioSecretKey, s3Config);
 builder.Services.AddSingleton<IAmazonS3>(s3Client);
 builder.Services.AddSingleton(sp => new StorageService(sp.GetRequiredService<IAmazonS3>(), minioBucket));
@@ -59,32 +72,56 @@ builder.Services.AddSingleton(sp => new StorageService(sp.GetRequiredService<IAm
 // App services
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<FormAccessService>();
+builder.Services.AddSingleton<SecondarySubmitService>();
 builder.Services.AddSingleton<PdfService>();
 
-// CORS — allow all origins (matches Next.js behaviour)
-builder.Services.AddCors(options =>
+// ── Event Bus (in-process, zero dependencies) ──────────────────────────────
+builder.Services.AddScoped<IEventBus, EventBus>();
+// Register all event handlers — each handler can implement multiple IEventHandler<T>
+builder.Services.AddScoped<LogJobRunHandler>();
+builder.Services.AddScoped<IEventHandler<JobStartedEvent>>(sp => sp.GetRequiredService<LogJobRunHandler>());
+builder.Services.AddScoped<IEventHandler<JobCompletedEvent>>(sp => sp.GetRequiredService<LogJobRunHandler>());
+builder.Services.AddScoped<IEventHandler<JobFailedEvent>>(sp => sp.GetRequiredService<LogJobRunHandler>());
+
+// ── Quartz ─────────────────────────────────────────────────────────────────
+builder.Services.AddQuartz(q =>
 {
-    options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader());
+    // Jobs are created by our DI-aware factory — no additional config needed here.
+    // Actual job/trigger registration happens in JobScheduler.ApplyAsync() at startup.
+    q.UseDefaultThreadPool(tp => tp.MaxConcurrency = 5);
 });
+builder.Services.AddQuartzHostedService(opts =>
+{
+    opts.WaitForJobsToComplete = true;
+    opts.StartDelay = TimeSpan.FromSeconds(5); // let the app fully start before first tick
+});
+
+// JobScheduler is transient so it always gets a fresh DbContext + Scheduler
+builder.Services.AddTransient<JobScheduler>();
+
+// CORS — allow all origins
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 var app = builder.Build();
 
-// Ensure DB migrated and seeded
+// ── Startup: migrate, seed, schedule jobs ──────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var seedAdminUser = GetFlag(builder.Configuration, "Seed:AdminUser", "SEED_ADMIN_USER", defaultValue: false);
-    var seedForms = GetFlag(builder.Configuration, "Seed:Forms", "SEED_FORMS", defaultValue: false);
-    var adminEmail = builder.Configuration["Admin:Email"]
-        ?? Environment.GetEnvironmentVariable("ADMIN_EMAIL");
-    var adminPassword = builder.Configuration["Admin:Password"]
-        ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
+    var seedAdminUser = GetFlag(builder.Configuration, "Seed:AdminUser", "SEED_ADMIN_USER", false);
+    var seedForms     = GetFlag(builder.Configuration, "Seed:Forms", "SEED_FORMS", false);
+    var adminEmail    = builder.Configuration["Admin:Email"] ?? Environment.GetEnvironmentVariable("ADMIN_EMAIL");
+    var adminPassword = builder.Configuration["Admin:Password"] ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
+
     var storage = app.Services.GetRequiredService<StorageService>();
     await storage.EnsureBucketAsync();
     await DbSeeder.SeedAsync(db, seedAdminUser, adminEmail, adminPassword, seedForms);
+
+    // Apply job schedules from the DB after seeding has run
+    var jobScheduler = scope.ServiceProvider.GetRequiredService<JobScheduler>();
+    await jobScheduler.ApplyAsync();
 }
 
 if (app.Environment.IsDevelopment())
@@ -95,25 +132,37 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
-// Auth middleware — populates HttpContext.Items["CurrentUser"]
-app.UseMiddleware<HPA.SurveyFlow.Api.Middleware.SessionAuthMiddleware>();
+// Correlation ID must be first so all subsequent middleware + logs carry it
+app.UseMiddleware<CorrelationIdMiddleware>();
 
+// Serilog request logging — logs method, path, status, elapsed in one structured line
+app.UseSerilogRequestLogging(opts =>
+{
+    opts.EnrichDiagnosticContext = (diag, ctx) =>
+    {
+        diag.Set("UserEmail", ctx.Items["CurrentUser"] is HPA.SurveyFlow.Domain.Entities.User u ? u.Email : null);
+        diag.Set("CorrelationId", ctx.Items["CorrelationId"]);
+    };
+});
+
+app.UseMiddleware<SessionAuthMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run();
-
-static bool GetFlag(IConfiguration configuration, string configurationKey, string environmentVariableName, bool defaultValue)
+try
 {
-    var rawValue = configuration[configurationKey]
-        ?? Environment.GetEnvironmentVariable(environmentVariableName);
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
-    if (string.IsNullOrWhiteSpace(rawValue))
-    {
-        return defaultValue;
-    }
-
-    return bool.TryParse(rawValue, out var flag)
+static bool GetFlag(IConfiguration configuration, string configKey, string envVar, bool defaultValue)
+{
+    var raw = configuration[configKey] ?? Environment.GetEnvironmentVariable(envVar);
+    if (string.IsNullOrWhiteSpace(raw)) return defaultValue;
+    return bool.TryParse(raw, out var flag)
         ? flag
-        : throw new InvalidOperationException($"{configurationKey} must be either true or false.");
+        : throw new InvalidOperationException($"{configKey} must be true or false.");
 }

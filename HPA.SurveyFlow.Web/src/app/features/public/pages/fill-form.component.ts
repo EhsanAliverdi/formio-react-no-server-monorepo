@@ -7,12 +7,15 @@ import {
   signal,
   computed,
   inject,
+  NgZone,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { FormService } from '../../../core/services/form.service';
 import { Formio } from 'formiojs';
+import { take } from 'rxjs/operators';
+import { patchSchemaUrls } from '../../../core/utils/schema-patch';
 
 type Panel = { key: string; title: string; label: string; breadcrumb: string; components: any[] };
 
@@ -65,9 +68,26 @@ function buildLabelMap(schema: any): Record<string, string> {
       } @else if (!form()) {
         <div class="rounded-lg border border-gray-200 bg-white p-4 text-gray-700">This form is not available.</div>
       } @else if (submitted()) {
-        <div class="rounded-lg border border-green-200 bg-green-50 p-6 text-center">
-          <p class="text-lg font-semibold text-green-800">Form submitted successfully!</p>
-          <a routerLink="/forms/mysubmissions" class="mt-4 inline-flex items-center text-sm text-green-700 underline">View my submissions</a>
+        <div class="rounded-lg p-6 text-center"
+          [class]="submitResultLevel() === 'error'
+            ? 'border border-red-200 bg-red-50'
+            : submitResultLevel() === 'warning'
+              ? 'border border-amber-200 bg-amber-50'
+              : 'border border-green-200 bg-green-50'">
+          <p class="text-lg font-semibold"
+            [class]="submitResultLevel() === 'error'
+              ? 'text-red-800'
+              : submitResultLevel() === 'warning'
+                ? 'text-amber-800'
+                : 'text-green-800'">
+            {{ submitMessage() || 'Form submitted successfully!' }}
+          </p>
+          @if (submitResultLevel() !== 'error') {
+            <a routerLink="/forms/mysubmissions" class="mt-4 inline-flex items-center text-sm underline"
+              [class]="submitResultLevel() === 'warning' ? 'text-amber-700' : 'text-green-700'">
+              View my submissions
+            </a>
+          }
         </div>
       } @else if (previewOpen()) {
         <!-- Preview before submit -->
@@ -148,11 +168,14 @@ export class FillFormComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private formService = inject(FormService);
   private toastr = inject(ToastrService);
+  private zone = inject(NgZone);
 
   form = signal<any>(null);
   loading = signal(true);
   submitting = signal(false);
   submitted = signal(false);
+  submitResultLevel = signal<'success' | 'warning' | 'error' | null>(null);
+  submitMessage = signal<string | null>(null);
   previewOpen = signal(false);
   step = signal(0);
   previewItems = signal<{ key: string; label: string; value: string }[]>([]);
@@ -176,10 +199,15 @@ export class FillFormComponent implements OnInit, OnDestroy {
       next: (res) => {
         let schema = res.json;
         if (typeof schema === 'string') { try { schema = JSON.parse(schema); } catch { schema = null; } }
+        schema = patchSchemaUrls(schema, (window as any).__SURVEYFLOW_API_BASE__ ?? '');
         this.labelMap = buildLabelMap(schema);
         this.form.set(schema);
         this.loading.set(false);
-        setTimeout(() => this.mountForm(), 0);
+        // Wait for Angular to flush the signal change to the DOM (onStable),
+        // then wait one rAF so #formContainer is actually in the document.
+        this.zone.onStable.pipe(take(1)).subscribe(() => {
+          requestAnimationFrame(() => this.mountForm());
+        });
       },
       error: () => { this.form.set(null); this.loading.set(false); },
     });
@@ -191,7 +219,12 @@ export class FillFormComponent implements OnInit, OnDestroy {
   }
 
   private mountForm(): void {
-    if (!this.containerRef?.nativeElement || !this.form()) return;
+    if (!this.form()) return;
+    if (!this.containerRef?.nativeElement) {
+      // Container not yet in DOM — retry after next paint
+      requestAnimationFrame(() => this.mountForm());
+      return;
+    }
     this.formInstance?.destroy?.(true);
     this.containerRef.nativeElement.innerHTML = '';
 
@@ -202,24 +235,31 @@ export class FillFormComponent implements OnInit, OnDestroy {
       schema.display = 'form';
     }
 
+    const isLastStep = !this.isWizard() || this.step() === this.panels().length - 1;
+
     Formio.createForm(this.containerRef.nativeElement, schema, {
-      noDefaultSubmitButton: !this.isWizard() || this.step() === this.panels().length - 1,
+      noDefaultSubmitButton: true,
     }).then((instance: any) => {
       this.formInstance = instance;
       instance.on('submit', (submission: any) => {
         const data = submission?.data ?? submission;
         this.pendingData = { ...(this.pendingData ?? {}), ...data };
-        if (!this.isWizard() || this.step() === this.panels().length - 1) {
+        if (isLastStep) {
           this.handleSubmitClick();
+        } else {
+          // Validation passed — advance to next step
+          this.advanceStep();
         }
       });
     });
   }
 
   nextStep(): void {
-    // Collect current data
-    const data = this.formInstance?.submission?.data ?? {};
-    this.pendingData = { ...(this.pendingData ?? {}), ...data };
+    // Trigger Formio validation — only advances via the 'submit' event if valid
+    this.formInstance?.submit();
+  }
+
+  private advanceStep(): void {
     if (this.step() < this.panels().length - 1) {
       this.step.update(s => s + 1);
       setTimeout(() => this.mountForm(), 0);
@@ -266,15 +306,49 @@ export class FillFormComponent implements OnInit, OnDestroy {
     this.submitting.set(true);
     const id = +this.route.snapshot.paramMap.get('id')!;
     this.formService.submit(id, this.pendingData ?? {}).subscribe({
-      next: () => {
+      next: (res) => {
         this.submitting.set(false);
         this.previewOpen.set(false);
         this.submitted.set(true);
+        this.handleSubmitResult(res);
       },
       error: (err) => {
         this.submitting.set(false);
-        this.toastr.error(err?.error?.message || 'Failed to submit form.');
+        const settings = this.appSettings();
+        const msg = settings.messageOnError || err?.error?.message || 'Failed to submit form.';
+        this.submitResultLevel.set('error');
+        this.submitMessage.set(msg);
+        this.submitted.set(true);
       },
     });
+  }
+
+  private handleSubmitResult(res: any): void {
+    const settings = this.appSettings();
+    let level: 'success' | 'warning' | 'error';
+    let message: string;
+    let redirect: string | undefined;
+
+    if (res?.has_errors) {
+      level = 'error';
+      message = settings.messageOnError || 'Your submission contains errors.';
+      redirect = settings.redirectOnError;
+    } else if (res?.has_warnings) {
+      level = 'warning';
+      message = settings.messageOnWarning || 'Submission received with warnings.';
+      redirect = settings.redirectOnWarning;
+    } else {
+      level = 'success';
+      message = settings.messageOnSuccess || 'Form submitted successfully!';
+      redirect = settings.redirectOnSuccess;
+    }
+
+    this.submitResultLevel.set(level);
+    this.submitMessage.set(message);
+
+    if (redirect) {
+      // Always navigate after 20 seconds — user sees the message first
+      setTimeout(() => { window.location.href = redirect!; }, 20_000);
+    }
   }
 }

@@ -10,6 +10,9 @@ internal static class PreStartFormsSeedData
 
     public static IReadOnlyList<SeedForm> Forms { get; } =
     [
+        DemoDynamicDropdownFormSeedData.Create(),
+        DemoAssetFormSeedData.Create(),
+        DemoFaultReportSeedData.Create(),
         CreateForkliftPreStartChecklist(),
         CreateReachStackerPreStartChecklist(),
         CreateShuttleStraddlePreStartChecklist(),

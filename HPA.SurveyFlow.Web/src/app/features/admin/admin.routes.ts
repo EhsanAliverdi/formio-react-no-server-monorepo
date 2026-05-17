@@ -32,6 +32,11 @@ export const adminRoutes: Routes = [
       import('./pages/submissions.component').then(m => m.SubmissionsComponent),
   },
   {
+    path: 'submissions/:id',
+    loadComponent: () =>
+      import('./pages/submission-detail.component').then(m => m.SubmissionDetailComponent),
+  },
+  {
     path: 'users',
     loadComponent: () =>
       import('./pages/users.component').then(m => m.UsersComponent),
@@ -45,6 +50,21 @@ export const adminRoutes: Routes = [
     path: 'settings',
     loadComponent: () =>
       import('./pages/settings.component').then(m => m.SettingsComponent),
+  },
+  {
+    path: 'synced-data',
+    loadComponent: () =>
+      import('./pages/synced-data.component').then(m => m.SyncedDataComponent),
+  },
+  {
+    path: 'logs',
+    loadComponent: () =>
+      import('./pages/log-viewer.component').then(m => m.LogViewerComponent),
+  },
+  {
+    path: 'jobs',
+    loadComponent: () =>
+      import('./pages/job-dashboard.component').then(m => m.JobDashboardComponent),
   },
   {
     path: 'integrations',

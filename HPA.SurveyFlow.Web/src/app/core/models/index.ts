@@ -62,13 +62,25 @@ export interface FormSubmission {
   data?: any;
 }
 
+export interface AbnormalityItem {
+  key: string;
+  type?: string;
+  label?: string;
+  normal_value?: any;
+  level: 'error' | 'warning';
+}
+
 export interface AdminSubmission extends FormSubmission {
   updated_by?: number;
   updated_by_email?: string;
   edit_history?: any;
   has_abnormalities: boolean;
-  abnormal_count: number;
-  abnormalities?: any[];
+  error_count: number;
+  warning_count: number;
+  abnormalities?: AbnormalityItem[];
+  secondary_submit_status?: string | null;   // null | 'pending' | 'success' | 'failed'
+  secondary_submit_response?: any;
+  secondary_submit_at?: string | null;
 }
 
 export interface Notification {
@@ -159,6 +171,58 @@ export interface MexIntegration {
 export interface Integrations {
   email: EmailIntegration;
   mex: MexIntegration;
+}
+
+export interface ScheduledJob {
+  id: number;
+  job_key: string;
+  display_name: string;
+  description?: string;
+  cron_expression: string;
+  is_enabled: boolean;
+  sync_mode: 'delta' | 'full';           // "delta" = since last run | "full" = all data every run
+  only_update_changed: boolean;          // skip records where source hasn't changed
+  parameter_schema?: string | null;
+  default_parameters?: string | null;
+  created_at: string;
+  updated_at: string;
+  last_run?: JobRunSummary | null;
+  next_run_at?: string | null;
+}
+
+export interface TriggerJobParams {
+  dateFrom?: string;       // ISO date
+  dateTo?: string;
+  fullHistorical?: boolean;
+  purgeBeforeSync?: boolean;  // dev/UAT only — deletes all existing records first
+}
+
+export interface JobRun {
+  id: number;
+  job_key: string;
+  display_name: string;
+  trigger_type: string;
+  triggered_by_email?: string;
+  started_at: string;
+  completed_at?: string | null;
+  status: 'running' | 'success' | 'failed';
+  error_message?: string | null;
+  result_summary?: string | null;
+}
+
+export interface JobRunSummary {
+  status: string;
+  started_at: string;
+  completed_at?: string | null;
+  result_summary?: string | null;
+  error_message?: string | null;
+}
+
+export interface DataSourceOption {
+  value: string;
+  label: string;
+  category?: string;
+  location?: string;
 }
 
 export interface PaginatedResult<T> {

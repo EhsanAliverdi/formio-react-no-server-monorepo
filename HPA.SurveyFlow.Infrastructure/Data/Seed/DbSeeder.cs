@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using HPA.SurveyFlow.Domain.Entities;
+using HPA.SurveyFlow.Infrastructure.Jobs.Implementations;
 using HPA.SurveyFlow.Infrastructure.Services;
 
 namespace HPA.SurveyFlow.Infrastructure.Data.Seed;
@@ -76,8 +77,52 @@ public static class DbSeeder
             await SeedFormsAsync(db);
         }
 
+        await SeedJobDefinitionsAsync(db);
+
         await db.SaveChangesAsync();
     }
+
+    private static async Task SeedJobDefinitionsAsync(AppDbContext db)
+    {
+        // Seed the MEX Asset Sync job definition if it doesn't already exist.
+        // Disabled by default — only activates once MEX integration is configured.
+        if (!await db.ScheduledJobDefinitions.AnyAsync(j => j.JobKey == MexAssetSyncJob.JobKey))
+        {
+            db.ScheduledJobDefinitions.Add(new ScheduledJobDefinition
+            {
+                JobKey         = MexAssetSyncJob.JobKey,
+                JobType        = typeof(MexAssetSyncJob).FullName!,
+                DisplayName    = "MEX Asset Sync",
+                Description    = "Fetches all assets from MEX Maintenance and caches them locally for use in form dropdowns.",
+                CronExpression = "0 0 * * * ?",   // every hour at :00
+                IsEnabled      = false,
+                // Declares which manual-trigger parameters this job supports
+                ParameterSchema = """["dateFrom","dateTo","fullHistorical"]""",
+            });
+        }
+        else
+        {
+            // Ensure existing seeded record has the parameter schema
+            var existing = await db.ScheduledJobDefinitions.FirstAsync(j => j.JobKey == MexAssetSyncJob.JobKey);
+            if (existing.ParameterSchema is null)
+                existing.ParameterSchema = """["dateFrom","dateTo","fullHistorical"]""";
+        }
+
+        if (!await db.ScheduledJobDefinitions.AnyAsync(j => j.JobKey == MexGapFillJob.JobKey))
+        {
+            db.ScheduledJobDefinitions.Add(new ScheduledJobDefinition
+            {
+                JobKey         = MexGapFillJob.JobKey,
+                JobType        = typeof(MexGapFillJob).FullName!,
+                DisplayName    = "MEX Gap Fill",
+                Description    = "Finds all numeric ID gaps in the synced MEX assets range and fetches missing assets one by one from /Asset/{id}.",
+                CronExpression = "0 30 2 * * ?",  // daily at 02:30 — runs after the hourly sync
+                IsEnabled      = false,            // enable once MEX is configured
+                SyncMode       = "full",
+            });
+        }
+    }
+
 
     private static async Task SeedFormsAsync(AppDbContext db)
     {
