@@ -42,11 +42,6 @@ export const adminRoutes: Routes = [
       import('./pages/users.component').then(m => m.UsersComponent),
   },
   {
-    path: 'notifications',
-    loadComponent: () =>
-      import('./pages/notifications.component').then(m => m.AdminNotificationsComponent),
-  },
-  {
     path: 'settings',
     loadComponent: () =>
       import('./pages/settings.component').then(m => m.SettingsComponent),

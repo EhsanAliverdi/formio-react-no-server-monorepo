@@ -1,8 +1,8 @@
-import { Component, Input, Output, EventEmitter, computed, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { AppSidebarComponent, NavItem, SidebarBranding } from './app-sidebar.component';
-import { AppHeaderComponent, HeaderUser, HeaderNotification } from './app-header.component';
+import { AppHeaderComponent, HeaderUser } from './app-header.component';
 import { SidebarService } from '../services/sidebar.service';
 import { ThemeService } from '../services/theme.service';
 
@@ -26,11 +26,8 @@ import { ThemeService } from '../services/theme.service';
       >
         <app-header
           [user]="user"
-          [notifications]="notifications"
-          [notificationsHref]="notificationsHref"
           [profileHref]="profileHref"
           [loginHref]="loginHref"
-          (notificationRead)="notificationRead.emit($event)"
           (signOut)="signOut.emit()"
         />
         <div class="flex-1 overflow-y-auto overflow-x-hidden">
@@ -46,11 +43,8 @@ export class AppLayoutComponent {
   @Input() navItems: NavItem[] = [];
   @Input() branding?: SidebarBranding;
   @Input() user?: HeaderUser;
-  @Input() notifications?: HeaderNotification[];
-  @Input() notificationsHref?: string;
   @Input() profileHref?: string;
   @Input() loginHref?: string;
-  @Output() notificationRead = new EventEmitter<string | number>();
   @Output() signOut = new EventEmitter<void>();
 
   sidebar = inject(SidebarService);

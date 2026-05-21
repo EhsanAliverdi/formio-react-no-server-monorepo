@@ -87,7 +87,7 @@ type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok'; me
                 </label>
               </div>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
-                Send emails for notifications, password resets, and form submissions.
+                Send emails for password resets and form submissions.
               </p>
 
               <!-- Provider selector -->

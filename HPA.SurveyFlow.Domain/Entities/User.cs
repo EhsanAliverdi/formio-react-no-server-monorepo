@@ -34,7 +34,5 @@ public class User
 
     public ICollection<Session> Sessions { get; set; } = [];
     public ICollection<FormSubmission> Submissions { get; set; } = [];
-    public ICollection<Notification> CreatedNotifications { get; set; } = [];
-    public ICollection<NotificationRecipient> NotificationRecipients { get; set; } = [];
     public ICollection<FormAllowedUser> AllowedForms { get; set; } = [];
 }

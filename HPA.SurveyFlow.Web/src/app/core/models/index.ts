@@ -83,32 +83,6 @@ export interface AdminSubmission extends FormSubmission {
   secondary_submit_at?: string | null;
 }
 
-export interface Notification {
-  id: number;
-  title: string;
-  body: string;
-  level: string;
-  created_at: string;
-  created_by?: number;
-  created_by_email?: string;
-  created_by_avatar_url?: string;
-  delivered_at: string;
-  read_at?: string;
-}
-
-export interface AdminNotification {
-  id: number;
-  title: string;
-  body: string;
-  level: string;
-  created_at: string;
-  created_by?: number;
-  created_by_email?: string;
-  created_by_avatar_url?: string;
-  recipient_count: number;
-  read_count: number;
-}
-
 export interface SiteSettings {
   siteName: string;
   faviconUrl?: string;
@@ -232,9 +206,3 @@ export interface PaginatedResult<T> {
   offset: number;
 }
 
-export interface NotificationsResult {
-  items: Notification[];
-  unread_count: number;
-  limit: number;
-  offset: number;
-}

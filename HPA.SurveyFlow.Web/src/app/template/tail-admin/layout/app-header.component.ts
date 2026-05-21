@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, signal, inject, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { SidebarService } from '../services/sidebar.service';
@@ -9,17 +9,6 @@ export interface HeaderUser {
   email?: string;
   avatarUrl?: string;
   role?: string;
-}
-
-export interface HeaderNotification {
-  id: string | number;
-  title: string;
-  message?: string;
-  timeLabel?: string;
-  href?: string;
-  read?: boolean;
-  unread?: boolean;
-  avatarUrl?: string;
 }
 
 @Component({
@@ -43,7 +32,7 @@ export interface HeaderNotification {
           </button>
         </div>
 
-        <!-- Right: theme + notifications + user -->
+        <!-- Right: theme + user -->
         <div class="flex items-center gap-2">
 
           <!-- Theme toggle -->
@@ -66,68 +55,6 @@ export interface HeaderNotification {
               </svg>
             }
           </button>
-
-          <!-- Notifications -->
-          @if (notificationsHref) {
-            <div class="relative">
-              <button
-                class="relative flex items-center justify-center w-10 h-10 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition"
-                (click)="notifOpen.set(!notifOpen())"
-                aria-label="Notifications"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                @if (unreadCount() > 0) {
-                  <span class="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-white text-[10px] font-bold">
-                    {{ unreadCount() > 99 ? '99+' : unreadCount() }}
-                  </span>
-                }
-              </button>
-
-              @if (notifOpen()) {
-                <div class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 z-50 overflow-hidden">
-                  <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                    <span class="font-semibold text-sm text-gray-800 dark:text-white">Notifications</span>
-                    @if (notificationsHref) {
-                      <a [routerLink]="notificationsHref" (click)="notifOpen.set(false)"
-                         class="text-xs text-brand-500 hover:underline">View all</a>
-                    }
-                  </div>
-                  @if (notifications && notifications.length > 0) {
-                    <ul class="divide-y divide-gray-100 dark:divide-gray-800 max-h-72 overflow-y-auto">
-                      @for (n of notifications.slice(0, 8); track n.id) {
-                        <li>
-                          <a
-                            [routerLink]="n.href ?? notificationsHref"
-                            (click)="onNotifRead(n); notifOpen.set(false)"
-                            class="flex gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition"
-                            [class.opacity-60]="n.read"
-                          >
-                            <div class="flex-1 min-w-0">
-                              <p class="text-sm font-medium text-gray-800 dark:text-white truncate">{{ n.title }}</p>
-                              @if (n.message) {
-                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ n.message }}</p>
-                              }
-                              @if (n.timeLabel) {
-                                <p class="text-xs text-gray-400 mt-0.5">{{ n.timeLabel }}</p>
-                              }
-                            </div>
-                            @if (!n.read) {
-                              <span class="mt-1.5 h-2 w-2 rounded-full bg-brand-500 shrink-0"></span>
-                            }
-                          </a>
-                        </li>
-                      }
-                    </ul>
-                  } @else {
-                    <div class="px-4 py-6 text-center text-sm text-gray-400">No notifications</div>
-                  }
-                </div>
-              }
-            </div>
-          }
 
           <!-- Sign In link (unauthenticated) -->
           @if (!user && loginHref) {
@@ -200,20 +127,14 @@ export interface HeaderNotification {
 })
 export class AppHeaderComponent {
   @Input() user?: HeaderUser;
-  @Input() notifications?: HeaderNotification[];
-  @Input() notificationsHref?: string;
   @Input() profileHref?: string;
   @Input() loginHref?: string;
-  @Output() notificationRead = new EventEmitter<string | number>();
   @Output() signOut = new EventEmitter<void>();
 
   sidebar = inject(SidebarService);
   theme = inject(ThemeService);
 
-  notifOpen = signal(false);
   userOpen = signal(false);
-
-  unreadCount = () => (this.notifications ?? []).filter(n => n.unread || !n.read).length;
 
   initials(): string {
     const name = this.user?.name ?? this.user?.email ?? '';
@@ -231,19 +152,7 @@ export class AppHeaderComponent {
     }
   }
 
-  onNotifRead(n: HeaderNotification): void {
-    this.notificationRead.emit(n.id);
-  }
-
   onSignOut(): void {
     this.signOut.emit();
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocClick(e: Event): void {
-    const target = e.target as HTMLElement;
-    if (!target.closest('[data-notif-dropdown]')) {
-      // only close if the click is outside - simplest approach
-    }
   }
 }

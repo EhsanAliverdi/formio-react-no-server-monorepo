@@ -9,8 +9,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Form> Forms { get; set; }
     public DbSet<Session> Sessions { get; set; }
     public DbSet<FormSubmission> FormSubmissions { get; set; }
-    public DbSet<Notification> Notifications { get; set; }
-    public DbSet<NotificationRecipient> NotificationRecipients { get; set; }
     public DbSet<SiteSetting> SiteSettings { get; set; }
     public DbSet<FormAllowedRole> FormAllowedRoles { get; set; }
     public DbSet<FormAllowedUser> FormAllowedUsers { get; set; }
@@ -96,33 +94,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(fs => fs.SecondarySubmitAt).HasColumnName("secondary_submit_at");
             e.HasOne(fs => fs.Form).WithMany(f => f.Submissions).HasForeignKey(fs => fs.FormId);
             e.HasOne(fs => fs.User).WithMany(u => u.Submissions).HasForeignKey(fs => fs.UserId);
-        });
-
-        modelBuilder.Entity<Notification>(e =>
-        {
-            e.ToTable("notifications");
-            e.HasKey(n => n.Id);
-            e.Property(n => n.Id).HasColumnName("id").UseIdentityAlwaysColumn();
-            e.Property(n => n.Title).HasColumnName("title").IsRequired();
-            e.Property(n => n.Body).HasColumnName("body").IsRequired();
-            e.Property(n => n.Type).HasColumnName("type").HasDefaultValue("info");
-            e.Property(n => n.Level).HasColumnName("level").HasDefaultValue("normal");
-            e.Property(n => n.CreatedBy).HasColumnName("created_by");
-            e.Property(n => n.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
-            e.HasOne(n => n.Creator).WithMany(u => u.CreatedNotifications)
-                .HasForeignKey(n => n.CreatedBy).OnDelete(DeleteBehavior.SetNull);
-        });
-
-        modelBuilder.Entity<NotificationRecipient>(e =>
-        {
-            e.ToTable("notification_recipients");
-            e.HasKey(nr => new { nr.NotificationId, nr.UserId });
-            e.Property(nr => nr.NotificationId).HasColumnName("notification_id");
-            e.Property(nr => nr.UserId).HasColumnName("user_id");
-            e.Property(nr => nr.DeliveredAt).HasColumnName("delivered_at").HasDefaultValueSql("now()");
-            e.Property(nr => nr.ReadAt).HasColumnName("read_at");
-            e.HasOne(nr => nr.Notification).WithMany(n => n.Recipients).HasForeignKey(nr => nr.NotificationId);
-            e.HasOne(nr => nr.User).WithMany(u => u.NotificationRecipients).HasForeignKey(nr => nr.UserId);
         });
 
         modelBuilder.Entity<SiteSetting>(e =>

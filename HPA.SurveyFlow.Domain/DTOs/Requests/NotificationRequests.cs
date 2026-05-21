@@ -2,16 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace HPA.SurveyFlow.Domain.DTOs.Requests;
 
-public class CreateNotificationRequest
-{
-    [JsonPropertyName("title")] public string? Title { get; set; }
-    [JsonPropertyName("body")] public string? Body { get; set; }
-    [JsonPropertyName("level")] public string? Level { get; set; }
-    [JsonPropertyName("all_users")] public bool? AllUsers { get; set; }
-    [JsonPropertyName("roles")] public List<string>? Roles { get; set; }
-    [JsonPropertyName("user_ids")] public List<int>? UserIds { get; set; }
-}
-
 public class PdfExportRequest
 {
     [JsonPropertyName("html")] public string? Html { get; set; }

@@ -24,12 +24,6 @@ export const publicRoutes: Routes = [
       import('./pages/fill-form.component').then(m => m.FillFormComponent),
   },
   {
-    path: 'notifications',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./pages/notifications.component').then(m => m.NotificationsComponent),
-  },
-  {
     path: 'myProfile',
     canActivate: [authGuard],
     loadComponent: () =>
