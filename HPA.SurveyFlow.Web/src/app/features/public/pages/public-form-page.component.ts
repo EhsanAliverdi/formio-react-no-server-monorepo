@@ -297,7 +297,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
     if (this.submitting()) return;
     this.submitting.set(true);
     const id = +this.route.snapshot.paramMap.get('id')!;
-    this.formService.submit(id, this.pendingData ?? {}).subscribe({
+    this.formService.submit(id, this.pendingData ?? {}, this.parentSubmissionId()).subscribe({
       next: (res: any) => {
         this.submitting.set(false);
         this.previewOpen.set(false);
@@ -336,6 +336,20 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
     if (redirect) {
       // Always navigate after 20 seconds — user sees the message first
       setTimeout(() => { window.location.href = redirect!; }, 20_000);
+      return;
     }
+
+    if (res?.next_form_id) {
+      setTimeout(() => {
+        window.location.href = `/form-public/${res.next_form_id}?parent_submission_id=${res.id}`;
+      }, 2_000);
+    }
+  }
+
+  private parentSubmissionId(): number | null {
+    const raw = this.route.snapshot.queryParamMap.get('parent_submission_id');
+    if (!raw) return null;
+    const id = Number(raw);
+    return Number.isFinite(id) && id > 0 ? id : null;
   }
 }

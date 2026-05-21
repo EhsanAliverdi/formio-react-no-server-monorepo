@@ -9,6 +9,7 @@ public class FormDto
     [JsonPropertyName("json")] public object Json { get; set; } = null!;
     [JsonPropertyName("allow_anonymous_submit")] public int AllowAnonymousSubmit { get; set; }
     [JsonPropertyName("visibility")] public string Visibility { get; set; } = null!;
+    [JsonPropertyName("parent_form_id")] public int? ParentFormId { get; set; }
     [JsonPropertyName("allowed_roles")] public List<string>? AllowedRoles { get; set; }
     [JsonPropertyName("allowed_user_ids")] public List<int>? AllowedUserIds { get; set; }
 }

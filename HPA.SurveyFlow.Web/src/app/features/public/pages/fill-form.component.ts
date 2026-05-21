@@ -82,6 +82,9 @@ function buildLabelMap(schema: any): Record<string, string> {
                 : 'text-green-800'">
             {{ submitMessage() || 'Form submitted successfully!' }}
           </p>
+          @if (submitActionNote()) {
+            <p class="mt-3 text-sm text-gray-600">{{ submitActionNote() }}</p>
+          }
           @if (submitResultLevel() !== 'error') {
             <a routerLink="/forms/mysubmissions" class="mt-4 inline-flex items-center text-sm underline"
               [class]="submitResultLevel() === 'warning' ? 'text-amber-700' : 'text-green-700'">
@@ -176,6 +179,7 @@ export class FillFormComponent implements OnInit, OnDestroy {
   submitted = signal(false);
   submitResultLevel = signal<'success' | 'warning' | 'error' | null>(null);
   submitMessage = signal<string | null>(null);
+  submitActionNote = signal<string | null>(null);
   previewOpen = signal(false);
   step = signal(0);
   previewItems = signal<{ key: string; label: string; value: string }[]>([]);
@@ -191,6 +195,7 @@ export class FillFormComponent implements OnInit, OnDestroy {
   private formInstance: any = null;
   private pendingData: any = null;
   private labelMap: Record<string, string> = {};
+  private resultTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -214,6 +219,7 @@ export class FillFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.resultTimer) clearTimeout(this.resultTimer);
     this.formInstance?.destroy?.(true);
     this.formInstance = null;
   }
@@ -305,7 +311,7 @@ export class FillFormComponent implements OnInit, OnDestroy {
     if (this.submitting()) return;
     this.submitting.set(true);
     const id = +this.route.snapshot.paramMap.get('id')!;
-    this.formService.submit(id, this.pendingData ?? {}).subscribe({
+    this.formService.submit(id, this.pendingData ?? {}, this.parentSubmissionId()).subscribe({
       next: (res) => {
         this.submitting.set(false);
         this.previewOpen.set(false);
@@ -327,28 +333,105 @@ export class FillFormComponent implements OnInit, OnDestroy {
     const settings = this.appSettings();
     let level: 'success' | 'warning' | 'error';
     let message: string;
-    let redirect: string | undefined;
 
     if (res?.has_errors) {
       level = 'error';
       message = settings.messageOnError || 'Your submission contains errors.';
-      redirect = settings.redirectOnError;
     } else if (res?.has_warnings) {
       level = 'warning';
       message = settings.messageOnWarning || 'Submission received with warnings.';
-      redirect = settings.redirectOnWarning;
     } else {
       level = 'success';
       message = settings.messageOnSuccess || 'Form submitted successfully!';
-      redirect = settings.redirectOnSuccess;
     }
 
     this.submitResultLevel.set(level);
-    this.submitMessage.set(message);
+    this.submitMessage.set(this.applyMessagePlaceholders(message, level, res));
 
-    if (redirect) {
-      // Always navigate after 20 seconds — user sees the message first
-      setTimeout(() => { window.location.href = redirect!; }, 20_000);
+    const action = this.resolveResultAction(settings, level, res);
+    if (action.mode === 'stay') {
+      this.submitActionNote.set(null);
+      return;
     }
+
+    const delayMs = Math.max(0, Number(action.delaySeconds) || 0) * 1000;
+    const when = delayMs === 0 ? 'now' : `in ${Math.round(delayMs / 1000)} second(s)`;
+
+    if (action.mode === 'redirect') {
+      this.submitActionNote.set(`Redirecting ${when}.`);
+      this.resultTimer = setTimeout(() => { window.location.href = action.url!; }, delayMs);
+      return;
+    }
+
+    this.submitActionNote.set(`Opening follow-up form ${when}.`);
+    this.resultTimer = setTimeout(() => {
+      this.router.navigate(['/forms', action.nextFormId, 'fill'], {
+        queryParams: { parent_submission_id: res.id },
+      });
+    }, delayMs);
+  }
+
+  private resolveResultAction(settings: any, level: 'success' | 'warning' | 'error', res: any): {
+    mode: 'stay' | 'redirect' | 'next_form';
+    delaySeconds: number;
+    url?: string;
+    nextFormId?: number;
+  } {
+    const configured = settings?.resultActions?.[level];
+    const redirect = this.redirectForLevel(settings, level);
+    const nextFormId = Number(res?.next_form_id);
+
+    if (configured?.mode === 'redirect' && redirect) {
+      return { mode: 'redirect', delaySeconds: Number(configured.delaySeconds) || 0, url: redirect };
+    }
+
+    if (configured?.mode === 'next_form' && Number.isFinite(nextFormId) && nextFormId > 0) {
+      return { mode: 'next_form', delaySeconds: Number(configured.delaySeconds) || 0, nextFormId };
+    }
+
+    if (configured) return { mode: 'stay', delaySeconds: 0 };
+
+    if (redirect) return { mode: 'redirect', delaySeconds: 20, url: redirect };
+    if (Number.isFinite(nextFormId) && nextFormId > 0) return { mode: 'next_form', delaySeconds: 2, nextFormId };
+    return { mode: 'stay', delaySeconds: 0 };
+  }
+
+  private redirectForLevel(settings: any, level: 'success' | 'warning' | 'error'): string | undefined {
+    if (level === 'success') return settings.redirectOnSuccess;
+    if (level === 'warning') return settings.redirectOnWarning;
+    return settings.redirectOnError;
+  }
+
+  private applyMessagePlaceholders(message: string, level: 'success' | 'warning' | 'error', res: any): string {
+    const abnormalities: any[] = Array.isArray(res?.abnormalities) ? res.abnormalities : [];
+    const errors = abnormalities.filter(a => a?.level === 'error');
+    const warnings = abnormalities.filter(a => a?.level === 'warning');
+    const formatQuestion = (a: any) => a?.label || a?.key || 'Question';
+    const formatAnswer = (a: any) => `${formatQuestion(a)}: ${this.valueToText(a?.actual_value)}`;
+
+    return message
+      .replaceAll('{{outcome}}', level)
+      .replaceAll('{{error_count}}', String(res?.error_count ?? errors.length))
+      .replaceAll('{{warning_count}}', String(res?.warning_count ?? warnings.length))
+      .replaceAll('{{abnormal_questions}}', abnormalities.map(formatQuestion).join(', '))
+      .replaceAll('{{error_questions}}', errors.map(formatQuestion).join(', '))
+      .replaceAll('{{warning_questions}}', warnings.map(formatQuestion).join(', '))
+      .replaceAll('{{abnormal_answers}}', abnormalities.map(formatAnswer).join(', '))
+      .replaceAll('{{error_answers}}', errors.map(formatAnswer).join(', '))
+      .replaceAll('{{warning_answers}}', warnings.map(formatAnswer).join(', '));
+  }
+
+  private valueToText(value: any): string {
+    if (value == null) return '';
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  }
+
+  private parentSubmissionId(): number | null {
+    const raw = this.route.snapshot.queryParamMap.get('parent_submission_id');
+    if (!raw) return null;
+    const id = Number(raw);
+    return Number.isFinite(id) && id > 0 ? id : null;
   }
 }

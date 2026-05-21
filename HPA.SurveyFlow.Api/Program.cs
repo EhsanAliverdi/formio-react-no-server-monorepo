@@ -1,8 +1,12 @@
 using Amazon.S3;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Scalar.AspNetCore;
 using Serilog;
+using HPA.SurveyFlow.Api.Authentication;
+using HPA.SurveyFlow.Api.Authorization;
 using HPA.SurveyFlow.Api.Middleware;
 using HPA.SurveyFlow.Infrastructure.Data;
 using HPA.SurveyFlow.Infrastructure.Data.Seed;
@@ -41,6 +45,15 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddOpenApi();
+
+builder.Services
+    .AddAuthentication(SessionBearerAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, SessionBearerAuthenticationHandler>(
+        SessionBearerAuthenticationHandler.SchemeName,
+        _ => { });
+builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
 // Database
 var connStr = builder.Configuration.GetConnectionString("Default")
@@ -145,7 +158,7 @@ app.UseSerilogRequestLogging(opts =>
     };
 });
 
-app.UseMiddleware<SessionAuthMiddleware>();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

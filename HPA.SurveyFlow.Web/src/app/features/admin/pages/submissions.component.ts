@@ -126,6 +126,53 @@ const PAGE_SIZE = 25;
                       </button>
                     </td>
                   </tr>
+                  @for (child of r.child_submissions ?? []; track child.id) {
+                    <tr class="border-t border-gray-100 bg-indigo-50/30 hover:bg-indigo-50 transition cursor-pointer"
+                      (click)="openDetail(child.id)">
+                      <td class="px-5 py-3 pl-10 text-gray-500 text-xs">#{{ child.id }}</td>
+                      <td class="px-5 py-3">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-indigo-600">Sub form</div>
+                        <div class="font-medium text-gray-800">{{ child.form_name }}</div>
+                      </td>
+                      <td class="px-5 py-3">
+                        <div class="flex flex-wrap gap-1">
+                          @if (child.error_count > 0) {
+                            <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                              {{ child.error_count }} Error{{ child.error_count !== 1 ? 's' : '' }}
+                            </span>
+                          }
+                          @if (child.warning_count > 0) {
+                            <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                              {{ child.warning_count }} Warning{{ child.warning_count !== 1 ? 's' : '' }}
+                            </span>
+                          }
+                          @if (!child.error_count && !child.warning_count) {
+                            <span class="text-gray-400">—</span>
+                          }
+                        </div>
+                      </td>
+                      <td class="px-5 py-3">
+                        @if (!child.secondary_submit_status) {
+                          <span class="text-gray-400 text-xs">—</span>
+                        } @else if (child.secondary_submit_status === 'pending') {
+                          <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">Pending</span>
+                        } @else if (child.secondary_submit_status === 'success') {
+                          <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Sent</span>
+                        } @else {
+                          <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Failed</span>
+                        }
+                      </td>
+                      <td class="px-5 py-3 text-gray-700">{{ formatDate(child.submitted_at) }}</td>
+                      <td class="px-5 py-3 text-gray-700">{{ child.user_email ?? 'Anonymous' }}</td>
+                      <td class="px-5 py-3" (click)="$event.stopPropagation()">
+                        <button type="button"
+                          class="rounded bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700 transition"
+                          (click)="openDetail(child.id)">
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  }
                 }
               }
             </tbody>

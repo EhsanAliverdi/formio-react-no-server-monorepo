@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using HPA.SurveyFlow.Api.Extensions;
-using HPA.SurveyFlow.Domain.Enums;
+using HPA.SurveyFlow.Api.Authorization;
+using HPA.SurveyFlow.Domain.Security;
 
 namespace HPA.SurveyFlow.Api.Controllers;
 
@@ -10,20 +10,18 @@ namespace HPA.SurveyFlow.Api.Controllers;
 /// Admin-only. Reads the current day's file and parses each JSONL line.
 /// </summary>
 [ApiController]
-[Route("api/admin/logs")]
+[Route("api/logs")]
 public class LogsController(IConfiguration configuration) : ControllerBase
 {
-    // GET /api/admin/logs?level=Error&q=mex&limit=200&date=2026-05-14
+    // GET /api/logs?level=Error&q=mex&limit=200&date=2026-05-14
     [HttpGet]
+    [RequirePermission(Permissions.Admin.ViewLogs)]
     public IActionResult GetLogs(
         [FromQuery] string? level = null,
         [FromQuery] string? q = null,
         [FromQuery] int limit = 200,
         [FromQuery] string? date = null)
     {
-        try { HttpContext.RequireRole(UserRole.Admin); }
-        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
-
         var logPath = ResolveLogPath(date);
         if (logPath is null || !System.IO.File.Exists(logPath))
             return Ok(new { items = Array.Empty<object>(), log_file = logPath ?? "not found" });
@@ -32,13 +30,11 @@ public class LogsController(IConfiguration configuration) : ControllerBase
         return Ok(new { items = entries, log_file = System.IO.Path.GetFileName(logPath) });
     }
 
-    // GET /api/admin/logs/files — list available log files
+    // GET /api/logs/files - list available log files
     [HttpGet("files")]
+    [RequirePermission(Permissions.Admin.ViewLogs)]
     public IActionResult GetFiles()
     {
-        try { HttpContext.RequireRole(UserRole.Admin); }
-        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
-
         var dir = GetLogDirectory();
         if (!System.IO.Directory.Exists(dir))
             return Ok(new { files = Array.Empty<object>() });

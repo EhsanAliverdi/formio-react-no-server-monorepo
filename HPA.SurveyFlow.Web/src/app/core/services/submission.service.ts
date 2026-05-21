@@ -39,25 +39,25 @@ export class SubmissionService {
       }
     }
     return this.http.get<PaginatedResult<AdminSubmission>>(
-      this.api.apiUrl('/api/admin/submissions'),
+      this.api.apiUrl('/api/submissions'),
       { params: httpParams }
     );
   }
 
   getAdmin(id: number): Observable<AdminSubmission> {
-    return this.http.get<AdminSubmission>(this.api.apiUrl(`/api/admin/submissions/${id}`));
+    return this.http.get<AdminSubmission>(this.api.apiUrl(`/api/submissions/${id}/detail`));
   }
 
   updateAdmin(id: number, data: any): Observable<AdminSubmission> {
     return this.http.put<AdminSubmission>(
-      this.api.apiUrl(`/api/admin/submissions/${id}`),
+      this.api.apiUrl(`/api/submissions/${id}`),
       data
     );
   }
 
   exportAdminPdf(html: string, fileName: string): Observable<Blob> {
     return this.http.post(
-      this.api.apiUrl('/api/admin/pdf'),
+      this.api.apiUrl('/api/pdf-exports'),
       { html, fileName },
       { responseType: 'blob' as const }
     );
@@ -66,7 +66,7 @@ export class SubmissionService {
   triggerSecondarySubmit(id: number, outcome?: 'success' | 'warning' | 'error'): Observable<{ success: boolean; message: string }> {
     const params = outcome ? new HttpParams().set('outcome', outcome) : undefined;
     return this.http.post<{ success: boolean; message: string }>(
-      this.api.apiUrl(`/api/admin/submissions/${id}/secondary-submit`),
+      this.api.apiUrl(`/api/submissions/${id}/secondary-submit`),
       {},
       { params }
     );

@@ -4,7 +4,7 @@ namespace HPA.SurveyFlow.Infrastructure.Services;
 
 public static class AbnormalitiesService
 {
-    public record Abnormality(string Key, string? Type, string? Label, object? NormalValue, string Level = "error");
+    public record Abnormality(string Key, string? Type, string? Label, object? NormalValue, string Level = "error", object? ActualValue = null);
 
     public static List<Abnormality> Compute(string formJson, string submissionDataJson)
     {
@@ -64,20 +64,20 @@ public static class AbnormalitiesService
 
         if (errorValues.Contains(actualValue))
         {
-            result.Add(new Abnormality(key, type, label, normalValue, "error"));
+            result.Add(new Abnormality(key, type, label, normalValue, "error", actualValue));
             return;
         }
 
         if (warningValues.Contains(actualValue))
         {
-            result.Add(new Abnormality(key, type, label, normalValue, "warning"));
+            result.Add(new Abnormality(key, type, label, normalValue, "warning", actualValue));
             return;
         }
 
         if (normalValues.Contains(actualValue)) return;
 
         if (normalValues.Count > 0 && defaultLevel != "none")
-            result.Add(new Abnormality(key, type, label, normalValue, defaultLevel == "warning" ? "warning" : "error"));
+            result.Add(new Abnormality(key, type, label, normalValue, defaultLevel == "warning" ? "warning" : "error", actualValue));
     }
 
     private static List<string> ReadConfiguredValues(JsonElement props, string key)

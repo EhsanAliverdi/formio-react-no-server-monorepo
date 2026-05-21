@@ -10,28 +10,28 @@ export class IntegrationsService {
   private api = inject(ApiService);
 
   getIntegrations(): Observable<Integrations> {
-    return this.http.get<Integrations>(this.api.apiUrl('/api/admin/settings/integrations'));
+    return this.http.get<Integrations>(this.api.apiUrl('/api/integrations'));
   }
 
   updateIntegrations(data: object): Observable<Integrations> {
-    return this.http.put<Integrations>(this.api.apiUrl('/api/admin/settings/integrations'), data);
+    return this.http.put<Integrations>(this.api.apiUrl('/api/integrations'), data);
   }
 
   testEmail(payload: object): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(
-      this.api.apiUrl('/api/admin/settings/integrations/test/email'), payload
+      this.api.apiUrl('/api/integrations/email/test'), payload
     );
   }
 
   testMex(payload: object): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(
-      this.api.apiUrl('/api/admin/settings/integrations/test/mex'), payload
+      this.api.apiUrl('/api/integrations/mex/test'), payload
     );
   }
 
   testMexRequest(payload: object): Observable<{ success?: boolean; message?: string; requiresConfirmation?: boolean; environment?: string; error?: string }> {
     return this.http.post<any>(
-      this.api.apiUrl('/api/admin/settings/integrations/test/mex/request'), payload
+      this.api.apiUrl('/api/integrations/mex/test-request'), payload
     );
   }
 }

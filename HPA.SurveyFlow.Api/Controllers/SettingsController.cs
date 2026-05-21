@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using HPA.SurveyFlow.Api.Authorization;
+using HPA.SurveyFlow.Domain.DTOs.Requests;
 using HPA.SurveyFlow.Domain.DTOs.Responses;
 using HPA.SurveyFlow.Domain.Entities;
+using HPA.SurveyFlow.Domain.Security;
 using HPA.SurveyFlow.Infrastructure.Data;
 
 namespace HPA.SurveyFlow.Api.Controllers;
@@ -14,6 +17,36 @@ public class SettingsController(AppDbContext db) : ControllerBase
     {
         var settings = await db.SiteSettings.ToListAsync();
         return Ok(BuildSiteSettingsDto(settings));
+    }
+
+    [RequirePermission(Permissions.Admin.ManageSettings)]
+    [HttpPut("api/settings/site")]
+    public async Task<IActionResult> UpdateSiteSettings([FromBody] UpdateSiteSettingsRequest body)
+    {
+        var updates = new Dictionary<string, string?>();
+        if (body.SiteName != null) updates["siteName"] = body.SiteName;
+        if (body.FaviconUrl != null) updates["faviconUrl"] = body.FaviconUrl;
+        if (body.LogoExpandedLightUrl != null) updates["logoExpandedLightUrl"] = body.LogoExpandedLightUrl;
+        if (body.LogoExpandedDarkUrl != null) updates["logoExpandedDarkUrl"] = body.LogoExpandedDarkUrl;
+        if (body.LogoCollapsedUrl != null) updates["logoCollapsedUrl"] = body.LogoCollapsedUrl;
+        if (body.LogoExpandedWidth != null) updates["logoExpandedWidth"] = body.LogoExpandedWidth;
+        if (body.LogoExpandedHeight != null) updates["logoExpandedHeight"] = body.LogoExpandedHeight;
+        if (body.LogoCollapsedSize != null) updates["logoCollapsedSize"] = body.LogoCollapsedSize;
+
+        foreach (var (key, value) in updates)
+        {
+            if (value == null) continue;
+            var existing = await db.SiteSettings.FindAsync(key);
+            if (existing != null)
+                existing.Value = value;
+            else
+                db.SiteSettings.Add(new SiteSetting { Key = key, Value = value });
+        }
+
+        await db.SaveChangesAsync();
+
+        var allSettings = await db.SiteSettings.ToListAsync();
+        return Ok(BuildSiteSettingsDto(allSettings));
     }
 
     [HttpGet("api/version")]

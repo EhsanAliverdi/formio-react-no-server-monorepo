@@ -39,6 +39,7 @@ public class AdminSubmissionListItemDto
     [JsonPropertyName("id")] public int Id { get; set; }
     [JsonPropertyName("form_id")] public int FormId { get; set; }
     [JsonPropertyName("form_name")] public string FormName { get; set; } = null!;
+    [JsonPropertyName("parent_submission_id")] public int? ParentSubmissionId { get; set; }
     [JsonPropertyName("user_id")] public int? UserId { get; set; }
     [JsonPropertyName("user_email")] public string? UserEmail { get; set; }
     [JsonPropertyName("submitted_at")] public DateTime SubmittedAt { get; set; }
@@ -46,6 +47,7 @@ public class AdminSubmissionListItemDto
     [JsonPropertyName("error_count")] public int ErrorCount { get; set; }
     [JsonPropertyName("warning_count")] public int WarningCount { get; set; }
     [JsonPropertyName("secondary_submit_status")] public string? SecondarySubmitStatus { get; set; }
+    [JsonPropertyName("child_submissions")] public List<AdminSubmissionListItemDto> ChildSubmissions { get; set; } = [];
 }
 
 public class AdminSubmissionDetailDto
@@ -53,6 +55,7 @@ public class AdminSubmissionDetailDto
     [JsonPropertyName("id")] public int Id { get; set; }
     [JsonPropertyName("form_id")] public int FormId { get; set; }
     [JsonPropertyName("form_name")] public string FormName { get; set; } = null!;
+    [JsonPropertyName("parent_submission_id")] public int? ParentSubmissionId { get; set; }
     [JsonPropertyName("user_id")] public int? UserId { get; set; }
     [JsonPropertyName("user_email")] public string? UserEmail { get; set; }
     [JsonPropertyName("submitted_at")] public DateTime SubmittedAt { get; set; }
@@ -69,4 +72,5 @@ public class AdminSubmissionDetailDto
     [JsonPropertyName("secondary_submit_status")] public string? SecondarySubmitStatus { get; set; }
     [JsonPropertyName("secondary_submit_response")] public object? SecondarySubmitResponse { get; set; }
     [JsonPropertyName("secondary_submit_at")] public DateTime? SecondarySubmitAt { get; set; }
+    [JsonPropertyName("child_submissions")] public List<AdminSubmissionListItemDto> ChildSubmissions { get; set; } = [];
 }

@@ -15,7 +15,7 @@ export class SettingsService {
 
   updateSiteSettings(data: Partial<SiteSettings>): Observable<SiteSettings> {
     return this.http.put<SiteSettings>(
-      this.api.apiUrl('/api/admin/settings/site'),
+      this.api.apiUrl('/api/settings/site'),
       data
     );
   }

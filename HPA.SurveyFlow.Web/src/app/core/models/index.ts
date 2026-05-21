@@ -45,6 +45,7 @@ export interface Form {
   json: any;
   allow_anonymous_submit: number;
   visibility: string;
+  parent_form_id?: number | null;
   allowed_roles?: string[];
   allowed_user_ids?: number[];
 }
@@ -53,6 +54,7 @@ export interface FormSubmission {
   id: number;
   form_id: number;
   form_name: string;
+  parent_submission_id?: number | null;
   user_id?: number;
   user_email?: string;
   submitted_at: string;
@@ -81,6 +83,7 @@ export interface AdminSubmission extends FormSubmission {
   secondary_submit_status?: string | null;   // null | 'pending' | 'success' | 'failed'
   secondary_submit_response?: any;
   secondary_submit_at?: string | null;
+  child_submissions?: AdminSubmission[];
 }
 
 export interface SiteSettings {

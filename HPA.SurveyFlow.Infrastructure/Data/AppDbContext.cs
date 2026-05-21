@@ -62,6 +62,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(f => f.Json).HasColumnName("json").IsRequired();
             e.Property(f => f.AllowAnonymousSubmit).HasColumnName("allow_anonymous_submit").HasDefaultValue(true);
             e.Property(f => f.Visibility).HasColumnName("visibility").HasDefaultValue("public");
+            e.Property(f => f.ParentFormId).HasColumnName("parent_form_id");
+            e.HasOne(f => f.ParentForm).WithMany(f => f.ChildForms).HasForeignKey(f => f.ParentFormId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Session>(e =>
@@ -83,6 +85,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(fs => fs.Id);
             e.Property(fs => fs.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             e.Property(fs => fs.FormId).HasColumnName("form_id");
+            e.Property(fs => fs.ParentSubmissionId).HasColumnName("parent_submission_id");
             e.Property(fs => fs.UserId).HasColumnName("user_id");
             e.Property(fs => fs.SubmittedAt).HasColumnName("submitted_at").HasDefaultValueSql("now()");
             e.Property(fs => fs.Data).HasColumnName("data").IsRequired();
@@ -93,6 +96,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(fs => fs.SecondarySubmitResponse).HasColumnName("secondary_submit_response");
             e.Property(fs => fs.SecondarySubmitAt).HasColumnName("secondary_submit_at");
             e.HasOne(fs => fs.Form).WithMany(f => f.Submissions).HasForeignKey(fs => fs.FormId);
+            e.HasOne(fs => fs.ParentSubmission).WithMany(fs => fs.ChildSubmissions).HasForeignKey(fs => fs.ParentSubmissionId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(fs => fs.User).WithMany(u => u.Submissions).HasForeignKey(fs => fs.UserId);
         });
 

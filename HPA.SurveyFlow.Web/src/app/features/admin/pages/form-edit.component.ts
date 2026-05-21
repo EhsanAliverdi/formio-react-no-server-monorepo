@@ -11,15 +11,56 @@ import { Form, User } from '../../../core/models';
 type WizardPanel = { key: string; title: string };
 type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
 type SecondarySubmitConfig = { enabled: boolean; integration: string; action: string };
+type ResultActionMode = 'stay' | 'redirect' | 'next_form';
+type ResultActionConfig = { mode: ResultActionMode; delaySeconds: number };
 
-const SECONDARY_SUBMIT_OUTCOMES: { value: SecondarySubmitOutcome; label: string; color: string }[] = [
-  { value: 'success', label: 'Success', color: 'green' },
-  { value: 'warning', label: 'Warning', color: 'amber' },
-  { value: 'error', label: 'Error', color: 'red' },
+const SECONDARY_SUBMIT_OUTCOMES = [
+  {
+    value: 'success' as const,
+    label: 'Success',
+    description: 'No warning or error answers were found.',
+    panelClass: 'border-green-200 bg-green-50/40',
+    badgeClass: 'bg-green-100 text-green-800 ring-green-200',
+    focusClass: 'focus:ring-green-500',
+  },
+  {
+    value: 'warning' as const,
+    label: 'Warning',
+    description: 'At least one warning answer was submitted and no error answers were found.',
+    panelClass: 'border-amber-200 bg-amber-50/40',
+    badgeClass: 'bg-amber-100 text-amber-800 ring-amber-200',
+    focusClass: 'focus:ring-amber-500',
+  },
+  {
+    value: 'error' as const,
+    label: 'Error',
+    description: 'At least one error answer was submitted.',
+    panelClass: 'border-red-200 bg-red-50/40',
+    badgeClass: 'bg-red-100 text-red-800 ring-red-200',
+    focusClass: 'focus:ring-red-500',
+  },
 ];
 
 function defaultSecondarySubmitConfig(enabled = false): SecondarySubmitConfig {
   return { enabled, integration: 'mex', action: 'create_request' };
+}
+
+function defaultResultActionConfig(): ResultActionConfig {
+  return { mode: 'stay', delaySeconds: 0 };
+}
+
+function normalizeResultActions(raw: any): Record<SecondarySubmitOutcome, ResultActionConfig> {
+  const defaults = {
+    success: defaultResultActionConfig(),
+    warning: defaultResultActionConfig(),
+    error: defaultResultActionConfig(),
+  };
+
+  return {
+    success: { ...defaults.success, ...(raw?.success ?? {}) },
+    warning: { ...defaults.warning, ...(raw?.warning ?? {}) },
+    error: { ...defaults.error, ...(raw?.error ?? {}) },
+  };
 }
 
 function normalizeSecondarySubmitConfig(raw: any): Record<SecondarySubmitOutcome, SecondarySubmitConfig> {
@@ -123,6 +164,17 @@ function ensureWizardHasPage(schema: any): any {
               <option value="restricted">Restricted</option>
             </select>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Parent form</label>
+            <select [(ngModel)]="parentFormId"
+              class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option [ngValue]="null">No parent form</option>
+              @for (f of parentFormOptions(); track f.id) {
+                <option [ngValue]="f.id">{{ f.name }}</option>
+              }
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Use this when this form is shown after another form is submitted.</p>
+          </div>
         </div>
 
         <!-- Access control (shown when restricted) -->
@@ -204,74 +256,111 @@ function ensureWizardHasPage(schema: any): any {
           </div>
 
           <div class="mt-6 border-t pt-5">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">Submission Result Messages</h3>
-            <p class="text-xs text-gray-500 mb-4">Messages shown after a form is submitted based on abnormality outcome. Leave blank to use defaults.</p>
-            <div class="space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-medium text-green-700 mb-1">Success message (no issues)</label>
-                  <textarea [(ngModel)]="appSettings.messageOnSuccess" rows="2" placeholder="Thank you for your submission."
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-green-700 mb-1">Redirect URL on success</label>
-                  <input type="url" [(ngModel)]="appSettings.redirectOnSuccess" placeholder="https://example.com/thank-you"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-amber-700 mb-1">Warning message</label>
-                  <textarea [(ngModel)]="appSettings.messageOnWarning" rows="2" placeholder="Submission received with warnings."
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-amber-700 mb-1">Redirect URL on warning</label>
-                  <input type="url" [(ngModel)]="appSettings.redirectOnWarning" placeholder="https://example.com/warning"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"/>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-red-700 mb-1">Error message</label>
-                  <textarea [(ngModel)]="appSettings.messageOnError" rows="2" placeholder="Your submission contains errors, please review."
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"></textarea>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-red-700 mb-1">Redirect URL on error</label>
-                  <input type="url" [(ngModel)]="appSettings.redirectOnError" placeholder="https://example.com/error"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"/>
-                </div>
+            <div class="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h3 class="text-sm font-semibold text-gray-800">Submission Result Flow</h3>
+                <p class="text-xs text-gray-500 mt-1">Configure the message, follow-up routing, and secondary integration submit for each submission outcome.</p>
               </div>
+              <span class="text-xs text-gray-500" [attr.title]="placeholderHelp">
+                Placeholder help
+              </span>
             </div>
-          </div>
 
-          <div class="mt-6 border-t pt-5">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">Secondary Submit</h3>
-            <p class="text-xs text-gray-500 mb-4">Forward submitted form data to integrations based on the same success, warning, and error outcomes used for result messages and redirects.</p>
-            <div class="space-y-4">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
               @for (outcome of secondarySubmitOutcomes; track outcome.value) {
-                <div class="rounded-lg border border-gray-200 p-4">
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" [(ngModel)]="secondarySubmitConfigs[outcome.value].enabled"
-                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                    <span class="text-sm font-medium text-gray-700">Enable on {{ outcome.label }}</span>
-                  </label>
-                  @if (secondarySubmitConfigs[outcome.value].enabled) {
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                      <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
-                        <select [(ngModel)]="secondarySubmitConfigs[outcome.value].integration"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                          <option value="mex">MEX Maintenance</option>
-                        </select>
+                <section class="rounded-lg border p-4 space-y-4" [class]="outcome.panelClass">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset" [class]="outcome.badgeClass">
+                        {{ outcome.label }}
+                      </span>
+                      <p class="mt-2 text-xs text-gray-600">{{ outcome.description }}</p>
+                    </div>
+                    <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+                      <input type="checkbox" [(ngModel)]="secondarySubmitConfigs[outcome.value].enabled"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                      Integration
+                    </label>
+                  </div>
+
+                  <div>
+                    <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
+                      Message
+                      <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                        [attr.title]="placeholderHelp">
+                        ?
+                      </span>
+                    </label>
+                    <textarea [(ngModel)]="appSettings[messageSettingKey(outcome.value)]" rows="3"
+                      [placeholder]="messagePlaceholder(outcome.value)"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                      [class]="outcome.focusClass"></textarea>
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">After message</label>
+                      <select [(ngModel)]="resultActions[outcome.value].mode"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                        [class]="outcome.focusClass">
+                        <option value="stay">Stay on result message</option>
+                        <option value="redirect">Redirect to URL</option>
+                        <option value="next_form">Open follow-up form</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">Delay before action</label>
+                      <div class="flex items-center gap-2">
+                        <input type="number" min="0" step="1" [(ngModel)]="resultActions[outcome.value].delaySeconds"
+                          class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                          [class]="outcome.focusClass"/>
+                        <span class="text-xs text-gray-500">seconds. Use 0 for immediate.</span>
                       </div>
-                      <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
-                        <select [(ngModel)]="secondarySubmitConfigs[outcome.value].action"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                          <option value="create_request">Create Request</option>
-                        </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Redirect URL</label>
+                    <input type="url" [(ngModel)]="appSettings[redirectSettingKey(outcome.value)]"
+                      placeholder="https://example.com/thank-you"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                      [class]="outcome.focusClass"/>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Follow-up form</label>
+                    <select [(ngModel)]="appSettings.nextForms[outcome.value]"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                      [class]="outcome.focusClass">
+                      <option [ngValue]="null">No follow-up form</option>
+                      @for (f of childFormOptions(); track f.id) {
+                        <option [ngValue]="f.id">{{ f.name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  @if (secondarySubmitConfigs[outcome.value].enabled) {
+                    <div class="rounded-lg border border-gray-200 bg-white p-3">
+                      <div class="text-xs font-semibold text-gray-700 mb-3">Secondary submit</div>
+                      <div class="grid grid-cols-1 gap-3">
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
+                          <select [(ngModel)]="secondarySubmitConfigs[outcome.value].integration"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="mex">MEX Maintenance</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
+                          <select [(ngModel)]="secondarySubmitConfigs[outcome.value].action"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="create_request">Create Request</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   }
-                </div>
+                </section>
               }
             </div>
           </div>
@@ -373,6 +462,7 @@ export class FormEditComponent implements OnInit {
   saveError = signal<string | null>(null);
   usersLoading = signal(false);
   allUsers = signal<User[]>([]);
+  allForms = signal<Form[]>([]);
   wizardPanels = signal<WizardPanel[]>([]);
   activePageIndex = signal(0);
 
@@ -382,9 +472,12 @@ export class FormEditComponent implements OnInit {
   formDisplay: 'form' | 'wizard' = 'form';
   allowedRoles: string[] = [];
   allowedUserIds: number[] = [];
+  parentFormId: number | null = null;
   appSettings: any = {};
+  placeholderHelp = 'Available placeholders: {{outcome}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
   secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
   secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = normalizeSecondarySubmitConfig(null);
+  resultActions: Record<SecondarySubmitOutcome, ResultActionConfig> = normalizeResultActions(null);
   currentSchema: any = {};
 
   availableRoles = [
@@ -398,6 +491,8 @@ export class FormEditComponent implements OnInit {
   publicFormUrl = computed(() =>
     this.formId ? `${window.location.origin}/form-public/${this.formId}` : ''
   );
+  parentFormOptions = computed(() => this.allForms().filter(f => f.id !== this.formId));
+  childFormOptions = computed(() => this.allForms().filter(f => f.id !== this.formId));
 
   ngOnInit(): void {
     const idStr = this.route.snapshot.paramMap.get('id');
@@ -409,12 +504,15 @@ export class FormEditComponent implements OnInit {
         this.name = f.name;
         this.allowAnonymous = !!f.allow_anonymous_submit;
         this.visibility = f.visibility;
+        this.parentFormId = f.parent_form_id ?? null;
         this.allowedRoles = f.allowed_roles ?? [];
         this.allowedUserIds = f.allowed_user_ids ?? [];
         let schema = f.json ?? {};
         if (typeof schema === 'string') { try { schema = JSON.parse(schema); } catch { schema = {}; } }
-        this.appSettings = { ...(schema.appSettings ?? {}) };
+        this.appSettings = { nextForms: {}, ...(schema.appSettings ?? {}) };
+        this.appSettings.nextForms = { success: null, warning: null, error: null, ...(this.appSettings.nextForms ?? {}) };
         this.secondarySubmitConfigs = normalizeSecondarySubmitConfig(schema.appSettings?.secondarySubmit);
+        this.resultActions = normalizeResultActions(schema.appSettings?.resultActions);
         this.formDisplay = schema.display === 'wizard' ? 'wizard' : 'form';
         this.currentSchema = schema;
         this.wizardPanels.set(getPanels(schema));
@@ -423,6 +521,7 @@ export class FormEditComponent implements OnInit {
       error: (err) => { this.loadError.set(err?.error?.error || 'Failed to load form.'); this.loading.set(false); },
     });
     this.loadUsers();
+    this.loadForms();
   }
 
   private loadUsers(): void {
@@ -430,6 +529,13 @@ export class FormEditComponent implements OnInit {
     this.userService.list().subscribe({
       next: (u) => { this.allUsers.set(u); this.usersLoading.set(false); },
       error: () => this.usersLoading.set(false),
+    });
+  }
+
+  private loadForms(): void {
+    this.formService.list().subscribe({
+      next: (forms) => this.allForms.set(forms),
+      error: () => {},
     });
   }
 
@@ -515,6 +621,24 @@ export class FormEditComponent implements OnInit {
       : [...this.allowedUserIds, id];
   }
 
+  messageSettingKey(outcome: SecondarySubmitOutcome): string {
+    return `messageOn${this.capitalizeOutcome(outcome)}`;
+  }
+
+  redirectSettingKey(outcome: SecondarySubmitOutcome): string {
+    return `redirectOn${this.capitalizeOutcome(outcome)}`;
+  }
+
+  messagePlaceholder(outcome: SecondarySubmitOutcome): string {
+    if (outcome === 'success') return 'Thank you for your submission.';
+    if (outcome === 'warning') return 'Submission received with warnings: {{warning_questions}}.';
+    return 'Please review these answers: {{error_questions}}.';
+  }
+
+  private capitalizeOutcome(outcome: SecondarySubmitOutcome): string {
+    return outcome.charAt(0).toUpperCase() + outcome.slice(1);
+  }
+
   save(): void {
     if (!this.name.trim()) { this.saveError.set('Form name is required.'); return; }
     this.saveError.set(null);
@@ -524,10 +648,15 @@ export class FormEditComponent implements OnInit {
       warning: { ...this.secondarySubmitConfigs.warning },
       error: { ...this.secondarySubmitConfigs.error },
     };
+    const resultActions = {
+      success: { ...this.resultActions.success, delaySeconds: Number(this.resultActions.success.delaySeconds) || 0 },
+      warning: { ...this.resultActions.warning, delaySeconds: Number(this.resultActions.warning.delaySeconds) || 0 },
+      error: { ...this.resultActions.error, delaySeconds: Number(this.resultActions.error.delaySeconds) || 0 },
+    };
     const finalSchema = {
       ...schema,
       display: this.formDisplay,
-      appSettings: { ...this.appSettings, secondarySubmit },
+      appSettings: { ...this.appSettings, resultActions, secondarySubmit },
     };
     this.saving.set(true);
     this.formService.update(this.formId, {
@@ -535,6 +664,7 @@ export class FormEditComponent implements OnInit {
       json: finalSchema,
       allow_anonymous_submit: this.allowAnonymous ? 1 : 0,
       visibility: this.visibility,
+      parent_form_id: this.parentFormId,
       allowed_roles: this.allowedRoles,
       allowed_user_ids: this.allowedUserIds,
     }).subscribe({

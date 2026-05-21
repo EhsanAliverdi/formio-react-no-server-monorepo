@@ -186,6 +186,7 @@ export class AdminFormsComponent implements OnInit {
       json: form.json,
       allow_anonymous_submit: form.allow_anonymous_submit ? 1 : 0,
       visibility: form.visibility,
+      parent_form_id: form.parent_form_id ?? null,
       allowed_roles: form.allowed_roles ?? [],
       allowed_user_ids: form.allowed_user_ids ?? [],
     };
@@ -243,6 +244,7 @@ export class AdminFormsComponent implements OnInit {
       json: schema,
       allow_anonymous_submit: parsed?.allow_anonymous_submit ?? 1,
       visibility: parsed?.visibility ?? 'public',
+      parent_form_id: parsed?.parent_form_id ?? null,
       allowed_roles: Array.isArray(parsed?.allowed_roles) ? parsed.allowed_roles : [],
       allowed_user_ids: Array.isArray(parsed?.allowed_user_ids) ? parsed.allowed_user_ids : [],
     };

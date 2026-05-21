@@ -36,6 +36,9 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         }
 
         var isPrivileged = role == UserRole.Admin || role == UserRole.Editor;
+        if (!isPrivileged)
+            forms = forms.Where(f => f.ParentFormId == null);
+
         var result = forms.Select(f => MapFormDto(f, isPrivileged)).ToList();
         return Ok(result);
     }
@@ -56,13 +59,16 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             return StatusCode(403, new { error = "Only admins can set allowed_user_ids." });
 
         var allowAnon = ParseBoolish(body.AllowAnonymousSubmit, defaultValue: true);
+        if (body.ParentFormId.HasValue && !await db.Forms.AnyAsync(f => f.Id == body.ParentFormId.Value))
+            return BadRequest(new { error = "Parent form does not exist." });
 
         var form = new Form
         {
             Name = body.Name,
             Json = body.Json.Value.GetRawText(),
             AllowAnonymousSubmit = allowAnon,
-            Visibility = body.Visibility ?? FormVisibility.Public
+            Visibility = body.Visibility ?? FormVisibility.Public,
+            ParentFormId = body.ParentFormId
         };
 
         db.Forms.Add(form);
@@ -129,6 +135,11 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         if (body.Json != null && body.Json.Value.ValueKind != JsonValueKind.Undefined)
             form.Json = body.Json.Value.GetRawText();
         if (body.Visibility != null) form.Visibility = body.Visibility;
+        if (body.ParentFormId.HasValue && body.ParentFormId.Value == id)
+            return BadRequest(new { error = "A form cannot be its own parent." });
+        if (body.ParentFormId.HasValue && !await db.Forms.AnyAsync(f => f.Id == body.ParentFormId.Value))
+            return BadRequest(new { error = "Parent form does not exist." });
+        form.ParentFormId = body.ParentFormId;
         if (body.AllowAnonymousSubmit != null)
             form.AllowAnonymousSubmit = ParseBoolish(body.AllowAnonymousSubmit, form.AllowAnonymousSubmit);
 
@@ -193,10 +204,21 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         }
 
         var dataJson = body.Data?.GetRawText() ?? "{}";
+        if (body.ParentSubmissionId.HasValue)
+        {
+            var parentSubmission = await db.FormSubmissions
+                .Include(s => s.Form)
+                .FirstOrDefaultAsync(s => s.Id == body.ParentSubmissionId.Value);
+            if (parentSubmission == null)
+                return BadRequest(new { error = "Parent submission does not exist." });
+            if (form.ParentFormId.HasValue && form.ParentFormId.Value != parentSubmission.FormId)
+                return BadRequest(new { error = "This form is not configured as a child of the parent submission's form." });
+        }
 
         var submission = new FormSubmission
         {
             FormId = form.Id,
+            ParentSubmissionId = body.ParentSubmissionId,
             UserId = currentUser?.Id,
             Data = dataJson,
             SubmittedAt = DateTime.UtcNow
@@ -210,10 +232,11 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         var warningCount = abnormalities.Count(a => a.Level == "warning");
 
         // Dispatch secondary submit in background — does not block the response
+        var outcome = errorCount > 0 ? "error" : warningCount > 0 ? "warning" : "success";
+
         try
         {
             var formSchema = JsonDocument.Parse(form.Json).RootElement;
-            var outcome = errorCount > 0 ? "error" : warningCount > 0 ? "warning" : "success";
             if (TryGetSecondarySubmitAction(formSchema, outcome, out var integration, out var action))
             {
                 secondarySubmitService.DispatchAsync(integration, action, dataJson, submission.Id, outcome);
@@ -228,7 +251,17 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             has_errors = errorCount > 0,
             has_warnings = warningCount > 0,
             error_count = errorCount,
-            warning_count = warningCount
+            warning_count = warningCount,
+            outcome,
+            abnormalities = abnormalities.Select(a => new
+            {
+                key = a.Key,
+                label = a.Label,
+                level = a.Level,
+                normal_value = a.NormalValue,
+                actual_value = a.ActualValue
+            }),
+            next_form_id = TryGetNextFormId(form.Json, outcome, out var nextFormId) ? nextFormId : (int?)null
         });
     }
 
@@ -245,9 +278,33 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             Json = jsonObj,
             AllowAnonymousSubmit = f.AllowAnonymousSubmit ? 1 : 0,
             Visibility = f.Visibility,
+            ParentFormId = f.ParentFormId,
             AllowedRoles = includeRestricted ? f.AllowedRoles.Select(r => r.Role).ToList() : null,
             AllowedUserIds = includeRestricted ? f.AllowedUsers.Select(u => u.UserId).ToList() : null
         };
+    }
+
+    internal static bool TryGetNextFormId(string formJson, string outcome, out int nextFormId)
+    {
+        nextFormId = 0;
+        try
+        {
+            var schema = JsonDocument.Parse(formJson).RootElement;
+            if (!schema.TryGetProperty("appSettings", out var appSettingsEl)
+                || !appSettingsEl.TryGetProperty("nextForms", out var nextFormsEl)
+                || !nextFormsEl.TryGetProperty(outcome, out var outcomeEl))
+                return false;
+
+            if (outcomeEl.ValueKind == JsonValueKind.Number)
+                return outcomeEl.TryGetInt32(out nextFormId) && nextFormId > 0;
+
+            if (outcomeEl.ValueKind == JsonValueKind.String
+                && int.TryParse(outcomeEl.GetString(), out nextFormId))
+                return nextFormId > 0;
+        }
+        catch { }
+
+        return false;
     }
 
     internal static bool TryGetSecondarySubmitAction(JsonElement formSchema, string outcome, out string integration, out string action)

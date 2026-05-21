@@ -24,10 +24,10 @@ export class LogService {
     if (opts.q) params = params.set('q', opts.q);
     if (opts.limit) params = params.set('limit', opts.limit);
     if (opts.date) params = params.set('date', opts.date);
-    return this.http.get<any>(this.api.apiUrl('/api/admin/logs'), { params });
+    return this.http.get<any>(this.api.apiUrl('/api/logs'), { params });
   }
 
   getFiles(): Observable<{ files: { name: string; date: string; size_bytes: number }[] }> {
-    return this.http.get<any>(this.api.apiUrl('/api/admin/logs/files'));
+    return this.http.get<any>(this.api.apiUrl('/api/logs/files'));
   }
 }

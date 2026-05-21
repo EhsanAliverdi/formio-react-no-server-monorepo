@@ -148,5 +148,18 @@ public static class DbSeeder
             existingForm.AllowAnonymousSubmit = true;
             existingForm.Visibility = "public";
         }
+
+        await db.SaveChangesAsync();
+        await LinkDemoSubFormsAsync(db);
+    }
+
+    private static async Task LinkDemoSubFormsAsync(AppDbContext db)
+    {
+        var parent = await db.Forms.FirstOrDefaultAsync(f => f.Name == DemoSubFormSeedData.ParentFormName);
+        var acknowledgement = await db.Forms.FirstOrDefaultAsync(f => f.Name == DemoSubFormSeedData.AcknowledgementFormName);
+        if (parent is null || acknowledgement is null) return;
+
+        acknowledgement.ParentFormId = parent.Id;
+        parent.Json = DemoSubFormSeedData.CreateParent(acknowledgement.Id).Schema.GetRawText();
     }
 }

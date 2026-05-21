@@ -10,28 +10,28 @@ export class JobService {
   private api = inject(ApiService);
 
   getJobs(): Observable<ScheduledJob[]> {
-    return this.http.get<ScheduledJob[]>(this.api.apiUrl('/api/admin/jobs'));
+    return this.http.get<ScheduledJob[]>(this.api.apiUrl('/api/jobs'));
   }
 
   getJobRuns(jobKey: string, limit = 50, offset = 0): Observable<PaginatedResult<JobRun>> {
     const params = new HttpParams().set('limit', limit).set('offset', offset);
     return this.http.get<PaginatedResult<JobRun>>(
-      this.api.apiUrl(`/api/admin/jobs/${jobKey}/runs`), { params });
+      this.api.apiUrl(`/api/jobs/${jobKey}/runs`), { params });
   }
 
   getAllRuns(limit = 50, offset = 0): Observable<PaginatedResult<JobRun>> {
     const params = new HttpParams().set('limit', limit).set('offset', offset);
     return this.http.get<PaginatedResult<JobRun>>(
-      this.api.apiUrl('/api/admin/jobs/runs'), { params });
+      this.api.apiUrl('/api/jobs/runs'), { params });
   }
 
   interruptJob(jobKey: string): Observable<{ success: boolean; message: string }> {
-    return this.http.post<any>(this.api.apiUrl(`/api/admin/jobs/${jobKey}/interrupt`), {});
+    return this.http.post<any>(this.api.apiUrl(`/api/jobs/${jobKey}/interrupt`), {});
   }
 
   triggerJob(jobKey: string, params?: import('../models').TriggerJobParams): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(
-      this.api.apiUrl(`/api/admin/jobs/${jobKey}/trigger`), params ?? {});
+      this.api.apiUrl(`/api/jobs/${jobKey}/trigger`), params ?? {});
   }
 
   updateJob(jobKey: string, data: {
@@ -42,7 +42,7 @@ export class JobService {
     only_update_changed?: boolean;
   }): Observable<{ success: boolean }> {
     return this.http.put<{ success: boolean }>(
-      this.api.apiUrl(`/api/admin/jobs/${jobKey}`),
+      this.api.apiUrl(`/api/jobs/${jobKey}`),
       {
         cronExpression:     data.cron_expression,
         isEnabled:          data.is_enabled,
@@ -72,15 +72,15 @@ export class JobService {
     if (opts.category) params = params.set('category', opts.category);
     if (opts.limit !== undefined) params = params.set('limit', opts.limit);
     if (opts.offset !== undefined) params = params.set('offset', opts.offset);
-    return this.http.get<any>(this.api.apiUrl('/api/admin/assets'), { params });
+    return this.http.get<any>(this.api.apiUrl('/api/assets'), { params });
   }
 
   getAdminAsset(id: number): Observable<ExternalAsset & { raw?: any }> {
-    return this.http.get<any>(this.api.apiUrl(`/api/admin/assets/${id}`));
+    return this.http.get<any>(this.api.apiUrl(`/api/assets/${id}`));
   }
 
   bestEffortSync(): Observable<{ success: boolean; message: string }> {
-    return this.http.post<any>(this.api.apiUrl('/api/admin/assets/best-effort-sync'), {});
+    return this.http.post<any>(this.api.apiUrl('/api/assets/best-effort-sync'), {});
   }
 
   syncOneAsset(externalId: string): Observable<{
@@ -89,7 +89,7 @@ export class JobService {
     total_synced: number;
     records: { external_id: string; display_name?: string; status: string; saved: boolean; error?: string }[];
   }> {
-    return this.http.post<any>(this.api.apiUrl('/api/admin/assets/sync-one'), { externalId });
+    return this.http.post<any>(this.api.apiUrl('/api/assets/sync-one'), { externalId });
   }
 
   getAssetTree(opts: {
@@ -105,7 +105,7 @@ export class JobService {
     if (opts.q)        params = params.set('q',         opts.q);
     if (opts.isActive !== undefined) params = params.set('isActive', String(opts.isActive));
     if (opts.category) params = params.set('category',  opts.category);
-    return this.http.get<any>(this.api.apiUrl('/api/admin/assets/tree'), { params });
+    return this.http.get<any>(this.api.apiUrl('/api/assets/tree'), { params });
   }
 }
 

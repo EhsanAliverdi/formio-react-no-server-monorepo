@@ -10,7 +10,7 @@ export class AdminService {
   private api = inject(ApiService);
 
   getStats(): Observable<AdminStats> {
-    return this.http.get<AdminStats>(this.api.apiUrl('/api/admin/stats'));
+    return this.http.get<AdminStats>(this.api.apiUrl('/api/dashboard/stats'));
   }
 
   getActivity(limit?: number): Observable<{ items: ActivityItem[] }> {
@@ -19,7 +19,7 @@ export class AdminService {
       params = params.set('limit', String(limit));
     }
     return this.http.get<{ items: ActivityItem[] }>(
-      this.api.apiUrl('/api/admin/activity'),
+      this.api.apiUrl('/api/dashboard/activity'),
       { params }
     );
   }
@@ -30,7 +30,7 @@ export class AdminService {
       body.fileName = fileName;
     }
     return this.http.post(
-      this.api.apiUrl('/api/admin/pdf'),
+      this.api.apiUrl('/api/pdf-exports'),
       body,
       { responseType: 'blob' as const }
     );
