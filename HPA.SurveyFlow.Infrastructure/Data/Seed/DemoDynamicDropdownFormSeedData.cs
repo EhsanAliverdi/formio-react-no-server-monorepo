@@ -37,9 +37,9 @@ internal static class DemoDynamicDropdownFormSeedData
                 messageOnError = "Request submitted — please review flagged items.",
                 secondarySubmit = new
                 {
-                    enabled = true,
-                    integration = "mex",
-                    action = "create_request",
+                    success = new { enabled = true, integration = "mex", action = "create_request" },
+                    warning = new { enabled = true, integration = "mex", action = "create_request" },
+                    error = new { enabled = true, integration = "mex", action = "create_request" },
                 },
             },
             components = new object[]

@@ -35,9 +35,9 @@ internal static class DemoFaultReportSeedData
                 redirectOnError = (string?)null,
                 secondarySubmit = new
                 {
-                    enabled = true,
-                    integration = "mex",
-                    action = "create_request",
+                    success = new { enabled = true, integration = "mex", action = "create_request" },
+                    warning = new { enabled = true, integration = "mex", action = "create_request" },
+                    error = new { enabled = true, integration = "mex", action = "create_request" },
                 },
             },
             components = new object[]

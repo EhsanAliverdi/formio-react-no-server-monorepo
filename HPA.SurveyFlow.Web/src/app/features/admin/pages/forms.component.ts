@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -15,15 +15,25 @@ import { Form } from '../../../core/models';
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Forms</h1>
-        <a
-          routerLink="/admin/forms/new"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          New Form
-        </a>
+        <div class="flex items-center gap-2">
+          <input #importFileInput type="file" accept="application/json,.json" class="hidden" (change)="importForm($event)" />
+          <button
+            type="button"
+            (click)="importFileInput.click()"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition"
+          >
+            Import JSON
+          </button>
+          <a
+            routerLink="/admin/forms/new"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            New Form
+          </a>
+        </div>
       </div>
 
       <!-- Error -->
@@ -96,6 +106,13 @@ import { Form } from '../../../core/models';
                 </a>
                 <button
                   type="button"
+                  (click)="exportForm(form)"
+                  class="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+                >
+                  Export
+                </button>
+                <button
+                  type="button"
                   (click)="deleteForm(form)"
                   class="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition"
                 >
@@ -110,6 +127,8 @@ import { Form } from '../../../core/models';
   `,
 })
 export class AdminFormsComponent implements OnInit {
+  @ViewChild('importFileInput') importFileInput!: ElementRef<HTMLInputElement>;
+
   private formService = inject(FormService);
   private toastr = inject(ToastrService);
   private router = inject(Router);
@@ -156,5 +175,90 @@ export class AdminFormsComponent implements OnInit {
         this.toastr.error(err?.error?.error || 'Failed to delete form.', 'Error');
       },
     });
+  }
+
+  exportForm(form: Form): void {
+    const payload = {
+      exported_at: new Date().toISOString(),
+      type: 'surveyflow.form',
+      version: 1,
+      name: form.name,
+      json: form.json,
+      allow_anonymous_submit: form.allow_anonymous_submit ? 1 : 0,
+      visibility: form.visibility,
+      allowed_roles: form.allowed_roles ?? [],
+      allowed_user_ids: form.allowed_user_ids ?? [],
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${this.toFileName(form.name)}.surveyflow-form.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  importForm(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result ?? ''));
+        const request = this.toCreateRequest(parsed, file.name);
+        this.formService.create(request).subscribe({
+          next: (res) => {
+            this.toastr.success(`Form "${request.name}" imported.`, 'Imported');
+            this.loadForms();
+            this.router.navigate(['/admin/forms', res.id, 'edit']);
+          },
+          error: (err) => {
+            this.toastr.error(err?.error?.error || 'Failed to import form.', 'Error');
+          },
+        });
+      } catch {
+        this.toastr.error('The selected file is not valid JSON.', 'Import failed');
+      } finally {
+        input.value = '';
+      }
+    };
+    reader.onerror = () => {
+      input.value = '';
+      this.toastr.error('Could not read the selected file.', 'Import failed');
+    };
+    reader.readAsText(file);
+  }
+
+  private toCreateRequest(parsed: any, fileName: string): any {
+    const schema = parsed?.json ?? parsed?.schema ?? parsed;
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+      throw new Error('Invalid form JSON.');
+    }
+
+    return {
+      name: this.importName(parsed, schema, fileName),
+      json: schema,
+      allow_anonymous_submit: parsed?.allow_anonymous_submit ?? 1,
+      visibility: parsed?.visibility ?? 'public',
+      allowed_roles: Array.isArray(parsed?.allowed_roles) ? parsed.allowed_roles : [],
+      allowed_user_ids: Array.isArray(parsed?.allowed_user_ids) ? parsed.allowed_user_ids : [],
+    };
+  }
+
+  private importName(parsed: any, schema: any, fileName: string): string {
+    const raw = parsed?.name || schema?.title || fileName.replace(/\.json$/i, '');
+    const name = String(raw).trim() || 'Imported Form';
+    return this.forms().some(f => f.name === name) ? `${name} (Imported)` : name;
+  }
+
+  private toFileName(name: string): string {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'form';
   }
 }

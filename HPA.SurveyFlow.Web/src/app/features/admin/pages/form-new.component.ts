@@ -9,6 +9,18 @@ import { FormEditorComponent } from '../../../shared/components/formio/form-edit
 import { User } from '../../../core/models';
 
 type WizardPanel = { key: string; title: string };
+type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
+type SecondarySubmitConfig = { enabled: boolean; integration: string; action: string };
+
+const SECONDARY_SUBMIT_OUTCOMES: { value: SecondarySubmitOutcome; label: string }[] = [
+  { value: 'success', label: 'Success' },
+  { value: 'warning', label: 'Warning' },
+  { value: 'error', label: 'Error' },
+];
+
+function defaultSecondarySubmitConfig(): SecondarySubmitConfig {
+  return { enabled: false, integration: 'mex', action: 'create_request' };
+}
 
 function getPanels(schema: any): WizardPanel[] {
   const comps: any[] = Array.isArray(schema?.components) ? schema.components : [];
@@ -140,6 +152,77 @@ function ensureWizardHasPage(schema: any): any {
               class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
           </div>
         </div>
+
+        <div class="mt-6 border-t pt-5">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">Submission Result Messages</h3>
+          <p class="text-xs text-gray-500 mb-4">Messages and redirects shown after submission based on abnormality outcome. Leave blank to use defaults.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-green-700 mb-1">Success message (no issues)</label>
+              <textarea [(ngModel)]="appSettings.messageOnSuccess" rows="2" placeholder="Thank you for your submission."
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-green-700 mb-1">Redirect URL on success</label>
+              <input type="url" [(ngModel)]="appSettings.redirectOnSuccess" placeholder="https://example.com/thank-you"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-amber-700 mb-1">Warning message</label>
+              <textarea [(ngModel)]="appSettings.messageOnWarning" rows="2" placeholder="Submission received with warnings."
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-amber-700 mb-1">Redirect URL on warning</label>
+              <input type="url" [(ngModel)]="appSettings.redirectOnWarning" placeholder="https://example.com/warning"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"/>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-red-700 mb-1">Error message</label>
+              <textarea [(ngModel)]="appSettings.messageOnError" rows="2" placeholder="Your submission contains errors, please review."
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-red-700 mb-1">Redirect URL on error</label>
+              <input type="url" [(ngModel)]="appSettings.redirectOnError" placeholder="https://example.com/error"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 border-t pt-5">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">Secondary Submit</h3>
+          <p class="text-xs text-gray-500 mb-4">Forward submitted form data to integrations based on the same success, warning, and error outcomes used for result messages and redirects.</p>
+          <div class="space-y-4">
+            @for (outcome of secondarySubmitOutcomes; track outcome.value) {
+              <div class="rounded-lg border border-gray-200 p-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="secondarySubmitConfigs[outcome.value].enabled"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                  <span class="text-sm font-medium text-gray-700">Enable on {{ outcome.label }}</span>
+                </label>
+                @if (secondarySubmitConfigs[outcome.value].enabled) {
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
+                      <select [(ngModel)]="secondarySubmitConfigs[outcome.value].integration"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="mex">MEX Maintenance</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
+                      <select [(ngModel)]="secondarySubmitConfigs[outcome.value].action"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="create_request">Create Request</option>
+                      </select>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
       </div>
 
       <!-- Wizard toggle -->
@@ -233,6 +316,12 @@ export class FormNewComponent implements OnInit {
   allowedRoles: string[] = [];
   allowedUserIds: number[] = [];
   appSettings: any = {};
+  secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
+  secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = {
+    success: defaultSecondarySubmitConfig(),
+    warning: defaultSecondarySubmitConfig(),
+    error: defaultSecondarySubmitConfig(),
+  };
   currentSchema: any = { type: 'form', display: 'form', components: [] };
 
   saving = signal(false);
@@ -331,7 +420,12 @@ export class FormNewComponent implements OnInit {
     if (!this.name.trim()) { this.error.set('Form name is required.'); return; }
     this.error.set(null);
     const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
-    const finalSchema = { ...schema, display: this.formDisplay, appSettings: { ...this.appSettings } };
+    const secondarySubmit = {
+      success: { ...this.secondarySubmitConfigs.success },
+      warning: { ...this.secondarySubmitConfigs.warning },
+      error: { ...this.secondarySubmitConfigs.error },
+    };
+    const finalSchema = { ...schema, display: this.formDisplay, appSettings: { ...this.appSettings, secondarySubmit } };
     this.saving.set(true);
     this.formService.create({
       name: this.name.trim(),

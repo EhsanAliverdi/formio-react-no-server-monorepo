@@ -14,7 +14,7 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
     /// in a background Task. The caller does not await this — it returns right away.
     /// The submission row is updated with the result once the background task completes.
     /// </summary>
-    public void DispatchAsync(string integration, string action, string submissionDataJson, int submissionId)
+    public void DispatchAsync(string integration, string action, string submissionDataJson, int submissionId, string outcome = "success")
     {
         // Mark pending synchronously on the caller's scope before we fire off.
         // We deliberately do NOT await so the HTTP response is not delayed.
@@ -34,10 +34,10 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
             var formJson = submission.Form.Json;
 
             // Execute the integration
-            SecondarySubmitOutcome outcome;
+            SecondarySubmitOutcome outcomeResult;
             try
             {
-                outcome = integration.ToLowerInvariant() switch
+                outcomeResult = integration.ToLowerInvariant() switch
                 {
                     "mex" => await ExecuteMexAsync(db, action, submissionDataJson, formJson, submissionId),
                     _ => new SecondarySubmitOutcome(false, null, $"Unknown integration: {integration}")
@@ -47,15 +47,22 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
             {
                 logger.LogError(ex, "Secondary submit failed for integration={Integration} action={Action} submissionId={Id}",
                     integration, action, submissionId);
-                outcome = new SecondarySubmitOutcome(false, null, ex.Message);
+                outcomeResult = new SecondarySubmitOutcome(false, null, ex.Message);
             }
 
             // Persist result
             submission = await db.FormSubmissions.FindAsync(submissionId);
             if (submission == null) return;
-            submission.SecondarySubmitStatus = outcome.Success ? "success" : "failed";
-            submission.SecondarySubmitResponse = outcome.ResponseJson;
+            submission.SecondarySubmitStatus = outcomeResult.Success ? "success" : "failed";
             submission.SecondarySubmitAt = DateTime.UtcNow;
+            submission.SecondarySubmitResponse = BuildSubmitLogJson(
+                outcome,
+                integration,
+                action,
+                submission.SecondarySubmitStatus,
+                outcomeResult.ResponseJson,
+                outcomeResult.LegacyError,
+                submission.SecondarySubmitAt.Value);
             await db.SaveChangesAsync();
 
             logger.LogInformation("Secondary submit completed: submissionId={Id} integration={Integration} status={Status}",
@@ -202,6 +209,35 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
 
     private static string ErrorJson(string message) =>
         JsonSerializer.Serialize(new { success = false, error = message });
+
+    private static string BuildSubmitLogJson(
+        string outcome,
+        string integration,
+        string action,
+        string status,
+        string? resultJson,
+        string? error,
+        DateTime completedAt)
+    {
+        object? result = null;
+        if (!string.IsNullOrWhiteSpace(resultJson))
+        {
+            try { result = JsonDocument.Parse(resultJson).RootElement.Clone(); }
+            catch { result = resultJson; }
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            outcome,
+            integration,
+            action,
+            status,
+            success = status == "success",
+            completed_at = completedAt,
+            error,
+            result,
+        });
+    }
 
     private record SecondarySubmitOutcome(bool Success, string? ResponseJson, string? LegacyError);
 }

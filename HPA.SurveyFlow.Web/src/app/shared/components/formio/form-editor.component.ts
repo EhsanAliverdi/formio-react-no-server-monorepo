@@ -20,6 +20,8 @@ import { Formio } from 'formiojs';
 import { registerDataSourceBuilderComponent } from './surveyflow-datasource.component';
 
 let abnormalitiesInstalled = false;
+const showWhenAbnormalitiesEnabled =
+  "show = !!(data && data.properties && (data.properties.abnormal_enabled === true || data.properties.abnormal_enabled === 'true'));";
 
 function installAbnormalitiesTab(): void {
   if (abnormalitiesInstalled) return;
@@ -60,46 +62,77 @@ function installAbnormalitiesTab(): void {
             tooltip: 'When enabled, submissions will be checked against the Normal Answer.',
           },
           {
-            type: 'textfield', input: true,
-            key: 'properties.abnormal_normal_value',
-            label: 'Normal Answer (Text)',
-            placeholder: 'Enter the normal/expected answer',
-            conditional: { when: 'properties.abnormal_enabled', eq: true },
-            customConditional: "show = (data && data.type && ['textfield','textarea','email','phoneNumber','password','url'].includes(data.type));",
+            type: 'htmlelement',
+            tag: 'div',
+            content: '<div class="alert alert-info mb-3"><strong>Answer rules</strong><br>Use submitted values, not display labels. For option fields this is the option value. Exact matches are used.</div>',
+            customConditional: showWhenAbnormalitiesEnabled,
           },
           {
-            type: 'number', input: true,
-            key: 'properties.abnormal_normal_value',
-            label: 'Normal Answer (Number)',
-            conditional: { when: 'properties.abnormal_enabled', eq: true },
-            customConditional: "show = (data && data.type && ['number'].includes(data.type));",
+            type: 'datagrid',
+            input: true,
+            key: 'properties.abnormal_normal_values',
+            label: 'Normal answers',
+            addAnother: 'Add normal answer',
+            reorder: false,
+            tooltip: 'If the submitted answer matches any value here, it is not flagged.',
+            customConditional: showWhenAbnormalitiesEnabled,
+            components: [
+              {
+                type: 'textfield',
+                input: true,
+                key: 'value',
+                label: 'Answer value',
+                placeholder: 'yes',
+              },
+            ],
           },
           {
-            type: 'checkbox', input: true,
-            key: 'properties.abnormal_normal_value',
-            label: 'Normal Answer (Checked)',
-            conditional: { when: 'properties.abnormal_enabled', eq: true },
-            customConditional: "show = (data && data.type && ['checkbox'].includes(data.type));",
+            type: 'datagrid',
+            input: true,
+            key: 'properties.abnormal_error_values',
+            label: 'Answers that create an error',
+            addAnother: 'Add error answer',
+            reorder: false,
+            tooltip: 'If the submitted answer matches any value here, it is flagged as an error.',
+            customConditional: showWhenAbnormalitiesEnabled,
+            components: [
+              {
+                type: 'textfield',
+                input: true,
+                key: 'value',
+                label: 'Answer value',
+                placeholder: 'no',
+              },
+            ],
+          },
+          {
+            type: 'datagrid',
+            input: true,
+            key: 'properties.abnormal_warning_values',
+            label: 'Answers that create a warning',
+            addAnother: 'Add warning answer',
+            reorder: false,
+            tooltip: 'If the submitted answer matches any value here, it is flagged as a warning.',
+            customConditional: showWhenAbnormalitiesEnabled,
+            components: [
+              {
+                type: 'textfield',
+                input: true,
+                key: 'value',
+                label: 'Answer value',
+                placeholder: 'unknown',
+              },
+            ],
           },
           {
             type: 'select', input: true,
-            key: 'properties.abnormal_normal_value',
-            label: 'Normal Answer',
-            placeholder: 'Select the normal/expected option',
-            dataSrc: 'custom',
-            data: { custom: "const vals = (data && Array.isArray(data.values)) ? data.values : []; values = vals.map(v => ({ label: (v && (v.label || v.value)) || '', value: (v && v.value) }));" },
-            conditional: { when: 'properties.abnormal_enabled', eq: true },
-            customConditional: "show = (data && data.type && ['radio','select','selectboxes'].includes(data.type));",
-          },
-          {
-            type: 'select', input: true,
-            key: 'properties.abnormal_level',
-            label: 'Abnormality Level',
-            tooltip: 'Choose whether a deviation from normal is treated as an Error or a Warning.',
+            key: 'properties.abnormal_default_level',
+            label: 'Any other answer',
+            tooltip: 'Used when normal answers are configured and the submitted answer does not match normal, error, or warning values.',
             defaultValue: 'error',
             dataSrc: 'values',
-            data: { values: [{ label: 'Error', value: 'error' }, { label: 'Warning', value: 'warning' }] },
-            conditional: { when: 'properties.abnormal_enabled', eq: true },
+            data: { values: [{ label: 'No flag', value: 'none' }, { label: 'Error', value: 'error' }, { label: 'Warning', value: 'warning' }] },
+            customConditional: showWhenAbnormalitiesEnabled,
           },
         ],
       },
@@ -224,6 +257,7 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
 
     // Fetch data sources FIRST, register them into the Formio sidebar,
     // then start the builder so the sidebar group is visible immediately.
+    const fallbackStart = window.setTimeout(() => this.startBuilder(), 1500);
     this.http.get<any[]>(this.api.apiUrl('/api/data-sources')).subscribe({
       next: (sources) => {
         const options = sources
@@ -232,11 +266,15 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
         if (options.length > 0) registerDataSourceBuilderComponent(options, Formio);
       },
       error: () => { /* not fatal — builder continues without data source group */ },
-      complete: () => this.startBuilder(),
+      complete: () => {
+        window.clearTimeout(fallbackStart);
+        this.startBuilder();
+      },
     });
   }
 
   private startBuilder(): void {
+    if (this.builder) return;
     const schema = structuredClone(this.formSchema ?? {});
     if (!Array.isArray(schema.components)) schema.components = [];
     this.lastAppliedJson = JSON.stringify(schema);

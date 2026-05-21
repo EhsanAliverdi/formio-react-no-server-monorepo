@@ -9,6 +9,42 @@ import { FormEditorComponent } from '../../../shared/components/formio/form-edit
 import { Form, User } from '../../../core/models';
 
 type WizardPanel = { key: string; title: string };
+type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
+type SecondarySubmitConfig = { enabled: boolean; integration: string; action: string };
+
+const SECONDARY_SUBMIT_OUTCOMES: { value: SecondarySubmitOutcome; label: string; color: string }[] = [
+  { value: 'success', label: 'Success', color: 'green' },
+  { value: 'warning', label: 'Warning', color: 'amber' },
+  { value: 'error', label: 'Error', color: 'red' },
+];
+
+function defaultSecondarySubmitConfig(enabled = false): SecondarySubmitConfig {
+  return { enabled, integration: 'mex', action: 'create_request' };
+}
+
+function normalizeSecondarySubmitConfig(raw: any): Record<SecondarySubmitOutcome, SecondarySubmitConfig> {
+  const defaults = {
+    success: defaultSecondarySubmitConfig(),
+    warning: defaultSecondarySubmitConfig(),
+    error: defaultSecondarySubmitConfig(),
+  };
+
+  if (!raw) return defaults;
+
+  const hasOutcomeConfig = ['success', 'warning', 'error'].some((outcome) => raw?.[outcome]);
+  if (!hasOutcomeConfig) {
+    const legacy = defaultSecondarySubmitConfig(!!raw.enabled);
+    legacy.integration = raw.integration || legacy.integration;
+    legacy.action = raw.action || legacy.action;
+    return { success: { ...legacy }, warning: { ...legacy }, error: { ...legacy } };
+  }
+
+  return {
+    success: { ...defaults.success, ...(raw.success ?? {}) },
+    warning: { ...defaults.warning, ...(raw.warning ?? {}) },
+    error: { ...defaults.error, ...(raw.error ?? {}) },
+  };
+}
 
 function getPanels(schema: any): WizardPanel[] {
   const comps: any[] = Array.isArray(schema?.components) ? schema.components : [];
@@ -208,29 +244,33 @@ function ensureWizardHasPage(schema: any): any {
 
           <div class="mt-6 border-t pt-5">
             <h3 class="text-sm font-semibold text-gray-700 mb-3">Secondary Submit</h3>
-            <p class="text-xs text-gray-500 mb-4">Forward the submitted form data to an external integration after a successful primary submission.</p>
-            <div class="space-y-3">
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" [(ngModel)]="secondarySubmitEnabled"
-                  class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                <span class="text-sm text-gray-700">Enable secondary submit</span>
-              </label>
-              @if (secondarySubmitEnabled) {
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
-                    <select [(ngModel)]="secondarySubmitIntegration"
-                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                      <option value="mex">MEX Maintenance</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
-                    <select [(ngModel)]="secondarySubmitAction"
-                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                      <option value="create_request">Create Request</option>
-                    </select>
-                  </div>
+            <p class="text-xs text-gray-500 mb-4">Forward submitted form data to integrations based on the same success, warning, and error outcomes used for result messages and redirects.</p>
+            <div class="space-y-4">
+              @for (outcome of secondarySubmitOutcomes; track outcome.value) {
+                <div class="rounded-lg border border-gray-200 p-4">
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" [(ngModel)]="secondarySubmitConfigs[outcome.value].enabled"
+                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                    <span class="text-sm font-medium text-gray-700">Enable on {{ outcome.label }}</span>
+                  </label>
+                  @if (secondarySubmitConfigs[outcome.value].enabled) {
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
+                        <select [(ngModel)]="secondarySubmitConfigs[outcome.value].integration"
+                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                          <option value="mex">MEX Maintenance</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
+                        <select [(ngModel)]="secondarySubmitConfigs[outcome.value].action"
+                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                          <option value="create_request">Create Request</option>
+                        </select>
+                      </div>
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -343,9 +383,8 @@ export class FormEditComponent implements OnInit {
   allowedRoles: string[] = [];
   allowedUserIds: number[] = [];
   appSettings: any = {};
-  secondarySubmitEnabled = false;
-  secondarySubmitIntegration = 'mex';
-  secondarySubmitAction = 'create_request';
+  secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
+  secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = normalizeSecondarySubmitConfig(null);
   currentSchema: any = {};
 
   availableRoles = [
@@ -375,10 +414,7 @@ export class FormEditComponent implements OnInit {
         let schema = f.json ?? {};
         if (typeof schema === 'string') { try { schema = JSON.parse(schema); } catch { schema = {}; } }
         this.appSettings = { ...(schema.appSettings ?? {}) };
-        const sec = schema.appSettings?.secondarySubmit;
-        this.secondarySubmitEnabled = !!sec?.enabled;
-        this.secondarySubmitIntegration = sec?.integration || 'mex';
-        this.secondarySubmitAction = sec?.action || 'create_request';
+        this.secondarySubmitConfigs = normalizeSecondarySubmitConfig(schema.appSettings?.secondarySubmit);
         this.formDisplay = schema.display === 'wizard' ? 'wizard' : 'form';
         this.currentSchema = schema;
         this.wizardPanels.set(getPanels(schema));
@@ -483,9 +519,11 @@ export class FormEditComponent implements OnInit {
     if (!this.name.trim()) { this.saveError.set('Form name is required.'); return; }
     this.saveError.set(null);
     const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
-    const secondarySubmit = this.secondarySubmitEnabled
-      ? { enabled: true, integration: this.secondarySubmitIntegration, action: this.secondarySubmitAction }
-      : { enabled: false };
+    const secondarySubmit = {
+      success: { ...this.secondarySubmitConfigs.success },
+      warning: { ...this.secondarySubmitConfigs.warning },
+      error: { ...this.secondarySubmitConfigs.error },
+    };
     const finalSchema = {
       ...schema,
       display: this.formDisplay,

@@ -26,9 +26,9 @@ internal static class DemoAssetFormSeedData
                 messageOnError = "Request submitted — please review the flagged items.",
                 secondarySubmit = new
                 {
-                    enabled = true,
-                    integration = "mex",
-                    action = "create_request",
+                    success = new { enabled = true, integration = "mex", action = "create_request" },
+                    warning = new { enabled = true, integration = "mex", action = "create_request" },
+                    error = new { enabled = true, integration = "mex", action = "create_request" },
                 },
             },
             components = new object[]

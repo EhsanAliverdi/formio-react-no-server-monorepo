@@ -876,7 +876,10 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
     }
 
     [HttpPost("submissions/{id:int}/secondary-submit")]
-    public async Task<IActionResult> TriggerSecondarySubmit(int id, [FromServices] SecondarySubmitService secondarySubmitService)
+    public async Task<IActionResult> TriggerSecondarySubmit(
+        int id,
+        [FromServices] SecondarySubmitService secondarySubmitService,
+        [FromQuery] string? outcome = null)
     {
         try { HttpContext.RequireRole(UserRole.Admin); }
         catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
@@ -888,27 +891,32 @@ public class AdminController(AppDbContext db, PdfService pdfService) : Controlle
         if (submission == null)
             return NotFound(new { error = "Submission not found." });
 
-        // Parse secondarySubmit config from form's appSettings
-        string integration, action;
+        // Parse secondarySubmit config from form's appSettings.
+        string integration, action, selectedOutcome;
         try
         {
             var formSchema = JsonDocument.Parse(submission.Form.Json).RootElement;
-            if (!formSchema.TryGetProperty("appSettings", out var appSettingsEl)
-                || !appSettingsEl.TryGetProperty("secondarySubmit", out var secEl)
-                || !secEl.TryGetProperty("enabled", out var enabledEl)
-                || enabledEl.ValueKind != JsonValueKind.True)
-                return BadRequest(new { error = "Secondary submit is not configured or not enabled for this form." });
+            var abnormalities = AbnormalitiesService.Compute(submission.Form.Json, submission.Data);
+            var submissionOutcome = abnormalities.Any(a => a.Level == "error")
+                ? "error"
+                : abnormalities.Any(a => a.Level == "warning") ? "warning" : "success";
 
-            integration = secEl.TryGetProperty("integration", out var intEl) ? intEl.GetString() ?? "" : "";
-            action = secEl.TryGetProperty("action", out var actEl) ? actEl.GetString() ?? "" : "";
+            selectedOutcome = string.IsNullOrWhiteSpace(outcome) ? submissionOutcome : outcome.Trim().ToLowerInvariant();
+            if (selectedOutcome is not ("success" or "warning" or "error"))
+                return BadRequest(new { error = "Outcome must be success, warning, or error." });
+            if (selectedOutcome != submissionOutcome)
+                return BadRequest(new { error = $"Current submission outcome is {submissionOutcome}. {selectedOutcome} integration submit is not available for the current form values." });
+
+            if (!FormsController.TryGetSecondarySubmitAction(formSchema, selectedOutcome, out integration, out action))
+                return BadRequest(new { error = $"Secondary submit is not configured or not enabled for {selectedOutcome} submissions." });
         }
         catch { return BadRequest(new { error = "Could not parse form configuration." }); }
 
         if (string.IsNullOrWhiteSpace(integration) || string.IsNullOrWhiteSpace(action))
             return BadRequest(new { error = "Integration or action is not configured." });
 
-        secondarySubmitService.DispatchAsync(integration, action, submission.Data, submission.Id);
-        return Ok(new { success = true, message = "Secondary submit triggered." });
+        secondarySubmitService.DispatchAsync(integration, action, submission.Data, submission.Id, selectedOutcome);
+        return Ok(new { success = true, message = $"Secondary submit triggered for {selectedOutcome}.", outcome = selectedOutcome });
     }
 
     private static object? ParseJsonOrString(string? raw)

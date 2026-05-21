@@ -63,10 +63,12 @@ export class SubmissionService {
     );
   }
 
-  triggerSecondarySubmit(id: number): Observable<{ success: boolean; message: string }> {
+  triggerSecondarySubmit(id: number, outcome?: 'success' | 'warning' | 'error'): Observable<{ success: boolean; message: string }> {
+    const params = outcome ? new HttpParams().set('outcome', outcome) : undefined;
     return this.http.post<{ success: boolean; message: string }>(
       this.api.apiUrl(`/api/admin/submissions/${id}/secondary-submit`),
-      {}
+      {},
+      { params }
     );
   }
 }

@@ -7,6 +7,16 @@ import { FormRendererComponent } from '../../../shared/components/formio/form-re
 import { AdminSubmission, AbnormalityItem } from '../../../core/models';
 import { buildSubmissionPdfBody, wrapPdfDocument } from '../../../core/utils/submission-pdf';
 
+type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
+type SecondarySubmitAction = {
+  outcome: SecondarySubmitOutcome;
+  label: string;
+  integration: string;
+  action: string;
+  enabled: boolean;
+  disabledReason?: string;
+};
+
 @Component({
   selector: 'app-submission-detail',
   standalone: true,
@@ -121,17 +131,29 @@ import { buildSubmissionPdfBody, wrapPdfDocument } from '../../../core/utils/sub
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="flex items-center justify-between mb-3">
               <h2 class="text-sm font-semibold text-gray-700">Integration Submit</h2>
-              <button type="button" (click)="triggerSecondarySubmit()"
-                [disabled]="secondarySubmitting() || detail()!.secondary_submit_status === 'pending'"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 transition">
-                @if (secondarySubmitting()) {
-                  <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
-                  Sending…
-                } @else {
-                  ↗ Send to Integration
-                }
-              </button>
             </div>
+
+            @if (currentSecondarySubmitAction(); as item) {
+              <div class="mb-4 flex flex-wrap gap-2">
+                <button type="button" (click)="triggerSecondarySubmit(item.outcome)"
+                  [disabled]="!item.enabled || secondarySubmittingOutcome() !== null || detail()!.secondary_submit_status === 'pending'"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 transition">
+                  @if (secondarySubmittingOutcome() === item.outcome) {
+                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    Sending...
+                  } @else if (!item.enabled) {
+                    {{ item.disabledReason }}
+                  } @else {
+                    Send {{ item.label }} to {{ integrationLabel(item.integration) }}
+                  }
+                </button>
+              </div>
+            } @else {
+              <button type="button" disabled
+                class="mb-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-gray-50 text-gray-500 opacity-75">
+                Secondary submit needs to be enabled at form level
+              </button>
+            }
 
             @if (!detail()!.secondary_submit_status) {
               <p class="text-sm text-gray-500">No integration submission yet.</p>
@@ -156,10 +178,22 @@ import { buildSubmissionPdfBody, wrapPdfDocument } from '../../../core/utils/sub
                   }
                 </div>
                 @if (detail()!.secondary_submit_response) {
-                  <details class="mt-2">
-                    <summary class="cursor-pointer text-xs text-gray-600 hover:text-gray-900 select-none">Show full response</summary>
-                    <pre class="mt-2 overflow-x-auto rounded bg-white border border-gray-200 p-3 text-xs text-gray-700 whitespace-pre-wrap">{{ formatJson(detail()!.secondary_submit_response) }}</pre>
-                  </details>
+                  @if (latestIntegrationLog(); as log) {
+                    <div class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      <div>
+                        <div class="text-xs font-semibold text-gray-600 mb-1">Last request sent</div>
+                        <pre class="overflow-x-auto rounded bg-white border border-gray-200 p-3 text-xs text-gray-700 whitespace-pre-wrap">{{ formatJson(log.request) }}</pre>
+                      </div>
+                      <div>
+                        <div class="text-xs font-semibold text-gray-600 mb-1">Last response received</div>
+                        <pre class="overflow-x-auto rounded bg-white border border-gray-200 p-3 text-xs text-gray-700 whitespace-pre-wrap">{{ formatJson(log.response) }}</pre>
+                      </div>
+                    </div>
+                    <details class="mt-2">
+                      <summary class="cursor-pointer text-xs text-gray-600 hover:text-gray-900 select-none">Show full integration log</summary>
+                      <pre class="mt-2 overflow-x-auto rounded bg-white border border-gray-200 p-3 text-xs text-gray-700 whitespace-pre-wrap">{{ formatJson(detail()!.secondary_submit_response) }}</pre>
+                    </details>
+                  }
                 }
               </div>
             }
@@ -217,7 +251,67 @@ export class SubmissionDetailComponent implements OnInit {
   editError = signal<string | null>(null);
 
   pdfExporting = signal(false);
-  secondarySubmitting = signal(false);
+  secondarySubmittingOutcome = signal<SecondarySubmitOutcome | null>(null);
+
+  currentSecondarySubmitAction = computed<SecondarySubmitAction | null>(() => {
+    const d = this.detail();
+    const outcome = this.currentSecondarySubmitOutcome();
+    const label = this.outcomeLabel(outcome);
+    const config = d?.form?.appSettings?.secondarySubmit;
+    if (!config) {
+      return {
+        outcome,
+        label,
+        integration: 'mex',
+        action: 'create_request',
+        enabled: false,
+        disabledReason: 'Secondary submit needs to be enabled at form level',
+      };
+    }
+
+    const hasOutcomeConfig = ['success', 'warning', 'error'].some((item) => config?.[item]);
+    if (!hasOutcomeConfig) {
+      return {
+        outcome,
+        label,
+        integration: config.integration || 'mex',
+        action: config.action || 'create_request',
+        enabled: !!config.enabled,
+        disabledReason: `${label} secondary submit needs to be enabled at form level`,
+      };
+    }
+
+    const currentConfig = config[outcome];
+    return {
+      outcome,
+      label,
+      integration: currentConfig?.integration || 'mex',
+      action: currentConfig?.action || 'create_request',
+      enabled: !!currentConfig?.enabled,
+      disabledReason: `${label} secondary submit needs to be enabled at form level`,
+    };
+  });
+
+  latestIntegrationLog = computed(() => {
+    const raw = this.detail()?.secondary_submit_response;
+    if (!raw) return null;
+
+    const result = raw?.result ?? raw;
+    const request = result?.sent_payload ?? result?.request ?? raw?.request ?? null;
+    const response = result?.body !== undefined || result?.status_code !== undefined || result?.success !== undefined || result?.error !== undefined
+      ? {
+          status_code: result?.status_code,
+          success: result?.success,
+          body: result?.body,
+          error: result?.error ?? raw?.error,
+        }
+      : result;
+
+    return {
+      request: request ?? 'No request payload was recorded.',
+      response: response ?? 'No response was recorded.',
+    };
+  });
 
   private submissionId!: number;
 
@@ -277,20 +371,36 @@ export class SubmissionDetailComponent implements OnInit {
     });
   }
 
-  triggerSecondarySubmit(): void {
-    if (this.secondarySubmitting()) return;
-    this.secondarySubmitting.set(true);
-    this.submissionService.triggerSecondarySubmit(this.submissionId).subscribe({
+  triggerSecondarySubmit(outcome: SecondarySubmitOutcome): void {
+    if (this.secondarySubmittingOutcome()) return;
+    this.secondarySubmittingOutcome.set(outcome);
+    this.submissionService.triggerSecondarySubmit(this.submissionId, outcome).subscribe({
       next: (res) => {
-        this.secondarySubmitting.set(false);
+        this.secondarySubmittingOutcome.set(null);
         this.toastr.success(res.message || 'Integration submit triggeredetail()!.');
         this.loadDetail();
       },
       error: (err) => {
-        this.secondarySubmitting.set(false);
+        this.secondarySubmittingOutcome.set(null);
         this.toastr.error(err?.error?.error || 'Failed to trigger integration submit.');
       },
     });
+  }
+
+  currentSecondarySubmitOutcome(): SecondarySubmitOutcome {
+    const d = this.detail();
+    if (!d) return 'success';
+    if ((d.error_count ?? 0) > 0) return 'error';
+    if ((d.warning_count ?? 0) > 0) return 'warning';
+    return 'success';
+  }
+
+  private outcomeLabel(outcome: SecondarySubmitOutcome): string {
+    return outcome.charAt(0).toUpperCase() + outcome.slice(1);
+  }
+
+  integrationLabel(integration: string): string {
+    return integration === 'mex' ? 'MEX' : integration;
   }
 
   errorsOf(d: AdminSubmission): AbnormalityItem[] {

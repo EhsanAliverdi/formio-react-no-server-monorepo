@@ -213,15 +213,10 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         try
         {
             var formSchema = JsonDocument.Parse(form.Json).RootElement;
-            if (formSchema.TryGetProperty("appSettings", out var appSettingsEl)
-                && appSettingsEl.TryGetProperty("secondarySubmit", out var secEl)
-                && secEl.TryGetProperty("enabled", out var enabledEl)
-                && enabledEl.ValueKind == JsonValueKind.True)
+            var outcome = errorCount > 0 ? "error" : warningCount > 0 ? "warning" : "success";
+            if (TryGetSecondarySubmitAction(formSchema, outcome, out var integration, out var action))
             {
-                var integration = secEl.TryGetProperty("integration", out var intEl) ? intEl.GetString() ?? "" : "";
-                var action = secEl.TryGetProperty("action", out var actEl) ? actEl.GetString() ?? "" : "";
-                if (!string.IsNullOrWhiteSpace(integration) && !string.IsNullOrWhiteSpace(action))
-                    secondarySubmitService.DispatchAsync(integration, action, dataJson, submission.Id);
+                secondarySubmitService.DispatchAsync(integration, action, dataJson, submission.Id, outcome);
             }
         }
         catch { /* never fail primary submit */ }
@@ -253,6 +248,36 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             AllowedRoles = includeRestricted ? f.AllowedRoles.Select(r => r.Role).ToList() : null,
             AllowedUserIds = includeRestricted ? f.AllowedUsers.Select(u => u.UserId).ToList() : null
         };
+    }
+
+    internal static bool TryGetSecondarySubmitAction(JsonElement formSchema, string outcome, out string integration, out string action)
+    {
+        integration = "";
+        action = "";
+
+        if (!formSchema.TryGetProperty("appSettings", out var appSettingsEl)
+            || !appSettingsEl.TryGetProperty("secondarySubmit", out var secEl))
+            return false;
+
+        if (secEl.TryGetProperty(outcome, out var outcomeEl))
+            return TryReadSecondarySubmitAction(outcomeEl, out integration, out action);
+
+        // Backward compatibility for forms saved before outcome-specific secondary submit.
+        return TryReadSecondarySubmitAction(secEl, out integration, out action);
+    }
+
+    private static bool TryReadSecondarySubmitAction(JsonElement configEl, out string integration, out string action)
+    {
+        integration = "";
+        action = "";
+
+        if (!configEl.TryGetProperty("enabled", out var enabledEl) || enabledEl.ValueKind != JsonValueKind.True)
+            return false;
+
+        integration = configEl.TryGetProperty("integration", out var intEl) ? intEl.GetString() ?? "" : "";
+        action = configEl.TryGetProperty("action", out var actEl) ? actEl.GetString() ?? "" : "";
+
+        return !string.IsNullOrWhiteSpace(integration) && !string.IsNullOrWhiteSpace(action);
     }
 
     private static bool ParseBoolish(object? value, bool defaultValue = false)

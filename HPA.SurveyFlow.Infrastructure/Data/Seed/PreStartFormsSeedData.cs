@@ -13,6 +13,7 @@ internal static class PreStartFormsSeedData
         DemoDynamicDropdownFormSeedData.Create(),
         DemoAssetFormSeedData.Create(),
         DemoFaultReportSeedData.Create(),
+        DemoAbnormalityMexSeedData.Create(),
         CreateForkliftPreStartChecklist(),
         CreateReachStackerPreStartChecklist(),
         CreateShuttleStraddlePreStartChecklist(),
