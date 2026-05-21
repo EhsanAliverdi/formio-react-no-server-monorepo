@@ -16,66 +16,74 @@ import { SiteSettings } from '../../../core/models';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="w-full space-y-6">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-4">
         <div>
-          <h1 class="text-xl font-semibold text-gray-800">Site settings</h1>
-          <p class="text-sm text-gray-600 mt-1">Configure site name and logos.</p>
+          <h1 class="text-xl font-semibold text-gray-800 dark:text-white">Site settings</h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure site name and logos.</p>
         </div>
         <button
-          class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          class="ta-btn ta-btn-primary"
           (click)="save()"
           [disabled]="saving() || loading()"
-        >{{ saving() ? 'Saving…' : 'Save' }}</button>
+        >{{ saving() ? 'Saving...' : 'Save' }}</button>
       </div>
 
       @if (error()) {
-        <div class="rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+        <div class="ta-alert-error">{{ error() }}</div>
       }
       @if (saveSuccess()) {
-        <div class="rounded border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-700">Settings saved successfully.</div>
+        <div class="ta-alert-success">Settings saved successfully.</div>
       }
 
       @if (loading()) {
-        <div class="text-gray-500">Loading…</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
       } @else {
-        <div class="rounded-2xl border border-gray-200 bg-white p-5">
-          <h2 class="text-base font-semibold mb-4">Site name</h2>
+        <div class="ta-card">
+          <h2 class="mb-4 text-base font-semibold text-gray-800 dark:text-white">Site name</h2>
+          <label class="ta-field-label" for="siteName">Display name</label>
           <input
-            class="w-full max-w-md rounded border border-gray-300 px-3 py-2 text-sm"
+            id="siteName"
+            class="ta-field max-w-md"
             [(ngModel)]="siteName"
             placeholder="SurveyFlow"
           />
         </div>
 
-        <div class="rounded-2xl border border-gray-200 bg-white p-5">
-          <h2 class="text-base font-semibold mb-4">Logos &amp; Favicon</h2>
+        <div class="ta-card">
+          <h2 class="mb-4 text-base font-semibold text-gray-800 dark:text-white">Logos &amp; Favicon</h2>
           <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             @for (field of logoFields; track field.key) {
               <div>
-                <label class="block text-sm font-medium mb-2">{{ field.label }}</label>
+                <label class="ta-field-label" [for]="field.key">{{ field.label }}</label>
                 @if (getFieldValue(field.key)) {
                   <img
                     [src]="getFieldValue(field.key)"
                     alt="preview"
-                    class="mb-2 h-12 object-contain rounded border border-gray-200"
+                    class="mb-3 h-12 rounded-lg border border-gray-200 object-contain dark:border-gray-700"
                   />
                 }
                 <input
+                  [id]="field.key"
                   type="url"
-                  class="w-full rounded border border-gray-300 px-3 py-2 text-sm mb-2"
+                  class="ta-field mb-3"
                   [value]="getFieldValue(field.key)"
                   (input)="setFieldValue(field.key, $event)"
                   placeholder="https://..."
                 />
-                <input
-                  type="file"
-                  accept="image/*"
-                  class="text-sm"
-                  (change)="onFileChange($event, field.key)"
-                />
-                @if (uploadingField === field.key) {
-                  <span class="text-xs text-gray-500 ml-2">Uploading…</span>
-                }
+                <div class="flex flex-wrap items-center gap-3">
+                  <label class="ta-btn ta-btn-secondary cursor-pointer">
+                    Upload image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      class="sr-only"
+                      (change)="onFileChange($event, field.key)"
+                    />
+                  </label>
+                  @if (uploadingField === field.key) {
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Uploading...</span>
+                  }
+                </div>
               </div>
             }
           </div>

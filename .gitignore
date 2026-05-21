@@ -21,6 +21,7 @@ node_modules/
 HPA.SurveyFlow.*/**/node_modules/
 HPA.SurveyFlow.*/**/dist/
 HPA.SurveyFlow.*/**/.angular/
+HPA.SurveyFlow.Web/ng-serve.log
 
 # .NET build outputs
 HPA.SurveyFlow.*/*.user
