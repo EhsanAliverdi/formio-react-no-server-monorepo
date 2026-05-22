@@ -1,11 +1,23 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ElementRef,
+  ViewChild,
+  signal,
+  computed,
+  inject,
+  NgZone,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { SubmissionService } from '../../../core/services/submission.service';
-import { FormRendererComponent } from '../../../shared/components/formio/form-renderer.component';
 import { AdminSubmission, AbnormalityItem } from '../../../core/models';
 import { buildSubmissionPdfBody, wrapPdfDocument } from '../../../core/utils/submission-pdf';
+import { patchSchemaUrls } from '../../../core/utils/schema-patch';
+import { Formio } from 'formiojs';
+import { take } from 'rxjs/operators';
 
 type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
 type SecondarySubmitAction = {
@@ -17,10 +29,24 @@ type SecondarySubmitAction = {
   disabledReason?: string;
 };
 
+type Panel = { key: string; title: string; label: string; breadcrumb: string; components: any[] };
+
+function isPanel(c: any): c is Panel {
+  return c?.type === 'panel' && Array.isArray(c.components);
+}
+
+function getPanels(schema: any): Panel[] {
+  return (Array.isArray(schema?.components) ? schema.components : []).filter(isPanel);
+}
+
+function panelTitle(p: Panel, i: number): string {
+  return (p as any).breadcrumb || p.title || (p as any).label || p.key || `Step ${i + 1}`;
+}
+
 @Component({
   selector: 'app-submission-detail',
   standalone: true,
-  imports: [CommonModule, FormRendererComponent],
+  imports: [CommonModule],
   template: `
     <div class="p-6">
 
@@ -49,12 +75,12 @@ type SecondarySubmitAction = {
                   ⬇ Export PDF
                 }
               </button>
-              <button type="button" (click)="editMode.set(true)"
+              <button type="button" (click)="enterEditMode()"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition">
                 ✏ Edit
               </button>
             } @else {
-              <button type="button" (click)="editMode.set(false)" [disabled]="editSaving()"
+              <button type="button" (click)="exitEditMode()" [disabled]="editSaving()"
                 class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition">
                 Cancel
               </button>
@@ -210,19 +236,93 @@ type SecondarySubmitAction = {
                 <div class="mb-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{{ editError() }}</div>
               }
 
-              <div [class.opacity-60]="editSaving()">
-                <app-form-renderer
-                  [form]="detail()!.form"
-                  [submission]="detail()!.data"
-                  [readOnly]="!editMode()"
-                  (submitted)="saveEdit($event)"
-                />
-              </div>
+              @if (!editMode()) {
+                @if (isWizard() && panels().length > 1) {
+                  <div class="mb-4 flex flex-wrap gap-2">
+                    @for (panel of panels(); track panel.key; let i = $index) {
+                      <button type="button"
+                        (click)="goToStep(i)"
+                        class="inline-flex items-center rounded-full border px-3 py-1 text-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                        [class]="step() === i
+                          ? 'border-blue-200 bg-blue-50 font-semibold text-blue-700'
+                          : i < step()
+                            ? 'border-green-200 bg-green-50 text-green-700'
+                            : 'border-gray-200 bg-white text-gray-500'">
+                        {{ i + 1 }}. {{ panelTitle(panel, i) }}
+                      </button>
+                    }
+                  </div>
+                }
+
+                <div class="formio-scope" [class.flowbite-stepper-wizard]="isWizard()">
+                  <div #viewFormContainer></div>
+                </div>
+
+                @if (isWizard() && panels().length > 1) {
+                  <div class="mt-4 flex gap-3">
+                    @if (step() > 0) {
+                      <button type="button" (click)="prevStep()"
+                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition">
+                        Previous
+                      </button>
+                    }
+                    @if (step() < panels().length - 1) {
+                      <button type="button" (click)="nextStep()"
+                        class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+                        Next
+                      </button>
+                    }
+                  </div>
+                }
+              } @else {
+                @if (isWizard() && panels().length > 1) {
+                  <div class="mb-4 flex flex-wrap gap-2">
+                    @for (panel of panels(); track panel.key; let i = $index) {
+                      <button type="button"
+                        (click)="goToStep(i)"
+                        [disabled]="editSaving()"
+                        class="inline-flex items-center rounded-full border px-3 py-1 text-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50"
+                        [class]="step() === i
+                          ? 'border-blue-200 bg-blue-50 font-semibold text-blue-700'
+                          : i < step()
+                            ? 'border-green-200 bg-green-50 text-green-700'
+                            : 'border-gray-200 bg-white text-gray-500'">
+                        {{ i + 1 }}. {{ panelTitle(panel, i) }}
+                      </button>
+                    }
+                  </div>
+                }
+
+                <div class="formio-scope" [class.flowbite-stepper-wizard]="isWizard()" [class.opacity-60]="editSaving()">
+                  <div #editFormContainer></div>
+                </div>
+
+                <div class="mt-4 flex items-center gap-3">
+                  @if (isWizard() && step() > 0) {
+                    <button type="button" (click)="prevStep()" [disabled]="editSaving()"
+                      class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition disabled:opacity-50">
+                      Previous
+                    </button>
+                  }
+                  <div class="flex-1"></div>
+                  @if (isWizard() && step() < panels().length - 1) {
+                    <button type="button" (click)="nextStep()" [disabled]="editSaving()"
+                      class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50">
+                      Next
+                    </button>
+                  } @else {
+                    <button type="button" (click)="submitEditForm()" [disabled]="editSaving()"
+                      class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50">
+                      @if (editSaving()) { Saving… } @else { Save Changes }
+                    </button>
+                  }
+                </div>
+              }
 
               @if (editMode()) {
                 <div class="mt-4 flex items-center gap-3 border-t pt-4">
                   <p class="text-xs text-gray-500 flex-1">Changes are saved to the submission record with full edit history.</p>
-                  <button type="button" (click)="editMode.set(false)" [disabled]="editSaving()"
+                  <button type="button" (click)="exitEditMode()" [disabled]="editSaving()"
                     class="px-4 py-2 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition">
                     Cancel
                   </button>
@@ -236,11 +336,15 @@ type SecondarySubmitAction = {
     </div>
   `,
 })
-export class SubmissionDetailComponent implements OnInit {
+export class SubmissionDetailComponent implements OnInit, OnDestroy {
+  @ViewChild('viewFormContainer', { static: false }) viewContainerRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('editFormContainer', { static: false }) editContainerRef!: ElementRef<HTMLDivElement>;
+
   router = inject(Router);
   private route = inject(ActivatedRoute);
   private submissionService = inject(SubmissionService);
   private toastr = inject(ToastrService);
+  private zone = inject(NgZone);
 
   loading = signal(true);
   loadError = signal<string | null>(null);
@@ -249,9 +353,18 @@ export class SubmissionDetailComponent implements OnInit {
   editMode = signal(false);
   editSaving = signal(false);
   editError = signal<string | null>(null);
+  step = signal(0);
 
   pdfExporting = signal(false);
   secondarySubmittingOutcome = signal<SecondarySubmitOutcome | null>(null);
+
+  viewSchema = computed(() => {
+    const form = this.detail()?.form;
+    return form ? patchSchemaUrls(form, (window as any).__SURVEYFLOW_API_BASE__ ?? '') : null;
+  });
+  panels = computed<Panel[]>(() => getPanels(this.viewSchema()));
+  isWizard = computed(() => this.viewSchema()?.display === 'wizard' || this.panels().length > 0);
+  panelTitle = panelTitle;
 
   currentSecondarySubmitAction = computed<SecondarySubmitAction | null>(() => {
     const d = this.detail();
@@ -314,6 +427,9 @@ export class SubmissionDetailComponent implements OnInit {
   });
 
   private submissionId!: number;
+  private viewFormInstance: any = null;
+  private editFormInstance: any = null;
+  private pendingEditData: any = null;
 
   ngOnInit(): void {
     const idStr = this.route.snapshot.paramMap.get('id');
@@ -322,11 +438,21 @@ export class SubmissionDetailComponent implements OnInit {
     this.loadDetail();
   }
 
+  ngOnDestroy(): void {
+    this.destroyViewForm();
+    this.destroyEditForm();
+  }
+
   private loadDetail(): void {
     this.loading.set(true);
     this.loadError.set(null);
     this.submissionService.getAdmin(this.submissionId).subscribe({
-      next: (sub) => { this.detail.set(sub); this.loading.set(false); },
+      next: (sub) => {
+        this.detail.set(sub);
+        this.step.set(0);
+        this.loading.set(false);
+        this.scheduleViewMount();
+      },
       error: (err) => { this.loadError.set(err?.error?.error || 'Failed to load submission.'); this.loading.set(false); },
     });
   }
@@ -337,7 +463,7 @@ export class SubmissionDetailComponent implements OnInit {
     this.submissionService.updateAdmin(this.submissionId, { data }).subscribe({
       next: () => {
         this.editSaving.set(false);
-        this.editMode.set(false);
+        this.exitEditMode();
         this.toastr.success('Submission updatedetail()!.');
         this.loadDetail();
       },
@@ -415,6 +541,163 @@ export class SubmissionDetailComponent implements OnInit {
     if (value == null) return '';
     if (typeof value === 'string') return value;
     try { return JSON.stringify(value, null, 2); } catch { return String(value); }
+  }
+
+  enterEditMode(): void {
+    this.editMode.set(true);
+    this.pendingEditData = structuredClone(this.detail()?.data ?? {});
+    this.destroyViewForm();
+    this.scheduleEditMount();
+  }
+
+  exitEditMode(): void {
+    this.editMode.set(false);
+    this.pendingEditData = null;
+    this.destroyEditForm();
+    this.scheduleViewMount();
+  }
+
+  nextStep(): void {
+    if (this.editMode()) {
+      this.editFormInstance?.submit();
+      return;
+    }
+    if (this.step() < this.panels().length - 1) {
+      this.step.update(s => s + 1);
+      this.scheduleViewMount();
+    }
+  }
+
+  goToStep(index: number): void {
+    if (index < 0 || index >= this.panels().length || index === this.step()) return;
+    if (this.editMode()) {
+      this.captureCurrentEditData();
+      this.step.set(index);
+      this.scheduleEditMount();
+      return;
+    }
+    this.step.set(index);
+    this.scheduleViewMount();
+  }
+
+  prevStep(): void {
+    if (this.editMode()) {
+      this.captureCurrentEditData();
+      if (this.step() > 0) {
+        this.step.update(s => s - 1);
+        this.scheduleEditMount();
+      }
+      return;
+    }
+    if (this.step() > 0) {
+      this.step.update(s => s - 1);
+      this.scheduleViewMount();
+    }
+  }
+
+  submitEditForm(): void {
+    if (this.editSaving()) return;
+    this.editFormInstance?.submit();
+  }
+
+  private scheduleViewMount(): void {
+    if (this.editMode() || this.loading() || !this.detail()?.form) return;
+    this.zone.onStable.pipe(take(1)).subscribe(() => requestAnimationFrame(() => this.mountViewForm()));
+  }
+
+  private scheduleEditMount(): void {
+    if (!this.editMode() || this.loading() || !this.detail()?.form) return;
+    this.zone.onStable.pipe(take(1)).subscribe(() => requestAnimationFrame(() => this.mountEditForm()));
+  }
+
+  private destroyViewForm(): void {
+    this.viewFormInstance?.destroy?.(true);
+    this.viewFormInstance = null;
+    if (this.viewContainerRef?.nativeElement) {
+      this.viewContainerRef.nativeElement.innerHTML = '';
+    }
+  }
+
+  private destroyEditForm(): void {
+    this.editFormInstance?.destroy?.(true);
+    this.editFormInstance = null;
+    if (this.editContainerRef?.nativeElement) {
+      this.editContainerRef.nativeElement.innerHTML = '';
+    }
+  }
+
+  private mountViewForm(): void {
+    if (this.editMode()) return;
+    if (!this.viewSchema() || !this.viewContainerRef?.nativeElement) {
+      requestAnimationFrame(() => this.mountViewForm());
+      return;
+    }
+
+    this.destroyViewForm();
+
+    const schema = structuredClone(this.viewSchema());
+    if (this.isWizard() && this.panels().length > 0) {
+      schema.components = [this.panels()[this.step()]];
+      schema.display = 'form';
+    }
+
+    Formio.createForm(this.viewContainerRef.nativeElement, schema, {
+      readOnly: true,
+      renderMode: 'html',
+      viewAsHtml: true,
+      noDefaultSubmitButton: true,
+    }).then(async (instance: any) => {
+      this.viewFormInstance = instance;
+      instance.disabled = true;
+      if (this.detail()?.data) {
+        await instance.setSubmission({ data: this.detail()!.data }, { fromSubmission: true });
+      }
+      instance.redraw?.();
+    });
+  }
+
+  private mountEditForm(): void {
+    if (!this.editMode()) return;
+    if (!this.viewSchema() || !this.editContainerRef?.nativeElement) {
+      requestAnimationFrame(() => this.mountEditForm());
+      return;
+    }
+
+    this.destroyEditForm();
+
+    const schema = structuredClone(this.viewSchema());
+    if (this.isWizard() && this.panels().length > 0) {
+      schema.components = [this.panels()[this.step()]];
+      schema.display = 'form';
+    }
+
+    const isLastStep = !this.isWizard() || this.step() === this.panels().length - 1;
+
+    Formio.createForm(this.editContainerRef.nativeElement, schema, {
+      noDefaultSubmitButton: true,
+      readOnly: false,
+    }).then(async (instance: any) => {
+      this.editFormInstance = instance;
+      const data = this.pendingEditData ?? this.detail()?.data ?? {};
+      await instance.setSubmission({ data }, { fromSubmission: true });
+      instance.on('submit', (submission: any) => {
+        const nextData = submission?.data ?? submission;
+        this.pendingEditData = { ...(this.pendingEditData ?? {}), ...nextData };
+        if (isLastStep) {
+          this.saveEdit(this.pendingEditData);
+        } else {
+          this.step.update(s => s + 1);
+          this.scheduleEditMount();
+        }
+      });
+      instance.redraw?.();
+    });
+  }
+
+  private captureCurrentEditData(): void {
+    const currentData = this.editFormInstance?.submission?.data;
+    if (!currentData) return;
+    this.pendingEditData = { ...(this.pendingEditData ?? {}), ...currentData };
   }
 
   formatDate(dateStr: string | null | undefined): string {
