@@ -23,6 +23,7 @@ public class DataSourceController(AppDbContext db) : ControllerBase
     //   ?q=pump        — user's search text (Formio appends this via searchField)
     //   &category=X    — filter by category (set once in form builder URL)
     //   &location=X    — filter by location (set once in form builder URL)
+    //   &parentId=X    — filter by parent external id
     //   &active=true   — only active assets (default true)
     //   &limit=300     — max results
     [HttpGet("query/{source}")]
@@ -31,6 +32,7 @@ public class DataSourceController(AppDbContext db) : ControllerBase
         [FromQuery] string? q        = null,
         [FromQuery] string? category = null,
         [FromQuery] string? location = null,
+        [FromQuery] string? parentId = null,
         [FromQuery] bool    active   = true,
         [FromQuery] int     limit    = 300)
     {
@@ -44,6 +46,9 @@ public class DataSourceController(AppDbContext db) : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(location))
             query = query.Where(a => a.Location == location);
+
+        if (!string.IsNullOrWhiteSpace(parentId))
+            query = query.Where(a => a.ParentExternalId == parentId);
 
         if (!string.IsNullOrWhiteSpace(q))
         {
@@ -70,7 +75,8 @@ public class DataSourceController(AppDbContext db) : ControllerBase
         [FromQuery] string? q       = null,
         [FromQuery] string? category = null,
         [FromQuery] string? location = null,
+        [FromQuery] string? parentId = null,
         [FromQuery] bool    active   = true,
         [FromQuery] int     limit    = 300)
-        => Query(source, q, category, location, active, limit);
+        => Query(source, q, category, location, parentId, active, limit);
 }
