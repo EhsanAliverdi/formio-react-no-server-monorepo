@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Mail;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using HPA.SurveyFlow.Api.Extensions;
 using HPA.SurveyFlow.Domain.DTOs.Requests;
 using HPA.SurveyFlow.Domain.DTOs.Responses;
@@ -13,7 +18,7 @@ namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/forms")]
-public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService) : ControllerBase
+public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> ListForms([FromQuery] string? mode)
@@ -241,6 +246,8 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             {
                 secondarySubmitService.DispatchAsync(integration, action, dataJson, submission.Id, outcome);
             }
+
+            await TrySendOutcomeEmailAsync(form, submission, currentUser, formSchema, outcome, abnormalities, errorCount, warningCount, dataJson);
         }
         catch { /* never fail primary submit */ }
 
@@ -350,4 +357,263 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             _ => defaultValue
         };
     }
+
+    private async Task TrySendOutcomeEmailAsync(
+        Form form,
+        FormSubmission submission,
+        User? currentUser,
+        JsonElement formSchema,
+        string outcome,
+        IReadOnlyList<AbnormalitiesService.Abnormality> abnormalities,
+        int errorCount,
+        int warningCount,
+        string dataJson)
+    {
+        if (!TryGetEmailNotificationConfig(formSchema, outcome, out var config))
+            return;
+
+        var settings = (await db.SiteSettings.ToListAsync()).ToDictionary(s => s.Key, s => (string?)s.Value);
+        if (settings.GetValueOrDefault("integration.email.enabled") != "true")
+            return;
+
+        var recipients = ParseRecipients(config.To);
+        if (recipients.Count == 0)
+            return;
+
+        using var submissionDataDoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(dataJson) ? "{}" : dataJson);
+        var submissionData = submissionDataDoc.RootElement;
+        var placeholders = BuildEmailPlaceholders(form, submission, currentUser, outcome, abnormalities, errorCount, warningCount, submissionData);
+
+        var subject = ReplacePlaceholders(config.Subject, placeholders);
+        var bodyHtml = ReplacePlaceholders(config.BodyHtml, placeholders);
+        if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(bodyHtml))
+            return;
+
+        byte[]? pdfBytes = null;
+        if (config.AttachPdf)
+        {
+            var pdfHtml = BuildSubmissionPdfHtml(form, submission, submissionData);
+            pdfBytes = await pdfService.GeneratePdfAsync(pdfHtml);
+        }
+
+        await SendEmailAsync(settings, recipients, subject, bodyHtml, pdfBytes, $"submission-{submission.Id}.pdf");
+    }
+
+    private static bool TryGetEmailNotificationConfig(JsonElement formSchema, string outcome, out EmailNotificationConfig config)
+    {
+        config = default;
+
+        if (!formSchema.TryGetProperty("appSettings", out var appSettingsEl)
+            || !appSettingsEl.TryGetProperty("emailNotifications", out var emailEl)
+            || !emailEl.TryGetProperty(outcome, out var outcomeEl))
+            return false;
+
+        var enabled = outcomeEl.TryGetProperty("enabled", out var enabledEl)
+            && (enabledEl.ValueKind == JsonValueKind.True || enabledEl.GetRawText() == "true");
+        if (!enabled)
+            return false;
+
+        config = new EmailNotificationConfig(
+            enabled,
+            outcomeEl.TryGetProperty("to", out var toEl) ? toEl.GetString() ?? string.Empty : string.Empty,
+            outcomeEl.TryGetProperty("subject", out var subjectEl) ? subjectEl.GetString() ?? string.Empty : string.Empty,
+            outcomeEl.TryGetProperty("bodyHtml", out var bodyEl) ? bodyEl.GetString() ?? string.Empty : string.Empty,
+            outcomeEl.TryGetProperty("attachPdf", out var attachEl)
+                && (attachEl.ValueKind == JsonValueKind.True || attachEl.GetRawText() == "true"));
+
+        return true;
+    }
+
+    private static List<string> ParseRecipients(string raw)
+    {
+        return Regex.Split(raw ?? string.Empty, @"[;,\r\n]+")
+            .Select(s => s.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static Dictionary<string, string> BuildEmailPlaceholders(
+        Form form,
+        FormSubmission submission,
+        User? currentUser,
+        string outcome,
+        IReadOnlyList<AbnormalitiesService.Abnormality> abnormalities,
+        int errorCount,
+        int warningCount,
+        JsonElement submissionData)
+    {
+        var abnormalLabels = abnormalities.Select(a => a.Label ?? a.Key).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+        var errorLabels = abnormalities.Where(a => a.Level == "error").Select(a => a.Label ?? a.Key).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+        var warningLabels = abnormalities.Where(a => a.Level == "warning").Select(a => a.Label ?? a.Key).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+
+        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["outcome"] = outcome,
+            ["submission_id"] = submission.Id.ToString(),
+            ["form_name"] = form.Name,
+            ["user_email"] = currentUser?.Email ?? string.Empty,
+            ["error_count"] = errorCount.ToString(),
+            ["warning_count"] = warningCount.ToString(),
+            ["abnormal_questions"] = string.Join(", ", abnormalLabels),
+            ["error_questions"] = string.Join(", ", errorLabels),
+            ["warning_questions"] = string.Join(", ", warningLabels),
+            ["abnormal_answers"] = BuildAbnormalAnswersHtml(abnormalities, submissionData),
+            ["error_answers"] = BuildAbnormalAnswersHtml(abnormalities.Where(a => a.Level == "error"), submissionData),
+            ["warning_answers"] = BuildAbnormalAnswersHtml(abnormalities.Where(a => a.Level == "warning"), submissionData),
+        };
+    }
+
+    private static string BuildAbnormalAnswersHtml(IEnumerable<AbnormalitiesService.Abnormality> abnormalities, JsonElement submissionData)
+    {
+        var items = abnormalities
+            .Select(a =>
+            {
+                var label = WebUtility.HtmlEncode(a.Label ?? a.Key);
+                var value = submissionData.ValueKind == JsonValueKind.Object && submissionData.TryGetProperty(a.Key, out var actual)
+                    ? WebUtility.HtmlEncode(JsonElementToDisplayText(actual))
+                    : string.Empty;
+                return string.IsNullOrWhiteSpace(value) ? $"<li>{label}</li>" : $"<li><strong>{label}:</strong> {value}</li>";
+            })
+            .ToList();
+
+        return items.Count == 0 ? string.Empty : $"<ul>{string.Join(string.Empty, items)}</ul>";
+    }
+
+    private static string ReplacePlaceholders(string template, IReadOnlyDictionary<string, string> placeholders)
+    {
+        var result = template ?? string.Empty;
+        foreach (var (key, value) in placeholders)
+            result = result.Replace($"{{{{{key}}}}}", value ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        return result;
+    }
+
+    private static async Task SendEmailAsync(
+        IReadOnlyDictionary<string, string?> settings,
+        IReadOnlyList<string> recipients,
+        string subject,
+        string bodyHtml,
+        byte[]? attachmentBytes,
+        string attachmentFileName)
+    {
+        var provider = settings.GetValueOrDefault("integration.email.provider") ?? "smtp";
+        var fromEmail = settings.GetValueOrDefault("integration.email.fromEmail") ?? "noreply@surveyflow.local";
+        var fromName = settings.GetValueOrDefault("integration.email.fromName") ?? "SurveyFlow";
+
+        if (provider == "sendgrid")
+        {
+          var apiKey = settings.GetValueOrDefault("integration.email.sendgridApiKey");
+          if (string.IsNullOrWhiteSpace(apiKey)) return;
+
+          using var http = new HttpClient();
+          http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+          var attachments = attachmentBytes == null ? Array.Empty<object>() :
+          [new
+          {
+              content = Convert.ToBase64String(attachmentBytes),
+              filename = attachmentFileName,
+              type = "application/pdf",
+              disposition = "attachment"
+          }];
+
+          var payload = new
+          {
+              personalizations = new[] { new { to = recipients.Select(email => new { email }).ToArray() } },
+              from = new { email = fromEmail, name = fromName },
+              subject,
+              content = new[] { new { type = "text/html", value = bodyHtml } },
+              attachments
+          };
+
+          var response = await http.PostAsJsonAsync("https://api.sendgrid.com/v3/mail/send", payload);
+          response.EnsureSuccessStatusCode();
+          return;
+        }
+
+        var host = settings.GetValueOrDefault("integration.email.smtpHost");
+        if (string.IsNullOrWhiteSpace(host)) return;
+
+        var portStr = settings.GetValueOrDefault("integration.email.smtpPort") ?? "587";
+        var username = settings.GetValueOrDefault("integration.email.smtpUsername");
+        var password = settings.GetValueOrDefault("integration.email.smtpPassword");
+        var tls = settings.GetValueOrDefault("integration.email.smtpTls") != "false";
+        if (!int.TryParse(portStr, out var port)) port = 587;
+
+        using var client = new SmtpClient(host, port)
+        {
+            EnableSsl = tls,
+            DeliveryMethod = SmtpDeliveryMethod.Network,
+            UseDefaultCredentials = false,
+        };
+
+        if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+            client.Credentials = new NetworkCredential(username, password);
+
+        using var message = new MailMessage
+        {
+            From = new MailAddress(fromEmail, fromName),
+            Subject = subject,
+            Body = bodyHtml,
+            IsBodyHtml = true,
+        };
+
+        foreach (var recipient in recipients)
+            message.To.Add(new MailAddress(recipient));
+
+        if (attachmentBytes != null)
+            message.Attachments.Add(new Attachment(new MemoryStream(attachmentBytes), attachmentFileName, "application/pdf"));
+
+        await client.SendMailAsync(message);
+    }
+
+    private static string BuildSubmissionPdfHtml(Form form, FormSubmission submission, JsonElement submissionData)
+    {
+        var rows = new List<string>();
+        if (submissionData.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in submissionData.EnumerateObject())
+            {
+                if (property.NameEquals("submit")) continue;
+                rows.Add($"<tr><td>{WebUtility.HtmlEncode(property.Name)}</td><td>{WebUtility.HtmlEncode(JsonElementToDisplayText(property.Value))}</td></tr>");
+            }
+        }
+
+                return $@"<!doctype html>
+<html>
+<head>
+    <meta charset=""utf-8"" />
+    <style>
+        body {{ font-family: Arial, sans-serif; padding: 24px; color: #111827; }}
+        h1 {{ margin: 0 0 8px; font-size: 24px; }}
+        p {{ margin: 0 0 16px; color: #4b5563; }}
+        table {{ width: 100%; border-collapse: collapse; }}
+        td {{ border: 1px solid #d1d5db; padding: 8px 10px; vertical-align: top; }}
+        td:first-child {{ width: 32%; font-weight: 600; background: #f9fafb; }}
+    </style>
+</head>
+<body>
+    <h1>{WebUtility.HtmlEncode(form.Name)}</h1>
+    <p>Submission #{submission.Id}</p>
+    <table>{string.Join(string.Empty, rows)}</table>
+</body>
+</html>";
+    }
+
+    private static string JsonElementToDisplayText(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String => element.GetString() ?? string.Empty,
+            JsonValueKind.Number => element.ToString(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Array => string.Join(", ", element.EnumerateArray().Select(JsonElementToDisplayText)),
+            JsonValueKind.Object => element.GetRawText(),
+            JsonValueKind.Null => string.Empty,
+            _ => element.ToString(),
+        };
+    }
+
+    private readonly record struct EmailNotificationConfig(bool Enabled, string To, string Subject, string BodyHtml, bool AttachPdf);
 }

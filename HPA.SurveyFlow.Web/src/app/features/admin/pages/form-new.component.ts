@@ -13,6 +13,7 @@ type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
 type SecondarySubmitConfig = { enabled: boolean; integration: string; action: string };
 type ResultActionMode = 'stay' | 'redirect' | 'next_form';
 type ResultActionConfig = { mode: ResultActionMode; delaySeconds: number };
+type EmailNotificationConfig = { enabled: boolean; to: string; subject: string; bodyHtml: string; attachPdf: boolean };
 
 const SECONDARY_SUBMIT_OUTCOMES = [
   {
@@ -47,6 +48,30 @@ function defaultSecondarySubmitConfig(): SecondarySubmitConfig {
 
 function defaultResultActionConfig(): ResultActionConfig {
   return { mode: 'stay', delaySeconds: 0 };
+}
+
+function defaultEmailNotificationConfig(): EmailNotificationConfig {
+  return {
+    enabled: false,
+    to: '',
+    subject: 'SurveyFlow {{outcome}} submission #{{submission_id}}',
+    bodyHtml: '<p>A {{outcome}} submission was received.</p><p>{{abnormal_answers}}</p>',
+    attachPdf: false,
+  };
+}
+
+function normalizeEmailNotificationConfig(raw: any): Record<SecondarySubmitOutcome, EmailNotificationConfig> {
+  const defaults = {
+    success: defaultEmailNotificationConfig(),
+    warning: defaultEmailNotificationConfig(),
+    error: defaultEmailNotificationConfig(),
+  };
+
+  return {
+    success: { ...defaults.success, ...(raw?.success ?? {}) },
+    warning: { ...defaults.warning, ...(raw?.warning ?? {}) },
+    error: { ...defaults.error, ...(raw?.error ?? {}) },
+  };
 }
 
 function getPanels(schema: any): WizardPanel[] {
@@ -296,6 +321,71 @@ function ensureWizardHasPage(schema: any): any {
                     </div>
                   </div>
                 }
+
+                <div class="rounded-lg border border-gray-200 bg-white p-3">
+                  <div class="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <div class="text-xs font-semibold text-gray-700">Email notification</div>
+                      <p class="mt-1 text-xs text-gray-500">Send outcome-based emails to one or more recipients. HTML is supported in the body.</p>
+                    </div>
+                    <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+                      <input type="checkbox" [(ngModel)]="emailNotifications[outcome.value].enabled"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                      Enabled
+                    </label>
+                  </div>
+
+                  @if (emailNotifications[outcome.value].enabled) {
+                    <div class="grid grid-cols-1 gap-3">
+                      <div>
+                        <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
+                          Recipients
+                          <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                            title="Separate recipients with commas, semicolons, or new lines.">
+                            ?
+                          </span>
+                        </label>
+                        <textarea [(ngModel)]="emailNotifications[outcome.value].to" rows="2"
+                          placeholder="team@example.com, manager@example.com"
+                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                          [class]="outcome.focusClass"></textarea>
+                      </div>
+
+                      <div>
+                        <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
+                          Subject
+                          <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                            [attr.title]="placeholderHelp">
+                            ?
+                          </span>
+                        </label>
+                        <input type="text" [(ngModel)]="emailNotifications[outcome.value].subject"
+                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                          [class]="outcome.focusClass"/>
+                      </div>
+
+                      <div>
+                        <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
+                          Body (HTML supported)
+                          <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                            [attr.title]="placeholderHelp">
+                            ?
+                          </span>
+                        </label>
+                        <textarea [(ngModel)]="emailNotifications[outcome.value].bodyHtml" rows="6"
+                          placeholder="<p>A {{outcome}} submission was received.</p>"
+                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2"
+                          [class]="outcome.focusClass"></textarea>
+                      </div>
+
+                      <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" [(ngModel)]="emailNotifications[outcome.value].attachPdf"
+                          class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                        <span class="text-sm text-gray-700">Attach submission PDF</span>
+                      </label>
+                    </div>
+                  }
+                </div>
               </section>
             }
           </div>
@@ -394,7 +484,7 @@ export class FormNewComponent implements OnInit {
   allowedRoles: string[] = [];
   allowedUserIds: number[] = [];
   appSettings: any = { nextForms: { success: null, warning: null, error: null } };
-  placeholderHelp = 'Available placeholders: {{outcome}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
+  placeholderHelp = 'Available placeholders: {{outcome}}, {{submission_id}}, {{form_name}}, {{user_email}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
   secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
   secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = {
     success: defaultSecondarySubmitConfig(),
@@ -406,6 +496,7 @@ export class FormNewComponent implements OnInit {
     warning: defaultResultActionConfig(),
     error: defaultResultActionConfig(),
   };
+  emailNotifications: Record<SecondarySubmitOutcome, EmailNotificationConfig> = normalizeEmailNotificationConfig(null);
   currentSchema: any = { type: 'form', display: 'form', components: [] };
 
   saving = signal(false);
@@ -537,7 +628,12 @@ export class FormNewComponent implements OnInit {
       warning: { ...this.resultActions.warning, delaySeconds: Number(this.resultActions.warning.delaySeconds) || 0 },
       error: { ...this.resultActions.error, delaySeconds: Number(this.resultActions.error.delaySeconds) || 0 },
     };
-    const finalSchema = { ...schema, display: this.formDisplay, appSettings: { ...this.appSettings, resultActions, secondarySubmit } };
+    const emailNotifications = {
+      success: { ...this.emailNotifications.success },
+      warning: { ...this.emailNotifications.warning },
+      error: { ...this.emailNotifications.error },
+    };
+    const finalSchema = { ...schema, display: this.formDisplay, appSettings: { ...this.appSettings, resultActions, secondarySubmit, emailNotifications } };
     this.saving.set(true);
     this.formService.create({
       name: this.name.trim(),
