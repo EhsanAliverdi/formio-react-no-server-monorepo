@@ -10,12 +10,16 @@ import {
   NgZone,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { Formio } from 'formiojs';
 import { FormService } from '../../../core/services/form.service';
+import { SubmissionService } from '../../../core/services/submission.service';
 import { Form } from '../../../core/models';
 import { patchSchemaUrls } from '../../../core/utils/schema-patch';
+import { buildFormDefinitionPdfBody, FormPdfOptions } from '../../../core/utils/form-definition-pdf';
+import { wrapPdfDocument } from '../../../core/utils/submission-pdf';
 
 type Panel = { key: string; title: string; label: string; breadcrumb: string; components: any[] };
 
@@ -34,7 +38,7 @@ function panelTitle(p: Panel, i: number): string {
 @Component({
   selector: 'app-admin-form-view',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="p-6">
       <div class="flex items-center gap-3 mb-6">
@@ -45,9 +49,21 @@ function panelTitle(p: Panel, i: number): string {
           </svg>
           Back
         </button>
-        <h1 class="text-2xl font-bold text-gray-900">
+        <h1 class="text-2xl font-bold text-gray-900 flex-1">
           @if (form()) { {{ form()!.name }} } @else { View Form }
         </h1>
+        @if (!loading() && form()) {
+          <button
+            type="button"
+            (click)="showPdfDialog.set(true)"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            Export PDF
+          </button>
+        }
       </div>
 
       @if (loading()) {
@@ -106,6 +122,80 @@ function panelTitle(p: Panel, i: number): string {
         </div>
       }
     </div>
+
+    <!-- PDF Export Dialog -->
+    @if (showPdfDialog()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="showPdfDialog.set(false)">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6" (click)="$event.stopPropagation()">
+          <h2 class="text-base font-semibold text-gray-900 mb-1">Export Form as PDF</h2>
+          <p class="text-xs text-gray-500 mb-4">Choose what to include in the export.</p>
+
+          <div class="flex flex-col gap-3 mb-5">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="pdfOptions.showAbnormalities" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
+              <div>
+                <div class="text-sm font-medium text-gray-800">Abnormality rules</div>
+                <div class="text-xs text-gray-500">Colour-code options: normal (green), warning (amber), error (red)</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="pdfOptions.showConditions" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
+              <div>
+                <div class="text-sm font-medium text-gray-800">Conditional logic</div>
+                <div class="text-xs text-gray-500">Show the condition under which each question is displayed</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="pdfOptions.showValidation" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
+              <div>
+                <div class="text-sm font-medium text-gray-800">Validation rules</div>
+                <div class="text-xs text-gray-500">Required, min/max length, patterns, etc.</div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="pdfOptions.showKeys" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
+              <div>
+                <div class="text-sm font-medium text-gray-800">Field keys</div>
+                <div class="text-xs text-gray-500">Show the internal field key next to each label</div>
+              </div>
+            </label>
+            @if (isWizard() && panels().length > 1) {
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="pdfOptions.groupBySteps" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
+                <div>
+                  <div class="text-sm font-medium text-gray-800">Group by wizard steps</div>
+                  <div class="text-xs text-gray-500">Add a section header for each step/panel</div>
+                </div>
+              </label>
+            }
+          </div>
+
+          @if (pdfError()) {
+            <div class="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{{ pdfError() }}</div>
+          }
+
+          <div class="flex gap-2 justify-end">
+            <button type="button" (click)="showPdfDialog.set(false)"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
+              Cancel
+            </button>
+            <button type="button" (click)="exportPdf()" [disabled]="pdfExporting()"
+              class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg transition">
+              @if (pdfExporting()) {
+                <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                Exporting…
+              } @else {
+                Export PDF
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class FormViewComponent implements OnInit, OnDestroy {
@@ -114,6 +204,7 @@ export class FormViewComponent implements OnInit, OnDestroy {
   router = inject(Router);
   private route = inject(ActivatedRoute);
   private formService = inject(FormService);
+  private submissionService = inject(SubmissionService);
   private zone = inject(NgZone);
 
   form = signal<Form | null>(null);
@@ -121,6 +212,18 @@ export class FormViewComponent implements OnInit, OnDestroy {
   loading = signal(true);
   error = signal<string | null>(null);
   step = signal(0);
+
+  showPdfDialog = signal(false);
+  pdfExporting = signal(false);
+  pdfError = signal<string | null>(null);
+
+  pdfOptions: FormPdfOptions = {
+    showConditions: true,
+    showAbnormalities: true,
+    showValidation: true,
+    showKeys: false,
+    groupBySteps: true,
+  };
 
   panels = computed<Panel[]>(() => getPanels(this.schema()));
   isWizard = computed(() => this.schema()?.display === 'wizard' || this.panels().length > 0);
@@ -173,6 +276,36 @@ export class FormViewComponent implements OnInit, OnDestroy {
       this.step.update(s => s - 1);
       setTimeout(() => this.mountForm(), 0);
     }
+  }
+
+  exportPdf(): void {
+    const f = this.form();
+    const schema = this.schema();
+    if (!f || !schema) return;
+
+    this.pdfError.set(null);
+    this.pdfExporting.set(true);
+
+    const body = buildFormDefinitionPdfBody(schema, this.pdfOptions);
+    const html = wrapPdfDocument(body);
+    const fileName = `${f.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'form'}-definition.pdf`;
+
+    this.submissionService.exportAdminPdf(html, fileName).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.pdfExporting.set(false);
+        this.showPdfDialog.set(false);
+      },
+      error: (err) => {
+        this.pdfExporting.set(false);
+        this.pdfError.set(err?.error?.error || 'Failed to export PDF.');
+      },
+    });
   }
 
   private mountForm(): void {
