@@ -19,7 +19,7 @@ import { SiteSettings } from '../../../core/models';
       <div class="flex items-center justify-between gap-4">
         <div>
           <h1 class="text-xl font-semibold text-gray-800 dark:text-white">Site settings</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure site name and logos.</p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure site name, logos, and footer display.</p>
         </div>
         <button
           class="ta-btn ta-btn-primary"
@@ -51,6 +51,14 @@ import { SiteSettings } from '../../../core/models';
 
         <div class="ta-card">
           <h2 class="mb-4 text-base font-semibold text-gray-800 dark:text-white">Logos &amp; Favicon</h2>
+          <label class="mb-6 flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+              [(ngModel)]="showPublicFormLogo"
+            />
+            Show logo on public form pages
+          </label>
           <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             @for (field of logoFields; track field.key) {
               <div>
@@ -88,6 +96,26 @@ import { SiteSettings } from '../../../core/models';
             }
           </div>
         </div>
+
+        <div class="ta-card">
+          <h2 class="mb-4 text-base font-semibold text-gray-800 dark:text-white">Copyright</h2>
+          <label class="mb-4 flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+              [(ngModel)]="showCopyright"
+            />
+            Show copyright
+          </label>
+          <label class="ta-field-label" for="copyrightText">Copyright text</label>
+          <textarea
+            id="copyrightText"
+            class="ta-field max-w-2xl"
+            rows="3"
+            [(ngModel)]="copyrightText"
+            placeholder="Copyright 2026 SurveyFlow. All rights reserved."
+          ></textarea>
+        </div>
       }
     </div>
   `,
@@ -108,6 +136,9 @@ export class SettingsComponent implements OnInit {
   logoExpandedLightUrl = '';
   logoExpandedDarkUrl = '';
   logoCollapsedUrl = '';
+  copyrightText = '';
+  showCopyright = false;
+  showPublicFormLogo = false;
 
   uploadingField: string | null = null;
 
@@ -133,6 +164,9 @@ export class SettingsComponent implements OnInit {
         this.logoExpandedLightUrl = s.logoExpandedLightUrl || '';
         this.logoExpandedDarkUrl = s.logoExpandedDarkUrl || '';
         this.logoCollapsedUrl = s.logoCollapsedUrl || '';
+        this.copyrightText = s.copyrightText || '';
+        this.showCopyright = !!s.showCopyright;
+        this.showPublicFormLogo = !!s.showPublicFormLogo;
         this.loading.set(false);
       },
       error: () => {
@@ -177,6 +211,9 @@ export class SettingsComponent implements OnInit {
       logoExpandedLightUrl: this.logoExpandedLightUrl || undefined,
       logoExpandedDarkUrl: this.logoExpandedDarkUrl || undefined,
       logoCollapsedUrl: this.logoCollapsedUrl || undefined,
+      copyrightText: this.copyrightText,
+      showCopyright: this.showCopyright,
+      showPublicFormLogo: this.showPublicFormLogo,
     };
 
     this.settingsService.updateSiteSettings(data).subscribe({

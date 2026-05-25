@@ -37,6 +37,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
                 .ThenInclude(c => c.Form)
             .Include(s => s.ChildSubmissions)
                 .ThenInclude(c => c.User)
+            .Where(s => s.DeletedAt == null)
             .AsQueryable();
 
         if (form_id.HasValue)
@@ -88,7 +89,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
                 .ThenInclude(c => c.Form)
             .Include(s => s.ChildSubmissions)
                 .ThenInclude(c => c.User)
-            .FirstOrDefaultAsync(s => s.Id == id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
 
         if (submission == null)
             return NotFound(new { error = "Submission not found." });
@@ -109,7 +110,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
                 .ThenInclude(c => c.Form)
             .Include(s => s.ChildSubmissions)
                 .ThenInclude(c => c.User)
-            .FirstOrDefaultAsync(s => s.Id == id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
 
         if (submission == null)
             return NotFound(new { error = "Submission not found." });
@@ -146,6 +147,37 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
         return Ok(await BuildAdminSubmissionDetailDto(submission));
     }
 
+    [RequirePermission(Permissions.Submissions.UpdateAll)]
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteAdminSubmission(int id)
+    {
+        var currentUser = HttpContext.RequireUser();
+
+        var root = await db.FormSubmissions
+            .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
+
+        if (root == null)
+            return NotFound(new { error = "Submission not found." });
+
+        var deleteRootId = root.ParentSubmissionId ?? root.Id;
+        var submissions = await db.FormSubmissions
+            .Where(s => s.DeletedAt == null && (s.Id == deleteRootId || s.ParentSubmissionId == deleteRootId))
+            .ToListAsync();
+
+        var deletedAt = DateTime.UtcNow;
+        foreach (var submission in submissions)
+        {
+            submission.DeletedAt = deletedAt;
+            submission.DeletedBy = currentUser.Id;
+            submission.DeleteReason = id == deleteRootId
+                ? "Deleted by admin."
+                : $"Deleted with parent submission #{deleteRootId}.";
+        }
+
+        await db.SaveChangesAsync();
+        return Ok(new { success = true, deleted_count = submissions.Count, root_submission_id = deleteRootId });
+    }
+
     [RequirePermission(Permissions.Submissions.SecondarySubmit)]
     [HttpPost("{id:int}/secondary-submit")]
     public async Task<IActionResult> TriggerSecondarySubmit(
@@ -155,12 +187,12 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
     {
         var submission = await db.FormSubmissions
             .Include(s => s.Form)
-            .FirstOrDefaultAsync(s => s.Id == id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
 
         if (submission == null)
             return NotFound(new { error = "Submission not found." });
 
-        string integration, action, selectedOutcome;
+        string integration, action, selectedOutcome, submitConfigJson;
         try
         {
             var formSchema = JsonDocument.Parse(submission.Form.Json).RootElement;
@@ -175,7 +207,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             if (selectedOutcome != submissionOutcome)
                 return BadRequest(new { error = $"Current submission outcome is {submissionOutcome}. {selectedOutcome} integration submit is not available for the current form values." });
 
-            if (!FormsController.TryGetSecondarySubmitAction(formSchema, selectedOutcome, out integration, out action))
+            if (!FormsController.TryGetSecondarySubmitAction(formSchema, selectedOutcome, out integration, out action, out submitConfigJson))
                 return BadRequest(new { error = $"Secondary submit is not configured or not enabled for {selectedOutcome} submissions." });
         }
         catch { return BadRequest(new { error = "Could not parse form configuration." }); }
@@ -183,7 +215,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
         if (string.IsNullOrWhiteSpace(integration) || string.IsNullOrWhiteSpace(action))
             return BadRequest(new { error = "Integration or action is not configured." });
 
-        secondarySubmitService.DispatchAsync(integration, action, submission.Data, submission.Id, selectedOutcome);
+        secondarySubmitService.DispatchAsync(integration, action, submission.Data, submission.Id, selectedOutcome, submitConfigJson);
         return Ok(new { success = true, message = $"Secondary submit triggered for {selectedOutcome}.", outcome = selectedOutcome });
     }
 
@@ -198,7 +230,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
 
         var submissions = await db.FormSubmissions
             .Include(s => s.Form)
-            .Where(s => s.UserId == currentUser.Id)
+            .Where(s => s.UserId == currentUser.Id && s.DeletedAt == null)
             .OrderByDescending(s => s.SubmittedAt)
             .ToListAsync();
 
@@ -226,7 +258,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
         var submission = await db.FormSubmissions
             .Include(s => s.Form)
             .Include(s => s.User)
-            .FirstOrDefaultAsync(s => s.Id == id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null);
 
         if (submission == null)
             return NotFound(new { error = "Submission not found." });
@@ -332,6 +364,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             SecondarySubmitAt = submission.SecondarySubmitAt,
             SecondarySubmitResponse = ParseJsonOrString(submission.SecondarySubmitResponse),
             ChildSubmissions = submission.ChildSubmissions
+                .Where(c => c.DeletedAt == null)
                 .OrderBy(c => c.SubmittedAt)
                 .Select(MapAdminSubmissionListItem)
                 .ToList(),
@@ -355,6 +388,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             WarningCount = abnormalities.Count(a => a.Level == "warning"),
             SecondarySubmitStatus = s.SecondarySubmitStatus,
             ChildSubmissions = s.ChildSubmissions
+                .Where(c => c.DeletedAt == null)
                 .OrderBy(c => c.SubmittedAt)
                 .Select(MapAdminSubmissionListItem)
                 .ToList(),

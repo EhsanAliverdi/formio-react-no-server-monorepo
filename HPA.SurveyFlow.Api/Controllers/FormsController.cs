@@ -213,7 +213,7 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         {
             var parentSubmission = await db.FormSubmissions
                 .Include(s => s.Form)
-                .FirstOrDefaultAsync(s => s.Id == body.ParentSubmissionId.Value);
+                .FirstOrDefaultAsync(s => s.Id == body.ParentSubmissionId.Value && s.DeletedAt == null);
             if (parentSubmission == null)
                 return BadRequest(new { error = "Parent submission does not exist." });
             if (form.ParentFormId.HasValue && form.ParentFormId.Value != parentSubmission.FormId)
@@ -242,9 +242,9 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         try
         {
             var formSchema = JsonDocument.Parse(form.Json).RootElement;
-            if (TryGetSecondarySubmitAction(formSchema, outcome, out var integration, out var action))
+            if (TryGetSecondarySubmitAction(formSchema, outcome, out var integration, out var action, out var submitConfigJson))
             {
-                secondarySubmitService.DispatchAsync(integration, action, dataJson, submission.Id, outcome);
+                secondarySubmitService.DispatchAsync(integration, action, dataJson, submission.Id, outcome, submitConfigJson);
             }
 
             await TrySendOutcomeEmailAsync(form, submission, currentUser, formSchema, outcome, abnormalities, errorCount, warningCount, dataJson);
@@ -314,26 +314,28 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         return false;
     }
 
-    internal static bool TryGetSecondarySubmitAction(JsonElement formSchema, string outcome, out string integration, out string action)
+    internal static bool TryGetSecondarySubmitAction(JsonElement formSchema, string outcome, out string integration, out string action, out string configJson)
     {
         integration = "";
         action = "";
+        configJson = "";
 
         if (!formSchema.TryGetProperty("appSettings", out var appSettingsEl)
             || !appSettingsEl.TryGetProperty("secondarySubmit", out var secEl))
             return false;
 
         if (secEl.TryGetProperty(outcome, out var outcomeEl))
-            return TryReadSecondarySubmitAction(outcomeEl, out integration, out action);
+            return TryReadSecondarySubmitAction(outcomeEl, out integration, out action, out configJson);
 
         // Backward compatibility for forms saved before outcome-specific secondary submit.
-        return TryReadSecondarySubmitAction(secEl, out integration, out action);
+        return TryReadSecondarySubmitAction(secEl, out integration, out action, out configJson);
     }
 
-    private static bool TryReadSecondarySubmitAction(JsonElement configEl, out string integration, out string action)
+    private static bool TryReadSecondarySubmitAction(JsonElement configEl, out string integration, out string action, out string configJson)
     {
         integration = "";
         action = "";
+        configJson = configEl.GetRawText();
 
         if (!configEl.TryGetProperty("enabled", out var enabledEl) || enabledEl.ValueKind != JsonValueKind.True)
             return false;

@@ -175,6 +175,18 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("data");
 
+                    b.Property<string>("DeleteReason")
+                        .HasColumnType("text")
+                        .HasColumnName("delete_reason");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
                     b.Property<string>("EditHistory")
                         .HasColumnType("text")
                         .HasColumnName("edit_history");
@@ -218,6 +230,8 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeletedBy");
 
                     b.HasIndex("FormId");
 
@@ -552,6 +566,16 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.Form", b =>
+                {
+                    b.HasOne("HPA.SurveyFlow.Domain.Entities.Form", "ParentForm")
+                        .WithMany("ChildForms")
+                        .HasForeignKey("ParentFormId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ParentForm");
+                });
+
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.FormAllowedRole", b =>
                 {
                     b.HasOne("HPA.SurveyFlow.Domain.Entities.Form", "Form")
@@ -582,18 +606,13 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.Form", b =>
-                {
-                    b.HasOne("HPA.SurveyFlow.Domain.Entities.Form", "ParentForm")
-                        .WithMany("ChildForms")
-                        .HasForeignKey("ParentFormId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("ParentForm");
-                });
-
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.FormSubmission", b =>
                 {
+                    b.HasOne("HPA.SurveyFlow.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HPA.SurveyFlow.Domain.Entities.Form", "Form")
                         .WithMany("Submissions")
                         .HasForeignKey("FormId")
@@ -608,6 +627,8 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.HasOne("HPA.SurveyFlow.Domain.Entities.User", "User")
                         .WithMany("Submissions")
                         .HasForeignKey("UserId");
+
+                    b.Navigation("DeletedByUser");
 
                     b.Navigation("Form");
 

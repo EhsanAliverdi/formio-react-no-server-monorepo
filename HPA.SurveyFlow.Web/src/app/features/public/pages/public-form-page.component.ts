@@ -12,9 +12,12 @@ import {
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormService } from '../../../core/services/form.service';
+import { SettingsService } from '../../../core/services/settings.service';
+import { SiteSettings } from '../../../core/models';
 import { Formio } from 'formiojs';
 import { take } from 'rxjs/operators';
 import { patchSchemaUrls } from '../../../core/utils/schema-patch';
+import { scheduleAbnormalAnswerColors } from '../../../core/utils/abnormal-answer-colors';
 
 type Panel = { key: string; title: string; label: string; breadcrumb: string; components: any[] };
 
@@ -49,8 +52,23 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="min-h-screen bg-gray-50 flex items-start justify-center py-8 px-4">
-      <div class="w-full max-w-3xl bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <div class="flex min-h-screen flex-col bg-gray-50">
+      @if (showPublicFormLogo()) {
+        <header class="px-4 pt-4 sm:px-6">
+          <a href="/" class="inline-flex items-center">
+            <img
+              [src]="publicLogo().src"
+              [alt]="publicLogo().alt"
+              class="object-contain"
+              [style.width.px]="publicLogo().width"
+              [style.height.px]="publicLogo().height"
+            />
+          </a>
+        </header>
+      }
+
+      <main class="flex flex-1 items-start justify-center px-4 py-8">
+        <div class="w-full max-w-3xl bg-white rounded-xl border border-gray-200 shadow-sm p-6">
 
         @if (loading()) {
           <div class="flex justify-center py-16">
@@ -149,16 +167,31 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
                 </button>
               }
               @if (step() === panels().length - 1) {
-                <button type="button" (click)="handleSubmitClick()" [disabled]="submitting()"
+                <button type="button" (click)="nextStep()" [disabled]="submitting()"
                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition">
                   @if (submitting()) { Submitting… } @else { Submit }
                 </button>
               }
             </div>
           }
+          @if (!isWizard()) {
+            <div class="mt-4 flex gap-3">
+              <button type="button" (click)="nextStep()" [disabled]="submitting()"
+                class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition">
+                @if (submitting()) { Submitting… } @else { Submit }
+              </button>
+            </div>
+          }
         }
 
-      </div>
+        </div>
+      </main>
+
+      @if (showCopyright()) {
+        <footer class="px-4 pb-6 text-center text-xs text-gray-500">
+          {{ copyrightText() }}
+        </footer>
+      }
     </div>
   `,
 })
@@ -167,6 +200,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
 
   private route = inject(ActivatedRoute);
   private formService = inject(FormService);
+  private settingsService = inject(SettingsService);
   private zone = inject(NgZone);
 
   form = signal<any>(null);
@@ -176,12 +210,25 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
   previewOpen = signal(false);
   step = signal(0);
   previewItems = signal<{ key: string; label: string; value: string }[]>([]);
+  siteSettings = signal<SiteSettings | null>(null);
 
   panels = computed<Panel[]>(() => getPanels(this.form()));
   isWizard = computed(() => this.form()?.display === 'wizard' || this.panels().length > 0);
   formTitle = computed(() => this.form()?.title || this.form()?.name || '');
   publicDescription = computed(() => this.form()?.appSettings?.publicDescription?.trim() || null);
   appSettings = computed(() => this.form()?.appSettings ?? {});
+  copyrightText = computed(() => this.siteSettings()?.copyrightText?.trim() || null);
+  showCopyright = computed(() => !!this.siteSettings()?.showCopyright && !!this.copyrightText());
+  showPublicFormLogo = computed(() => !!this.siteSettings()?.showPublicFormLogo);
+  publicLogo = computed(() => {
+    const settings = this.siteSettings();
+    return {
+      src: settings?.logoExpandedLightUrl?.trim() || '/images/logo/logo.svg',
+      alt: settings?.siteName?.trim() || 'SurveyFlow',
+      width: Number(settings?.logoExpandedWidth) || 170,
+      height: Number(settings?.logoExpandedHeight) || 40,
+    };
+  });
 
   panelTitle = panelTitle;
 
@@ -190,6 +237,8 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
   private labelMap: Record<string, string> = {};
 
   ngOnInit(): void {
+    this.settingsService.getSiteSettings().subscribe({ next: s => this.siteSettings.set(s), error: () => {} });
+
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) { this.loading.set(false); return; }
     this.formService.get(+id, 'public').subscribe({
@@ -234,6 +283,9 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
       noDefaultSubmitButton: true,
     }).then((instance: any) => {
       this.formInstance = instance;
+      if (this.appSettings().showColorCodedAnswers) {
+        scheduleAbnormalAnswerColors(this.containerRef.nativeElement, schema);
+      }
       instance.on('submit', (submission: any) => {
         const data = submission?.data ?? submission;
         this.pendingData = { ...(this.pendingData ?? {}), ...data };
@@ -305,7 +357,11 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         this.submitting.set(false);
-        const msg = this.appSettings().messageOnError || err?.error?.message || 'Failed to submit form.';
+        const msg = this.applyMessagePlaceholders(
+          this.appSettings().messageOnError || err?.error?.message || 'Failed to submit form.',
+          'error',
+          err?.error
+        );
         this.submitResult.set({ level: 'error', message: msg });
       },
     });
@@ -331,7 +387,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
       redirect = settings.redirectOnSuccess;
     }
 
-    this.submitResult.set({ level, message });
+    this.submitResult.set({ level, message: this.applyMessagePlaceholders(message, level, res) });
 
     if (redirect) {
       // Always navigate after 20 seconds — user sees the message first
@@ -351,5 +407,32 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
     if (!raw) return null;
     const id = Number(raw);
     return Number.isFinite(id) && id > 0 ? id : null;
+  }
+
+  private applyMessagePlaceholders(message: string, level: 'success' | 'warning' | 'error', res: any): string {
+    const abnormalities: any[] = Array.isArray(res?.abnormalities) ? res.abnormalities : [];
+    const errors = abnormalities.filter(a => a?.level === 'error');
+    const warnings = abnormalities.filter(a => a?.level === 'warning');
+    const formatQuestion = (a: any) => a?.label || a?.key || 'Question';
+    const formatAnswer = (a: any) => `${formatQuestion(a)}: ${this.valueToText(a?.actual_value)}`;
+
+    return (message || '')
+      .replaceAll('{{outcome}}', level)
+      .replaceAll('{{submission_id}}', String(res?.id ?? ''))
+      .replaceAll('{{error_count}}', String(res?.error_count ?? errors.length))
+      .replaceAll('{{warning_count}}', String(res?.warning_count ?? warnings.length))
+      .replaceAll('{{abnormal_questions}}', abnormalities.map(formatQuestion).join(', '))
+      .replaceAll('{{error_questions}}', errors.map(formatQuestion).join(', '))
+      .replaceAll('{{warning_questions}}', warnings.map(formatQuestion).join(', '))
+      .replaceAll('{{abnormal_answers}}', abnormalities.map(formatAnswer).join(', '))
+      .replaceAll('{{error_answers}}', errors.map(formatAnswer).join(', '))
+      .replaceAll('{{warning_answers}}', warnings.map(formatAnswer).join(', '));
+  }
+
+  private valueToText(value: any): string {
+    if (value == null) return '';
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
   }
 }

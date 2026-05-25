@@ -17,12 +17,12 @@ public class DashboardController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> GetStats()
     {
         var totalForms = await db.Forms.CountAsync();
-        var totalSubmissions = await db.FormSubmissions.CountAsync();
-        var submittedForms = await db.FormSubmissions.Select(s => s.FormId).Distinct().CountAsync();
+        var totalSubmissions = await db.FormSubmissions.CountAsync(s => s.DeletedAt == null);
+        var submittedForms = await db.FormSubmissions.Where(s => s.DeletedAt == null).Select(s => s.FormId).Distinct().CountAsync();
         var today = DateTime.UtcNow.Date;
-        var submissionsToday = await db.FormSubmissions.CountAsync(s => s.SubmittedAt >= today);
+        var submissionsToday = await db.FormSubmissions.CountAsync(s => s.DeletedAt == null && s.SubmittedAt >= today);
         var last7Days = DateTime.UtcNow.AddDays(-7);
-        var submissionsLast7Days = await db.FormSubmissions.CountAsync(s => s.SubmittedAt >= last7Days);
+        var submissionsLast7Days = await db.FormSubmissions.CountAsync(s => s.DeletedAt == null && s.SubmittedAt >= last7Days);
 
         return Ok(new
         {
@@ -45,6 +45,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
         var recentSubmissions = await db.FormSubmissions
             .Include(s => s.Form)
             .Include(s => s.User)
+            .Where(s => s.DeletedAt == null)
             .OrderByDescending(s => s.SubmittedAt)
             .Take(limit)
             .ToListAsync();
@@ -72,7 +73,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
 
         var updatedSubmissions = await db.FormSubmissions
             .Include(s => s.Form)
-            .Where(s => s.UpdatedAt != null)
+            .Where(s => s.DeletedAt == null && s.UpdatedAt != null)
             .OrderByDescending(s => s.UpdatedAt)
             .Take(limit)
             .ToListAsync();

@@ -55,6 +55,12 @@ export class SubmissionService {
     );
   }
 
+  deleteAdmin(id: number): Observable<{ success: boolean; deleted_count: number; root_submission_id: number }> {
+    return this.http.delete<{ success: boolean; deleted_count: number; root_submission_id: number }>(
+      this.api.apiUrl(`/api/submissions/${id}`)
+    );
+  }
+
   exportAdminPdf(html: string, fileName: string): Observable<Blob> {
     return this.http.post(
       this.api.apiUrl('/api/pdf-exports'),

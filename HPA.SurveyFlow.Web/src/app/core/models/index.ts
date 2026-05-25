@@ -95,6 +95,9 @@ export interface SiteSettings {
   logoExpandedWidth?: string;
   logoExpandedHeight?: string;
   logoCollapsedSize?: string;
+  copyrightText?: string;
+  showCopyright: boolean;
+  showPublicFormLogo: boolean;
 }
 
 export interface AdminStats {

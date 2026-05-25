@@ -11,6 +11,9 @@ public class FormSubmission
     public DateTime? UpdatedAt { get; set; }
     public int? UpdatedBy { get; set; }
     public string? EditHistory { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public int? DeletedBy { get; set; }
+    public string? DeleteReason { get; set; }
 
     // secondary submit tracking
     public string? SecondarySubmitStatus { get; set; }    // null | "pending" | "success" | "failed"
@@ -21,4 +24,5 @@ public class FormSubmission
     public FormSubmission? ParentSubmission { get; set; }
     public ICollection<FormSubmission> ChildSubmissions { get; set; } = [];
     public User? User { get; set; }
+    public User? DeletedByUser { get; set; }
 }

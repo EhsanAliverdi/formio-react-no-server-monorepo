@@ -16,6 +16,7 @@ import { FormService } from '../../../core/services/form.service';
 import { Formio } from 'formiojs';
 import { take } from 'rxjs/operators';
 import { patchSchemaUrls } from '../../../core/utils/schema-patch';
+import { scheduleAbnormalAnswerColors } from '../../../core/utils/abnormal-answer-colors';
 
 type Panel = { key: string; title: string; label: string; breadcrumb: string; components: any[] };
 
@@ -153,11 +154,19 @@ function buildLabelMap(schema: any): Record<string, string> {
               </button>
             }
             @if (step() === panels().length - 1) {
-              <button type="button" (click)="handleSubmitClick()" [disabled]="submitting()"
+              <button type="button" (click)="nextStep()" [disabled]="submitting()"
                 class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition">
                 @if (submitting()) { Submitting… } @else { Submit }
               </button>
             }
+          </div>
+        }
+        @if (!isWizard()) {
+          <div class="mt-4 flex gap-3">
+            <button type="button" (click)="nextStep()" [disabled]="submitting()"
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition">
+              @if (submitting()) { Submitting… } @else { Submit }
+            </button>
           </div>
         }
       }
@@ -247,6 +256,9 @@ export class FillFormComponent implements OnInit, OnDestroy {
       noDefaultSubmitButton: true,
     }).then((instance: any) => {
       this.formInstance = instance;
+      if (this.appSettings().showColorCodedAnswers) {
+        scheduleAbnormalAnswerColors(this.containerRef.nativeElement, schema);
+      }
       instance.on('submit', (submission: any) => {
         const data = submission?.data ?? submission;
         this.pendingData = { ...(this.pendingData ?? {}), ...data };

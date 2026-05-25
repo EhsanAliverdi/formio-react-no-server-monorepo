@@ -34,7 +34,8 @@ public class DataSourceController(AppDbContext db) : ControllerBase
         [FromQuery] string? location = null,
         [FromQuery] string? parentId = null,
         [FromQuery] bool    active   = true,
-        [FromQuery] int     limit    = 300)
+        [FromQuery] int     limit    = 300,
+        [FromQuery] string? valueField = null)
     {
         var query = db.ExternalAssets.Where(a => a.Source == source);
 
@@ -56,14 +57,36 @@ public class DataSourceController(AppDbContext db) : ControllerBase
             query = query.Where(a =>
                 a.DisplayName.ToLower().Contains(ql) ||
                 a.ExternalId.ToLower().Contains(ql) ||
+                (a.RawJson != null && a.RawJson.ToLower().Contains(ql)) ||
                 (a.Category != null && a.Category.ToLower().Contains(ql)));
         }
 
-        var items = await query
+        var assets = await query
             .OrderBy(a => a.DisplayName)
             .Take(limit)
-            .Select(a => new { value = a.ExternalId, label = a.DisplayName })
+            .Select(a => new { a.Id, a.ExternalId, a.DisplayName, a.RawJson })
             .ToListAsync();
+
+        var items = assets.Select(a =>
+        {
+            var rawValue = ResolveOptionValue(a.Id, a.ExternalId, a.RawJson, valueField);
+            var assetNumber = ReadRawString(a.RawJson, "assetNumber", "AssetNumber");
+            var description = ReadRawString(a.RawJson, "assetDescription", "AssetDescription");
+            var labelParts = new[] { assetNumber, a.ExternalId, a.DisplayName, description }
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            return new
+            {
+                value = string.IsNullOrWhiteSpace(rawValue) ? a.ExternalId : rawValue,
+                label = string.Join(" - ", labelParts),
+                id = a.Id,
+                external_id = a.ExternalId,
+                externalId = a.ExternalId,
+                assetNumber,
+                assetDescription = description,
+            };
+        }).ToList();
 
         return Ok(items);
     }
@@ -77,6 +100,44 @@ public class DataSourceController(AppDbContext db) : ControllerBase
         [FromQuery] string? location = null,
         [FromQuery] string? parentId = null,
         [FromQuery] bool    active   = true,
-        [FromQuery] int     limit    = 300)
-        => Query(source, q, category, location, parentId, active, limit);
+        [FromQuery] int     limit    = 300,
+        [FromQuery] string? valueField = null)
+        => Query(source, q, category, location, parentId, active, limit, valueField);
+
+    private static string? ResolveOptionValue(int id, string externalId, string? rawJson, string? valueField)
+    {
+        if (string.IsNullOrWhiteSpace(valueField))
+            return externalId;
+
+        return valueField switch
+        {
+            "id" or "localId" => id.ToString(),
+            "externalId" or "external_id" or "assetId" => externalId,
+            _ => ReadRawString(rawJson, valueField),
+        };
+    }
+
+    private static string? ReadRawString(string? rawJson, params string?[] keys)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson))
+            return null;
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+                return null;
+
+            foreach (var key in keys.Where(k => !string.IsNullOrWhiteSpace(k)))
+            {
+                if (doc.RootElement.TryGetProperty(key!, out var value))
+                    return value.ValueKind == System.Text.Json.JsonValueKind.String
+                        ? value.GetString()
+                        : value.ToString();
+            }
+        }
+        catch { }
+
+        return null;
+    }
 }

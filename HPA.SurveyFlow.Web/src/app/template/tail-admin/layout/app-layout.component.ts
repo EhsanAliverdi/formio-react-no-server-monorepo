@@ -31,10 +31,17 @@ import { ThemeService } from '../services/theme.service';
           (signOut)="signOut.emit()"
         />
         <div class="flex-1 overflow-y-auto overflow-x-hidden">
-          <div class="p-4 mx-auto max-w-screen-2xl md:p-6">
-            <router-outlet />
+          <div class="mx-auto flex min-h-full max-w-screen-2xl flex-col p-4 md:p-6">
+            <div class="flex-1">
+              <router-outlet />
+            </div>
           </div>
         </div>
+        @if (showCopyright && copyrightText) {
+          <footer class="w-full border-t border-gray-200 bg-white px-4 py-3 text-center text-xs text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 lg:px-6">
+            {{ copyrightText }}
+          </footer>
+        }
       </div>
     </div>
   `,
@@ -45,6 +52,8 @@ export class AppLayoutComponent {
   @Input() user?: HeaderUser;
   @Input() profileHref?: string;
   @Input() loginHref?: string;
+  @Input() copyrightText?: string | null;
+  @Input() showCopyright = false;
   @Output() signOut = new EventEmitter<void>();
 
   sidebar = inject(SidebarService);

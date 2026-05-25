@@ -26,6 +26,8 @@ import type { HeaderUser } from '../../template/tail-admin/layout/app-header.com
         [branding]="branding()"
         [user]="headerUser()"
         profileHref="/admin/profile"
+        [copyrightText]="copyrightText()"
+        [showCopyright]="showCopyright()"
         (signOut)="logout()"
       />
     }
@@ -82,6 +84,9 @@ export class AdminLayoutComponent implements OnInit {
       collapsedSize: Number(settings?.logoCollapsedSize) || 40,
     };
   });
+
+  copyrightText = computed(() => this.siteSettings()?.copyrightText?.trim() || null);
+  showCopyright = computed(() => !!this.siteSettings()?.showCopyright && !!this.copyrightText());
 
   ngOnInit(): void {
     this.settingsService.getSiteSettings().subscribe({ next: s => this.siteSettings.set(s), error: () => {} });

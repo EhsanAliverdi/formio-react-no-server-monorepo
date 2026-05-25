@@ -83,7 +83,20 @@ const PAGE_SIZE = 25;
                 @for (r of rows(); track r.id) {
                   <tr class="border-t border-gray-100 hover:bg-gray-50 transition cursor-pointer"
                     (click)="openDetail(r.id)">
-                    <td class="px-5 py-4 text-gray-500 text-xs">#{{ r.id }}</td>
+                    <td class="px-5 py-4 text-gray-500 text-xs">
+                      <div class="flex items-center gap-2">
+                        @if ((r.child_submissions?.length ?? 0) > 0) {
+                          <button type="button"
+                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                            (click)="toggleChildren(r.id); $event.stopPropagation()">
+                            {{ childrenExpanded().has(r.id) ? '-' : '+' }}
+                          </button>
+                        } @else {
+                          <span class="inline-block h-6 w-6"></span>
+                        }
+                        <span>#{{ r.id }}</span>
+                      </div>
+                    </td>
                     <td class="px-5 py-4 font-medium text-gray-800">{{ r.form_name }}</td>
                     <td class="px-5 py-4">
                       <div class="flex flex-wrap gap-1">
@@ -124,8 +137,14 @@ const PAGE_SIZE = 25;
                         (click)="openDetail(r.id)">
                         View
                       </button>
+                      <button type="button"
+                        class="ml-2 rounded border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition"
+                        (click)="deleteSubmission(r)">
+                        Delete
+                      </button>
                     </td>
                   </tr>
+                  @if (childrenExpanded().has(r.id)) {
                   @for (child of r.child_submissions ?? []; track child.id) {
                     <tr class="border-t border-gray-100 bg-indigo-50/30 hover:bg-indigo-50 transition cursor-pointer"
                       (click)="openDetail(child.id)">
@@ -173,6 +192,7 @@ const PAGE_SIZE = 25;
                       </td>
                     </tr>
                   }
+                  }
                 }
               }
             </tbody>
@@ -212,6 +232,7 @@ export class SubmissionsComponent implements OnInit, OnDestroy {
   fromDate = signal('');
   toDate = signal('');
   forms = signal<{ id: number; name: string }[]>([]);
+  childrenExpanded = signal<Set<number>>(new Set());
 
   totalPages = computed(() => Math.max(1, Math.ceil(this.total() / PAGE_SIZE)));
   paginationFrom = computed(() => this.total() === 0 ? 0 : (this.page() - 1) * PAGE_SIZE + 1);
@@ -277,6 +298,24 @@ export class SubmissionsComponent implements OnInit, OnDestroy {
 
   openDetail(id: number): void {
     this.router.navigate(['/admin/submissions', id]);
+  }
+
+  toggleChildren(id: number): void {
+    const next = new Set(this.childrenExpanded());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.childrenExpanded.set(next);
+  }
+
+  deleteSubmission(row: AdminSubmission): void {
+    const childCount = row.child_submissions?.length ?? 0;
+    const suffix = childCount > 0 ? ` and ${childCount} sub form submission(s)` : '';
+    if (!window.confirm(`Delete submission #${row.id}${suffix}? This is a soft delete and keeps the audit log.`)) return;
+
+    this.submissionService.deleteAdmin(row.id).subscribe({
+      next: () => this.loadSubmissions(),
+      error: (err) => this.error.set(err?.error?.error || 'Failed to delete submission.'),
+    });
   }
 
   onQInput(event: Event): void { this.searchSubject.next((event.target as HTMLInputElement).value); }

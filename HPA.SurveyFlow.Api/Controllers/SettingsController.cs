@@ -32,6 +32,9 @@ public class SettingsController(AppDbContext db) : ControllerBase
         if (body.LogoExpandedWidth != null) updates["logoExpandedWidth"] = body.LogoExpandedWidth;
         if (body.LogoExpandedHeight != null) updates["logoExpandedHeight"] = body.LogoExpandedHeight;
         if (body.LogoCollapsedSize != null) updates["logoCollapsedSize"] = body.LogoCollapsedSize;
+        if (body.CopyrightText != null) updates["copyrightText"] = body.CopyrightText;
+        if (body.ShowCopyright != null) updates["showCopyright"] = body.ShowCopyright.Value ? "true" : "false";
+        if (body.ShowPublicFormLogo != null) updates["showPublicFormLogo"] = body.ShowPublicFormLogo.Value ? "true" : "false";
 
         foreach (var (key, value) in updates)
         {
@@ -77,7 +80,13 @@ public class SettingsController(AppDbContext db) : ControllerBase
             LogoCollapsedUrl = dict.GetValueOrDefault("logoCollapsedUrl"),
             LogoExpandedWidth = dict.GetValueOrDefault("logoExpandedWidth"),
             LogoExpandedHeight = dict.GetValueOrDefault("logoExpandedHeight"),
-            LogoCollapsedSize = dict.GetValueOrDefault("logoCollapsedSize")
+            LogoCollapsedSize = dict.GetValueOrDefault("logoCollapsedSize"),
+            CopyrightText = dict.GetValueOrDefault("copyrightText"),
+            ShowCopyright = ParseBool(dict.GetValueOrDefault("showCopyright")),
+            ShowPublicFormLogo = ParseBool(dict.GetValueOrDefault("showPublicFormLogo"))
         };
     }
+
+    private static bool ParseBool(string? value) =>
+        bool.TryParse(value, out var parsed) && parsed;
 }

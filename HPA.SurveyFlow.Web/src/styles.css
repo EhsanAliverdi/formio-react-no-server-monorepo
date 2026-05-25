@@ -187,8 +187,59 @@
 .component-btn-group .component-settings-button {
   @apply inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50;
 }
+
+.formio-scope .sf-answer-choice {
+  @apply rounded-md border px-2 py-1 transition;
+}
+
+.formio-scope .sf-answer-normal {
+  @apply border-green-200 bg-green-50 text-green-800;
+}
+
+.formio-scope .sf-answer-normal .form-check-input,
+.formio-scope .sf-answer-normal input[type="radio"],
+.formio-scope .sf-answer-normal input[type="checkbox"] {
+  accent-color: #16a34a;
+}
+
+.formio-scope .sf-answer-warning {
+  @apply border-amber-200 bg-amber-50 text-amber-800;
+}
+
+.formio-scope .sf-answer-warning .form-check-input,
+.formio-scope .sf-answer-warning input[type="radio"],
+.formio-scope .sf-answer-warning input[type="checkbox"] {
+  accent-color: #d97706;
+}
+
+.formio-scope .sf-answer-error {
+  @apply border-red-200 bg-red-50 text-red-800;
+}
+
+.formio-scope .sf-answer-error .form-check-input,
+.formio-scope .sf-answer-error input[type="radio"],
+.formio-scope .sf-answer-error input[type="checkbox"] {
+  accent-color: #dc2626;
+}
+
+.formio-scope select.sf-answer-select.sf-answer-normal {
+  @apply border-green-300 bg-green-50 text-green-800;
+  border-color: #86efac !important;
+}
+
+.formio-scope select.sf-answer-select.sf-answer-warning {
+  @apply border-amber-300 bg-amber-50 text-amber-800;
+  border-color: #fcd34d !important;
+}
+
+.formio-scope select.sf-answer-select.sf-answer-error {
+  @apply border-red-300 bg-red-50 text-red-800;
+  border-color: #fca5a5 !important;
+}
 .wizard-pages { @apply mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2; }
 .wizard-page-label { @apply cursor-pointer rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50; }
+.wizard-page-label .sf-wizard-page-actions { @apply ml-2 inline-flex items-center gap-1 align-middle; }
+.wizard-page-label .sf-wizard-page-actions button { @apply rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800; }
 
 /* Builder component editor */
 .component-edit-container { @apply text-sm; }

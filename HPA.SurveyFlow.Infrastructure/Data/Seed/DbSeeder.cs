@@ -27,6 +27,9 @@ public static class DbSeeder
             ["logoExpandedWidth"] = "170",
             ["logoExpandedHeight"] = "40",
             ["logoCollapsedSize"] = "40",
+            ["copyrightText"] = "",
+            ["showCopyright"] = "false",
+            ["showPublicFormLogo"] = "false",
         };
 
         foreach (var (key, value) in defaultSettings)
@@ -150,16 +153,54 @@ public static class DbSeeder
         }
 
         await db.SaveChangesAsync();
-        await LinkDemoSubFormsAsync(db);
+        await LinkEquipmentMexFlowDemosAsync(db);
+        await RetireOldSeedFormsAsync(db);
+        await db.SaveChangesAsync();
     }
 
-    private static async Task LinkDemoSubFormsAsync(AppDbContext db)
+    private static async Task LinkEquipmentMexFlowDemosAsync(AppDbContext db)
     {
-        var parent = await db.Forms.FirstOrDefaultAsync(f => f.Name == DemoSubFormSeedData.ParentFormName);
-        var acknowledgement = await db.Forms.FirstOrDefaultAsync(f => f.Name == DemoSubFormSeedData.AcknowledgementFormName);
-        if (parent is null || acknowledgement is null) return;
+        foreach (var definition in DemoEquipmentMexFlowSeedData.Definitions)
+        {
+            var parent = await db.Forms.FirstOrDefaultAsync(f => f.Name == definition.ParentFormName);
+            var acknowledgement = await db.Forms.FirstOrDefaultAsync(f => f.Name == definition.AcknowledgementFormName);
+            if (parent is null || acknowledgement is null) continue;
 
-        acknowledgement.ParentFormId = parent.Id;
-        parent.Json = DemoSubFormSeedData.CreateParent(acknowledgement.Id).Schema.GetRawText();
+            acknowledgement.ParentFormId = parent.Id;
+            parent.Json = DemoEquipmentMexFlowSeedData.CreateParent(definition, acknowledgement.Id).Schema.GetRawText();
+        }
+    }
+
+    private static async Task RetireOldSeedFormsAsync(AppDbContext db)
+    {
+        var retiredNames = PreStartFormsSeedData.RetiredSeedFormNames
+            .Except(PreStartFormsSeedData.ActiveSeedFormNames, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (retiredNames.Count == 0) return;
+
+        var retiredForms = await db.Forms
+            .Where(f => retiredNames.Contains(f.Name))
+            .ToListAsync();
+
+        if (retiredForms.Count == 0) return;
+
+        var formIdsWithSubmissions = await db.FormSubmissions
+            .Where(s => retiredForms.Select(f => f.Id).Contains(s.FormId))
+            .Select(s => s.FormId)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var form in retiredForms)
+        {
+            if (formIdsWithSubmissions.Contains(form.Id))
+            {
+                form.Visibility = "restricted";
+                form.AllowAnonymousSubmit = false;
+                continue;
+            }
+
+            db.Forms.Remove(form);
+        }
     }
 }

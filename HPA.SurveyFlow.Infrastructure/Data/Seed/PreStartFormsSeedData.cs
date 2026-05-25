@@ -9,19 +9,28 @@ internal static class PreStartFormsSeedData
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public static IReadOnlyList<SeedForm> Forms { get; } =
-    [
-        DemoDynamicDropdownFormSeedData.Create(),
-        DemoAssetFormSeedData.Create(),
-        DemoFaultReportSeedData.Create(),
-        DemoAbnormalityMexSeedData.Create(),
-        DemoSubFormSeedData.CreateParent(),
-        DemoSubFormSeedData.CreateAcknowledgement(),
-        CreateForkliftPreStartChecklist(),
-        CreateReachStackerPreStartChecklist(),
-        CreateShuttleStraddlePreStartChecklist(),
-        CreateLightVehiclePreStartChecklist(),
-        CreateQuayCranePreStartChecklist(),
-    ];
+        DemoEquipmentMexFlowSeedData.CreateInitialForms();
+
+    public static IReadOnlySet<string> ActiveSeedFormNames { get; } =
+        Forms.Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    public static IReadOnlySet<string> RetiredSeedFormNames { get; } =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            DemoDynamicDropdownFormSeedData.FormName,
+            DemoAssetFormSeedData.FormName,
+            DemoFaultReportSeedData.FormName,
+            DemoAbnormalityMexSeedData.FormName,
+            DemoSubFormSeedData.ParentFormName,
+            DemoSubFormSeedData.AcknowledgementFormName,
+            DemoForkliftMexFlowSeedData.ParentFormName,
+            DemoForkliftMexFlowSeedData.WarningAcknowledgementFormName,
+            "Forklift Pre-Start Checklist",
+            "Reach Stacker Pre-Start Checklist",
+            "Shuttle & Straddle Pre-Start Checklist",
+            "Light Vehicle Pre-Start Checklist",
+            "Quay Crane Pre-Start Checklist",
+        };
 
     private static SeedForm CreateForkliftPreStartChecklist()
     {

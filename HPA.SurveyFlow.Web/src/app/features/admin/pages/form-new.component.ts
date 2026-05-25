@@ -6,11 +6,12 @@ import { FormService } from '../../../core/services/form.service';
 import { UserService } from '../../../core/services/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { FormEditorComponent } from '../../../shared/components/formio/form-editor.component';
+import { IntegrationPayloadMappingComponent } from '../../../shared/components/integration-payload-mapping/integration-payload-mapping.component';
 import { Form, User } from '../../../core/models';
 
 type WizardPanel = { key: string; title: string };
 type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
-type SecondarySubmitConfig = { enabled: boolean; integration: string; action: string };
+type SecondarySubmitConfig = { enabled: boolean; integration: string; action: string; fieldMappings?: Record<string, any> };
 type ResultActionMode = 'stay' | 'redirect' | 'next_form';
 type ResultActionConfig = { mode: ResultActionMode; delaySeconds: number };
 type EmailNotificationConfig = { enabled: boolean; to: string; subject: string; bodyHtml: string; attachPdf: boolean };
@@ -99,7 +100,7 @@ function ensureWizardHasPage(schema: any): any {
 @Component({
   selector: 'app-admin-form-new',
   standalone: true,
-  imports: [CommonModule, FormsModule, FormEditorComponent],
+  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent],
   template: `
     <div class="p-6">
       <!-- Header -->
@@ -207,6 +208,17 @@ function ensureWizardHasPage(schema: any): any {
             <input type="checkbox" [(ngModel)]="appSettings.allowSubmissionPdfExport"
               class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
             <span class="text-sm text-gray-700">Allow submission PDF export</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="appSettings.showColorCodedAnswers"
+              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+            <span class="flex items-center gap-2 text-sm text-gray-700">
+              Show color-coded answers while filling
+              <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                title="When enabled, answers configured in the Abnormalities tab are highlighted for people filling the form: green for normal, amber for warning, and red for critical/error.">
+                ?
+              </span>
+            </span>
           </label>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Public description</label>
@@ -318,6 +330,10 @@ function ensureWizardHasPage(schema: any): any {
                           <option value="create_request">Create Request</option>
                         </select>
                       </div>
+                      <app-integration-payload-mapping
+                        [config]="secondarySubmitConfigs[outcome.value]"
+                        [formSchema]="currentSchema"
+                      />
                     </div>
                   </div>
                 }
@@ -408,7 +424,7 @@ function ensureWizardHasPage(schema: any): any {
       </div>
 
       <!-- Wizard page management -->
-      @if (formDisplay === 'wizard') {
+      @if (false && formDisplay === 'wizard') {
         <div class="mb-4 bg-white rounded-xl border border-gray-200 p-4">
           <div class="flex items-center gap-2 flex-wrap">
             @for (panel of wizardPanels(); track panel.key; let i = $index) {

@@ -92,12 +92,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(fs => fs.UpdatedAt).HasColumnName("updated_at");
             e.Property(fs => fs.UpdatedBy).HasColumnName("updated_by");
             e.Property(fs => fs.EditHistory).HasColumnName("edit_history");
+            e.Property(fs => fs.DeletedAt).HasColumnName("deleted_at");
+            e.Property(fs => fs.DeletedBy).HasColumnName("deleted_by");
+            e.Property(fs => fs.DeleteReason).HasColumnName("delete_reason");
             e.Property(fs => fs.SecondarySubmitStatus).HasColumnName("secondary_submit_status");
             e.Property(fs => fs.SecondarySubmitResponse).HasColumnName("secondary_submit_response");
             e.Property(fs => fs.SecondarySubmitAt).HasColumnName("secondary_submit_at");
             e.HasOne(fs => fs.Form).WithMany(f => f.Submissions).HasForeignKey(fs => fs.FormId);
             e.HasOne(fs => fs.ParentSubmission).WithMany(fs => fs.ChildSubmissions).HasForeignKey(fs => fs.ParentSubmissionId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(fs => fs.User).WithMany(u => u.Submissions).HasForeignKey(fs => fs.UserId);
+            e.HasOne(fs => fs.DeletedByUser).WithMany().HasForeignKey(fs => fs.DeletedBy).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<SiteSetting>(e =>

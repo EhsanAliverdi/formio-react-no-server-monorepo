@@ -213,6 +213,7 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
   private builder: any = null;
   private sidebarCleanup: (() => void) | null = null;
   private dialogObserver: MutationObserver | null = null;
+  private wizardHeaderObserver: MutationObserver | null = null;
   private lastEmittedJson: string | null = null;
   private lastAppliedJson: string | null = null;
 
@@ -237,7 +238,10 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
   ngOnDestroy(): void {
     this.sidebarCleanup?.();
     this.dialogObserver?.disconnect();
+    this.wizardHeaderObserver?.disconnect();
     this.dialogObserver = null;
+    this.wizardHeaderObserver = null;
+    this.containerRef?.nativeElement?.removeEventListener('click', this.onWizardHeaderClick);
     document.body.classList.remove('formio-dialog-open');
     this.builder?.destroy(true);
     this.builder = null;
@@ -307,6 +311,99 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
         document.body.classList.toggle('formio-dialog-open', hasDialog);
       });
       this.dialogObserver.observe(document.body, { childList: true });
+      this.installWizardHeaderEditing();
     });
+  }
+
+  private installWizardHeaderEditing(): void {
+    const root = this.containerRef.nativeElement;
+    const render = () => this.renderWizardHeaderEditing();
+    render();
+    this.wizardHeaderObserver?.disconnect();
+    this.wizardHeaderObserver = new MutationObserver(render);
+    this.wizardHeaderObserver.observe(root, { childList: true, subtree: true });
+    root.addEventListener('click', this.onWizardHeaderClick);
+  }
+
+  private onWizardHeaderClick = (event: Event): void => {
+    const button = (event.target as HTMLElement)?.closest<HTMLButtonElement>('[data-sf-wizard-action]');
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const action = button.dataset['sfWizardAction'];
+    const index = Number(button.dataset['sfWizardIndex']);
+    if (!Number.isFinite(index)) return;
+
+    if (action === 'rename') this.renameWizardPage(index);
+    if (action === 'delete') this.deleteWizardPage(index);
+    if (action === 'left') this.moveWizardPage(index, -1);
+    if (action === 'right') this.moveWizardPage(index, 1);
+  };
+
+  private renderWizardHeaderEditing(): void {
+    const root = this.containerRef?.nativeElement;
+    if (!root) return;
+
+    const header = root.querySelector<HTMLElement>('.wizard-pages');
+    if (!header || header.dataset['sfWizardEditable'] === 'true') return;
+
+    const items = Array.from(header.querySelectorAll<HTMLElement>('li:not(.wizard-add-page)'));
+    if (!items.length) return;
+    header.dataset['sfWizardEditable'] = 'true';
+    items.forEach((item, index) => {
+      const label = item.querySelector<HTMLElement>('.wizard-page-label');
+      if (!label || label.querySelector('[data-sf-wizard-action]')) return;
+
+      label.insertAdjacentHTML('beforeend', `
+        <span class="sf-wizard-page-actions">
+          <button type="button" data-sf-wizard-action="rename" data-sf-wizard-index="${index}" title="Rename page">Edit</button>
+          <button type="button" data-sf-wizard-action="delete" data-sf-wizard-index="${index}" title="Delete page">Delete</button>
+          ${index > 0 ? `<button type="button" data-sf-wizard-action="left" data-sf-wizard-index="${index}" title="Move page left">Left</button>` : ''}
+          ${index < items.length - 1 ? `<button type="button" data-sf-wizard-action="right" data-sf-wizard-index="${index}" title="Move page right">Right</button>` : ''}
+        </span>
+      `);
+    });
+  }
+
+  private renameWizardPage(index: number): void {
+    const schema = structuredClone(this.getSchema());
+    const components = Array.isArray(schema.components) ? schema.components : [];
+    const current = components[index];
+    if (!current) return;
+
+    const title = prompt('Rename page:', current.breadcrumb || current.title || current.label || `Page ${index + 1}`);
+    if (!title?.trim()) return;
+
+    components[index] = { ...current, breadcrumb: title.trim(), title: title.trim(), label: title.trim() };
+    this.applyWizardSchema(schema);
+  }
+
+  private deleteWizardPage(index: number): void {
+    const schema = structuredClone(this.getSchema());
+    const components = Array.isArray(schema.components) ? schema.components : [];
+    if (components.length <= 1 || !components[index]) return;
+    if (!confirm('Delete this wizard page? Components on the page will be removed.')) return;
+
+    components.splice(index, 1);
+    this.applyWizardSchema(schema);
+  }
+
+  private moveWizardPage(index: number, direction: -1 | 1): void {
+    const schema = structuredClone(this.getSchema());
+    const components = Array.isArray(schema.components) ? schema.components : [];
+    const target = index + direction;
+    if (target < 0 || target >= components.length) return;
+
+    [components[index], components[target]] = [components[target], components[index]];
+    this.applyWizardSchema(schema);
+  }
+
+  private applyWizardSchema(schema: any): void {
+    this.lastAppliedJson = JSON.stringify(schema);
+    this.builder?.setForm(schema);
+    this.lastEmittedJson = JSON.stringify(schema);
+    this.zone.run(() => this.schemaChange.emit(structuredClone(schema)));
+    setTimeout(() => this.renderWizardHeaderEditing(), 0);
   }
 }

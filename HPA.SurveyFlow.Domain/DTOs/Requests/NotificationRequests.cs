@@ -23,6 +23,9 @@ public class UpdateSiteSettingsRequest
     [JsonPropertyName("logoExpandedWidth")] public string? LogoExpandedWidth { get; set; }
     [JsonPropertyName("logoExpandedHeight")] public string? LogoExpandedHeight { get; set; }
     [JsonPropertyName("logoCollapsedSize")] public string? LogoCollapsedSize { get; set; }
+    [JsonPropertyName("copyrightText")] public string? CopyrightText { get; set; }
+    [JsonPropertyName("showCopyright")] public bool? ShowCopyright { get; set; }
+    [JsonPropertyName("showPublicFormLogo")] public bool? ShowPublicFormLogo { get; set; }
 }
 
 public class UpdateIntegrationsRequest
