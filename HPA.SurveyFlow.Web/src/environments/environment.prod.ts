@@ -3,4 +3,8 @@ export const environment = {
   apiBaseUrl: '',
   appVersion: 'local',
   appEnvironment: 'production',
+  telemetry: {
+    enabled: false,
+    otlpEndpoint: '',
+  },
 };

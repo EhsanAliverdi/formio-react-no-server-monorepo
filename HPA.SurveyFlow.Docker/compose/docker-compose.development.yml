@@ -1,6 +1,13 @@
 name: hpa-surveyflow-development
 
 services:
+  aspire-dashboard:
+    container_name: hpa-surveyflow-aspire-dev
+    ports:
+      - "${ASPIRE_DASHBOARD_PORT:-18888}:18888"
+      - "${ASPIRE_OTLP_PORT:-18889}:18889"
+      - "${ASPIRE_HTTP_OTLP_PORT:-4318}:18890"
+
   postgres:
     container_name: hpa-surveyflow-postgres-dev
     ports:
@@ -27,15 +34,15 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       APP_ENVIRONMENT: development
       HPA_DOCKER_DEV: "true"
-      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-surveyflow};Username=${POSTGRES_USER:-surveyflow};Password=${POSTGRES_PASSWORD:-surveyflow123}"
-      Minio__Endpoint: http://minio:9000
-      Minio__AccessKey: ${MINIO_ROOT_USER:-minioadmin}
-      Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      ConnectionStrings__Default: "Host=${POSTGRES_HOST:-postgres};Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:-surveyflow};Username=${POSTGRES_USER:-surveyflow};Password=${POSTGRES_PASSWORD:-surveyflow123}"
+      Minio__Endpoint: ${MINIO_ENDPOINT:-http://minio:9000}
+      Minio__AccessKey: ${MINIO_ACCESS_KEY:-minioadmin}
+      Minio__SecretKey: ${MINIO_SECRET_KEY:-minioadmin}
       Seed__AdminUser: ${SEED_ADMIN_USER:-false}
       Seed__Forms: ${SEED_FORMS:-false}
       Admin__Email: ${ADMIN_EMAIL:-}
       Admin__Password: ${ADMIN_PASSWORD:-}
-      CHROMIUM_WS_ENDPOINT: ws://chromium:3000
+      CHROMIUM_WS_ENDPOINT: ${CHROMIUM_WS_ENDPOINT:-ws://chromium:3000}
     ports:
       - "${API_PORT:-5000}:5000"
 

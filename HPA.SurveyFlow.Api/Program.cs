@@ -1,8 +1,12 @@
 using Amazon.S3;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Quartz;
 using Scalar.AspNetCore;
 using Serilog;
@@ -106,6 +110,53 @@ var s3Config = new AmazonS3Config { ServiceURL = minioEndpoint, ForcePathStyle =
 var s3Client = new AmazonS3Client(minioAccessKey, minioSecretKey, s3Config);
 builder.Services.AddSingleton<IAmazonS3>(s3Client);
 builder.Services.AddSingleton(sp => new StorageService(sp.GetRequiredService<IAmazonS3>(), minioBucket));
+
+// ── OpenTelemetry ───────────────────────────────────────────────────────────
+var appVersion = builder.Configuration["App:Version"]
+    ?? Environment.GetEnvironmentVariable("APP_VERSION") ?? "unknown";
+var appEnvironment = builder.Configuration["App:Environment"]
+    ?? Environment.GetEnvironmentVariable("APP_ENVIRONMENT") ?? "production";
+
+var aiConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"]
+    ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+
+var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"]
+    ?? Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+    ?? "http://localhost:18889";
+
+var otelBuilder = builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(r => r
+        .AddService(
+            serviceName: "hpa-surveyflow-api",
+            serviceVersion: appVersion,
+            serviceInstanceId: Environment.MachineName)
+        .AddAttributes([
+            new("deployment.environment", appEnvironment)
+        ]));
+
+if (!string.IsNullOrEmpty(aiConnectionString))
+{
+    // Azure Application Insights — covers traces, metrics, and logs in one call.
+    // Switch from Aspire to AI by setting APPLICATIONINSIGHTS_CONNECTION_STRING.
+    otelBuilder.UseAzureMonitor(o => o.ConnectionString = aiConnectionString);
+}
+else
+{
+    // OTLP → .NET Aspire Dashboard (or any OTLP-compatible backend, e.g. Jaeger, Grafana)
+    otelBuilder
+        .WithTracing(t => t
+            .AddAspNetCoreInstrumentation(o => o.RecordException = true)
+            .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
+            .AddQuartzInstrumentation()
+            .AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint)))
+        .WithMetrics(m => m
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddOtlpExporter(o => o.Endpoint = new Uri(otlpEndpoint)));
+}
 
 // App services
 builder.Services.AddScoped<AuthService>();
