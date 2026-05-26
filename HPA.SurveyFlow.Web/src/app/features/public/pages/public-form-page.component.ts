@@ -94,6 +94,17 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
                   : 'text-green-800'">
               {{ submitResult()!.message }}
             </p>
+            @if (isPreStart()) {
+              <div class="mt-5">
+                <a href="/pre-start"
+                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6" />
+                  </svg>
+                  Start Over
+                </a>
+              </div>
+            }
           </div>
         } @else if (previewOpen()) {
           <!-- Preview before submit -->
@@ -123,11 +134,27 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
           </div>
         } @else {
           <!-- Header -->
-          @if (formTitle()) {
-            <h1 class="text-xl font-bold text-gray-900 mb-1">{{ formTitle() }}</h1>
-          }
-          @if (publicDescription()) {
-            <p class="text-sm text-gray-600 mb-4">{{ publicDescription() }}</p>
+          <div class="flex items-start justify-between gap-4 mb-1">
+            <div>
+              @if (formTitle()) {
+                <h1 class="text-xl font-bold text-gray-900">{{ formTitle() }}</h1>
+              }
+              @if (publicDescription()) {
+                <p class="text-sm text-gray-600 mt-1">{{ publicDescription() }}</p>
+              }
+            </div>
+            @if (isPreStart()) {
+              <a href="/pre-start"
+                 class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Start Over
+              </a>
+            }
+          </div>
+          @if (!formTitle() && !publicDescription()) {
+            <div class="mb-4"></div>
           }
 
           <!-- Wizard step pills -->
@@ -217,6 +244,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
   formTitle = computed(() => this.form()?.title || this.form()?.name || '');
   publicDescription = computed(() => this.form()?.appSettings?.publicDescription?.trim() || null);
   appSettings = computed(() => this.form()?.appSettings ?? {});
+  isPreStart = computed(() => !!this.appSettings().preStart);
   copyrightText = computed(() => this.siteSettings()?.copyrightText?.trim() || null);
   showCopyright = computed(() => !!this.siteSettings()?.showCopyright && !!this.copyrightText());
   showPublicFormLogo = computed(() => !!this.siteSettings()?.showPublicFormLogo);
@@ -390,8 +418,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
     this.submitResult.set({ level, message: this.applyMessagePlaceholders(message, level, res) });
 
     if (redirect) {
-      // Always navigate after 20 seconds — user sees the message first
-      setTimeout(() => { window.location.href = redirect!; }, 20_000);
+      setTimeout(() => { window.location.href = redirect!; }, 10_000);
       return;
     }
 

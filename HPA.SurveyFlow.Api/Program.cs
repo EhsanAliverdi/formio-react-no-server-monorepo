@@ -148,14 +148,15 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var seedAdminUser = GetFlag(builder.Configuration, "Seed:AdminUser", "SEED_ADMIN_USER", false);
-    var seedForms     = GetFlag(builder.Configuration, "Seed:Forms", "SEED_FORMS", false);
+    var seedAdminUser        = GetFlag(builder.Configuration, "Seed:AdminUser",        "SEED_ADMIN_USER",        false);
+    var seedForms            = GetFlag(builder.Configuration, "Seed:Forms",            "SEED_FORMS",            false);
+    var seedOverrideExisting = GetFlag(builder.Configuration, "Seed:OverrideExisting", "SEED_OVERRIDE_EXISTING", false);
     var adminEmail    = builder.Configuration["Admin:Email"] ?? Environment.GetEnvironmentVariable("ADMIN_EMAIL");
     var adminPassword = builder.Configuration["Admin:Password"] ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
 
     var storage = app.Services.GetRequiredService<StorageService>();
     await storage.EnsureBucketAsync();
-    await DbSeeder.SeedAsync(db, seedAdminUser, adminEmail, adminPassword, seedForms);
+    await DbSeeder.SeedAsync(db, seedAdminUser, adminEmail, adminPassword, seedForms, seedOverrideExisting);
 
     // Apply job schedules from the DB after seeding has run
     var jobScheduler = scope.ServiceProvider.GetRequiredService<JobScheduler>();

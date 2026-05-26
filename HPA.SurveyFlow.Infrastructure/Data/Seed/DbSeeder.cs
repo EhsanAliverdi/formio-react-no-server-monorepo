@@ -12,7 +12,8 @@ public static class DbSeeder
         bool seedAdminUser,
         string? adminEmail,
         string? adminPassword,
-        bool seedForms)
+        bool seedForms,
+        bool overrideExisting = false)
     {
         await db.Database.MigrateAsync();
 
@@ -77,7 +78,7 @@ public static class DbSeeder
 
         if (seedForms)
         {
-            await SeedFormsAsync(db);
+            await SeedFormsAsync(db, overrideExisting);
         }
 
         await SeedJobDefinitionsAsync(db);
@@ -127,7 +128,7 @@ public static class DbSeeder
     }
 
 
-    private static async Task SeedFormsAsync(AppDbContext db)
+    private static async Task SeedFormsAsync(AppDbContext db, bool overrideExisting)
     {
         foreach (var seedForm in PreStartFormsSeedData.Forms)
         {
@@ -147,18 +148,20 @@ public static class DbSeeder
                 continue;
             }
 
+            if (!overrideExisting) continue;
+
             existingForm.Json = json;
             existingForm.AllowAnonymousSubmit = true;
             existingForm.Visibility = "public";
         }
 
         await db.SaveChangesAsync();
-        await LinkEquipmentMexFlowDemosAsync(db);
+        await LinkEquipmentMexFlowDemosAsync(db, overrideExisting);
         await RetireOldSeedFormsAsync(db);
         await db.SaveChangesAsync();
     }
 
-    private static async Task LinkEquipmentMexFlowDemosAsync(AppDbContext db)
+    private static async Task LinkEquipmentMexFlowDemosAsync(AppDbContext db, bool overrideExisting)
     {
         foreach (var definition in DemoEquipmentMexFlowSeedData.Definitions)
         {
@@ -167,7 +170,53 @@ public static class DbSeeder
             if (parent is null || acknowledgement is null) continue;
 
             acknowledgement.ParentFormId = parent.Id;
-            parent.Json = DemoEquipmentMexFlowSeedData.CreateParent(definition, acknowledgement.Id).Schema.GetRawText();
+
+            if (overrideExisting)
+            {
+                // Full replace — safe because we are intentionally overriding
+                parent.Json = DemoEquipmentMexFlowSeedData.CreateParent(definition, acknowledgement.Id).Schema.GetRawText();
+            }
+            else
+            {
+                // Patch only nextForms.warning inside the existing JSON so user edits
+                // (e.g. preStartImage) are preserved
+                parent.Json = PatchNextFormsWarning(parent.Json, acknowledgement.Id);
+            }
+        }
+    }
+
+    private static string PatchNextFormsWarning(string existingJson, int warningFormId)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(existingJson);
+            var root = doc.RootElement.Clone();
+            var dict = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(existingJson)!;
+
+            // Navigate appSettings.nextForms.warning and patch it
+            if (dict.TryGetValue("appSettings", out var appSettingsEl))
+            {
+                var appSettings = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(appSettingsEl.GetRawText())!;
+                if (appSettings.TryGetValue("nextForms", out var nextFormsEl))
+                {
+                    var nextForms = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(nextFormsEl.GetRawText())!;
+                    nextForms["warning"] = System.Text.Json.JsonSerializer.SerializeToElement(warningFormId);
+                    appSettings["nextForms"] = System.Text.Json.JsonSerializer.SerializeToElement(nextForms);
+                }
+                else
+                {
+                    appSettings["nextForms"] = System.Text.Json.JsonSerializer.SerializeToElement(
+                        new { success = (int?)null, warning = warningFormId, error = (int?)null });
+                }
+                dict["appSettings"] = System.Text.Json.JsonSerializer.SerializeToElement(appSettings);
+            }
+
+            return System.Text.Json.JsonSerializer.Serialize(dict);
+        }
+        catch
+        {
+            // If parsing fails fall back to leaving the JSON untouched
+            return existingJson;
         }
     }
 

@@ -23,6 +23,28 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
     [HttpGet]
     public async Task<IActionResult> ListForms([FromQuery] string? mode)
     {
+        // PreStart mode: anonymous, returns only forms with appSettings.preStart == true
+        if (string.Equals(mode, "prestart", StringComparison.OrdinalIgnoreCase))
+        {
+            var allForms = await db.Forms.ToListAsync();
+            var preStartForms = allForms.Where(f =>
+            {
+                try
+                {
+                    var schema = f.Json is string s ? JsonDocument.Parse(s).RootElement : JsonDocument.Parse(f.Json).RootElement;
+                    if (schema.TryGetProperty("appSettings", out var appSettings) &&
+                        appSettings.TryGetProperty("preStart", out var preStartProp))
+                    {
+                        return preStartProp.ValueKind == JsonValueKind.True ||
+                               (preStartProp.ValueKind == JsonValueKind.String && preStartProp.GetString() == "true");
+                    }
+                }
+                catch { /* ignore malformed JSON */ }
+                return false;
+            }).ToList();
+            return Ok(preStartForms.Select(f => MapFormDto(f, false)).ToList());
+        }
+
         var currentUser = HttpContext.GetCurrentUser();
         var role = currentUser?.Role;
         var userId = currentUser?.Id;

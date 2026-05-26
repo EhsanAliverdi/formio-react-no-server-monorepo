@@ -1,12 +1,16 @@
 import { Component, OnInit, ViewChild, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormService } from '../../../core/services/form.service';
 import { UserService } from '../../../core/services/user.service';
+import { ApiService } from '../../../core/services/api.service';
 import { ToastrService } from 'ngx-toastr';
 import { FormEditorComponent } from '../../../shared/components/formio/form-editor.component';
 import { IntegrationPayloadMappingComponent } from '../../../shared/components/integration-payload-mapping/integration-payload-mapping.component';
+import { IconPickerComponent } from '../../../shared/components/icon-picker/icon-picker.component';
+import { IconService } from '../../../core/services/icon.service';
 import { Form, User } from '../../../core/models';
 
 type WizardPanel = { key: string; title: string };
@@ -139,7 +143,7 @@ function ensureWizardHasPage(schema: any): any {
 @Component({
   selector: 'app-admin-form-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent],
+  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent],
   template: `
     <div class="p-6">
       <!-- Header -->
@@ -472,6 +476,110 @@ function ensureWizardHasPage(schema: any): any {
           </div>
         </div>
 
+        <!-- Appearance (PreStart) -->
+        <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
+          <h2 class="text-base font-semibold text-gray-800 mb-4">Appearance &amp; Pre-Start</h2>
+          <div class="space-y-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="preStartEnabled"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+              <span class="text-sm text-gray-700 font-medium">Show on Pre-Start page</span>
+              <span class="text-xs text-gray-400">(No login required, card view at <code>/pre-start</code>)</span>
+            </label>
+
+            @if (preStartEnabled) {
+              <!-- Image upload -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Card Image (optional)</label>
+                @if (preStartImage) {
+                  <div class="mb-3 flex items-start gap-3">
+                    <img [src]="preStartImage" alt="Card image" class="h-24 w-40 rounded-lg object-cover border border-gray-200"/>
+                    <button type="button" (click)="clearPreStartImage()"
+                      class="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                      Remove
+                    </button>
+                  </div>
+                }
+                <div class="flex items-center gap-3">
+                  <input #imageFileInput type="file" accept="image/*" class="hidden" (change)="uploadPreStartImage($event)"/>
+                  <button type="button" (click)="imageFileInput.click()" [disabled]="imageUploading()"
+                    class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium rounded-lg transition disabled:opacity-50">
+                    @if (imageUploading()) {
+                      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      Uploading…
+                    } @else {
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                      </svg>
+                      Upload Image
+                    }
+                  </button>
+                  <span class="text-xs text-gray-400">Recommended: <strong>400 × 300 px</strong> (4:3) or square. Max 10MB. Image takes priority over icon.</span>
+                </div>
+                @if (preStartImage) {
+                  <label class="mt-3 flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" [(ngModel)]="preStartImageFullWidth"
+                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                    <span class="text-sm text-gray-700">Full-width image <span class="text-gray-400 font-normal">(edge-to-edge, <code>object-cover</code>)</span></span>
+                  </label>
+                }
+              </div>
+
+              <!-- Icon picker -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Card Icon (used when no image)</label>
+                <div class="flex items-center gap-3">
+                  @if (preStartIcon) {
+                    <img [src]="preStartIconSvgUrl()" alt="Selected icon" class="w-10 h-10 object-contain border border-gray-200 rounded-lg p-1"/>
+                    <span class="text-xs text-gray-500">{{ preStartIcon }}</span>
+                    <button type="button" (click)="preStartIcon = ''"
+                      class="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                      Clear
+                    </button>
+                  }
+                  <button type="button" (click)="showIconPicker.set(true)"
+                    class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ preStartIcon ? 'Change Icon' : 'Pick Icon' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Card display options -->
+              <div class="border-t pt-4 space-y-3">
+                <p class="text-sm font-medium text-gray-700">Card display options</p>
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="preStartShowTitle"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                  <span class="text-sm text-gray-700">Show form title on card</span>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="preStartShowDescription"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                  <span class="text-sm text-gray-700">Show description on card</span>
+                </label>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Button text</label>
+                  <input type="text" [(ngModel)]="preStartButtonText" placeholder="Start Checklist"
+                    class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (showIconPicker()) {
+          <app-icon-picker
+            [selectedIcon]="preStartIcon"
+            (iconSelected)="onIconSelected($event)"
+          />
+        }
+
         <!-- Wizard / Single-page toggle -->
         <div class="mb-4 bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
           <span class="text-sm font-medium text-gray-700">Form type:</span>
@@ -560,6 +668,9 @@ export class FormEditComponent implements OnInit {
   private formService = inject(FormService);
   private userService = inject(UserService);
   private toastr = inject(ToastrService);
+  private http = inject(HttpClient);
+  private apiService = inject(ApiService);
+  private iconService = inject(IconService);
 
   form = signal<Form | null>(null);
   loading = signal(true);
@@ -567,10 +678,12 @@ export class FormEditComponent implements OnInit {
   saving = signal(false);
   saveError = signal<string | null>(null);
   usersLoading = signal(false);
+  imageUploading = signal(false);
   allUsers = signal<User[]>([]);
   allForms = signal<Form[]>([]);
   wizardPanels = signal<WizardPanel[]>([]);
   activePageIndex = signal(0);
+  showIconPicker = signal(false);
 
   name = '';
   allowAnonymous = false;
@@ -580,6 +693,13 @@ export class FormEditComponent implements OnInit {
   allowedUserIds: number[] = [];
   parentFormId: number | null = null;
   appSettings: any = {};
+  preStartEnabled = false;
+  preStartImage = '';
+  preStartImageFullWidth = false;
+  preStartIcon = '';
+  preStartShowTitle = true;
+  preStartShowDescription = true;
+  preStartButtonText = '';
   placeholderHelp = 'Available placeholders: {{outcome}}, {{submission_id}}, {{form_name}}, {{user_email}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
   secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
   secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = normalizeSecondarySubmitConfig(null);
@@ -618,6 +738,13 @@ export class FormEditComponent implements OnInit {
         if (typeof schema === 'string') { try { schema = JSON.parse(schema); } catch { schema = {}; } }
         this.appSettings = { nextForms: {}, ...(schema.appSettings ?? {}) };
         this.appSettings.nextForms = { success: null, warning: null, error: null, ...(this.appSettings.nextForms ?? {}) };
+        this.preStartEnabled = !!(schema.appSettings?.preStart);
+        this.preStartImage = schema.appSettings?.preStartImage || '';
+        this.preStartImageFullWidth = !!(schema.appSettings?.preStartImageFullWidth);
+        this.preStartIcon = schema.appSettings?.preStartIcon || schema.appSettings?.formsListIconKey || '';
+        this.preStartShowTitle = schema.appSettings?.preStartShowTitle !== false;
+        this.preStartShowDescription = schema.appSettings?.preStartShowDescription !== false;
+        this.preStartButtonText = schema.appSettings?.preStartButtonText || '';
         this.secondarySubmitConfigs = normalizeSecondarySubmitConfig(schema.appSettings?.secondarySubmit);
         this.resultActions = normalizeResultActions(schema.appSettings?.resultActions);
         this.emailNotifications = normalizeEmailNotificationConfig(schema.appSettings?.emailNotifications);
@@ -711,6 +838,43 @@ export class FormEditComponent implements OnInit {
     this.activePageIndex.set(j);
   }
 
+  preStartIconSvgUrl = computed(() => {
+    if (!this.preStartIcon || !this.preStartIcon.includes(':')) return '';
+    const [pack, name] = this.preStartIcon.split(':', 2);
+    return this.iconService.getSvgUrl(pack, name);
+  });
+
+  onIconSelected(iconKey: string): void {
+    this.showIconPicker.set(false);
+    this.preStartIcon = iconKey;
+  }
+
+  clearPreStartImage(): void {
+    this.preStartImage = '';
+  }
+
+  uploadPreStartImage(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    input.value = '';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    this.imageUploading.set(true);
+    this.http.post<{ url: string }>(this.apiService.apiUrl('/api/uploads'), formData).subscribe({
+      next: (res) => {
+        this.preStartImage = res.url;
+        this.imageUploading.set(false);
+        this.toastr.success('Image uploaded.');
+      },
+      error: (err) => {
+        this.imageUploading.set(false);
+        this.toastr.error(err?.error?.error || 'Image upload failed.');
+      },
+    });
+  }
+
   copyPublicLink(): void {
     navigator.clipboard.writeText(this.publicFormUrl()).then(() => {
       this.toastr.success('Link copied to clipboard.');
@@ -769,7 +933,22 @@ export class FormEditComponent implements OnInit {
     const finalSchema = {
       ...schema,
       display: this.formDisplay,
-      appSettings: { ...this.appSettings, resultActions, secondarySubmit, emailNotifications },
+      appSettings: {
+        ...this.appSettings,
+        resultActions,
+        secondarySubmit,
+        emailNotifications,
+        preStart: this.preStartEnabled,
+        preStartImage: this.preStartImage || null,
+        preStartImageFullWidth: this.preStartImageFullWidth,
+        preStartIcon: this.preStartIcon || null,
+        preStartShowTitle: this.preStartShowTitle,
+        preStartShowDescription: this.preStartShowDescription,
+        preStartButtonText: this.preStartButtonText.trim() || null,
+        // keep formsListIconKey in sync for backward compat
+        formsListIconKey: this.preStartIcon || this.appSettings.formsListIconKey || null,
+        showIconInFormsList: this.preStartEnabled || this.appSettings.showIconInFormsList || false,
+      },
     };
     this.saving.set(true);
     this.formService.update(this.formId, {

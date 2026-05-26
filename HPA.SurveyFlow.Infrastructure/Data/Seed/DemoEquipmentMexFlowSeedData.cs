@@ -103,18 +103,21 @@ internal static class DemoEquipmentMexFlowSeedData
             },
             appSettings = new
             {
+                preStart = true,
                 showIconInFormsList = true,
                 formsListIconKey = d.IconKey,
+                preStartIcon = d.IconKey,
                 publicDescription = $"Pre-start demo for {d.EquipmentName} with MEX asset selection, abnormal rules, MEX create request mapping, warning acknowledgement flow, and error stop outcome.",
                 previewBeforeSubmit = true,
                 allowSubmissionPdfExport = true,
                 showColorCodedAnswers = true,
-                messageOnSuccess = "Pre-start submitted. No abnormal answers were detected.",
+                messageOnSuccess = "Pre-start submitted. No abnormal answers were detected. Returning to the pre-start menu in 10 seconds…",
                 messageOnWarning = "Pre-start submitted with {{warning_count}} warning issue(s). A MEX request has been created and you must complete the acknowledgement before operating.",
                 messageOnError = "STOP. Equipment must not be operated. {{error_count}} critical safety issue(s) were detected and a MEX request has been created.",
+                redirectOnSuccess = "/pre-start",
                 resultActions = new
                 {
-                    success = new { mode = "stay", delaySeconds = 0 },
+                    success = new { mode = "redirect", delaySeconds = 10 },
                     warning = new { mode = "next_form", delaySeconds = 1 },
                     error = new { mode = "stay", delaySeconds = 0 },
                 },
@@ -148,7 +151,8 @@ internal static class DemoEquipmentMexFlowSeedData
             appSettings = new
             {
                 publicDescription = $"Acknowledgement required when the {d.EquipmentName} pre-start has warning-level abnormalities.",
-                messageOnSuccess = "Acknowledgement recorded. Operate only if site procedure allows and all warning issues have been reported.",
+                messageOnSuccess = "Acknowledgement recorded. Operate only if site procedure allows and all warning issues have been reported. Returning to the pre-start menu in 10 seconds…",
+                redirectOnSuccess = "/pre-start",
             },
             components = new object[]
             {
