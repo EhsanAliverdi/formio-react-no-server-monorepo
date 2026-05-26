@@ -153,6 +153,12 @@ internal static class DemoEquipmentMexFlowSeedData
                 publicDescription = $"Acknowledgement required when the {d.EquipmentName} pre-start has warning-level abnormalities.",
                 messageOnSuccess = "Acknowledgement recorded. Operate only if site procedure allows and all warning issues have been reported. Returning to the pre-start menu in 10 seconds…",
                 redirectOnSuccess = "/pre-start",
+                resultActions = new
+                {
+                    success = new { mode = "redirect", delaySeconds = 10 },
+                    warning = new { mode = "stay", delaySeconds = 0 },
+                    error = new { mode = "stay", delaySeconds = 0 },
+                },
             },
             components = new object[]
             {
