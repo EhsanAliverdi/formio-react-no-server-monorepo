@@ -48,6 +48,7 @@ services:
       Minio__SecretKey: ${MINIO_SECRET_KEY:-minioadmin}
       Seed__AdminUser: ${SEED_ADMIN_USER:-false}
       Seed__Forms: ${SEED_FORMS:-false}
+      Seed__OverrideExisting: ${SEED_OVERRIDE_EXISTING:-false}
       Admin__Email: ${ADMIN_EMAIL:-}
       Admin__Password: ${ADMIN_PASSWORD:-}
       APP_VERSION: ${API_APP_VERSION:-}

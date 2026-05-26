@@ -33,6 +33,7 @@ services:
       Minio__SecretKey: ${MINIO_SECRET_KEY:-minioadmin}
       Seed__AdminUser: ${SEED_ADMIN_USER:-false}
       Seed__Forms: ${SEED_FORMS:-false}
+      Seed__OverrideExisting: ${SEED_OVERRIDE_EXISTING:-false}
       Admin__Email: ${ADMIN_EMAIL:-}
       Admin__Password: ${ADMIN_PASSWORD:-}
       CHROMIUM_WS_ENDPOINT: ${CHROMIUM_WS_ENDPOINT:-ws://chromium:3000}
