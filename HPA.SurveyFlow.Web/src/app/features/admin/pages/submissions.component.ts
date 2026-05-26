@@ -124,7 +124,9 @@ const PAGE_SIZE = 25;
                           Pending
                         </span>
                       } @else if (r.secondary_submit_status === 'success') {
-                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">✓ Sent</span>
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                          ✓ Sent@if (r.secondary_submit_ref) { <span class="ml-1 font-bold">#{{ r.secondary_submit_ref }}</span> }
+                        </span>
                       } @else {
                         <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">✗ Failed</span>
                       }
@@ -176,7 +178,9 @@ const PAGE_SIZE = 25;
                         } @else if (child.secondary_submit_status === 'pending') {
                           <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">Pending</span>
                         } @else if (child.secondary_submit_status === 'success') {
-                          <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Sent</span>
+                          <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                            ✓ Sent@if (child.secondary_submit_ref) { <span class="ml-1 font-bold">#{{ child.secondary_submit_ref }}</span> }
+                          </span>
                         } @else {
                           <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Failed</span>
                         }

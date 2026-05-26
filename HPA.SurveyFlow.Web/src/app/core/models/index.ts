@@ -81,6 +81,7 @@ export interface AdminSubmission extends FormSubmission {
   warning_count: number;
   abnormalities?: AbnormalityItem[];
   secondary_submit_status?: string | null;   // null | 'pending' | 'success' | 'failed'
+  secondary_submit_ref?: string | null;
   secondary_submit_response?: any;
   secondary_submit_at?: string | null;
   child_submissions?: AdminSubmission[];

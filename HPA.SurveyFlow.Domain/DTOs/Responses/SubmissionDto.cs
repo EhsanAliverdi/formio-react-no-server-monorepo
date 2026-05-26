@@ -47,6 +47,7 @@ public class AdminSubmissionListItemDto
     [JsonPropertyName("error_count")] public int ErrorCount { get; set; }
     [JsonPropertyName("warning_count")] public int WarningCount { get; set; }
     [JsonPropertyName("secondary_submit_status")] public string? SecondarySubmitStatus { get; set; }
+    [JsonPropertyName("secondary_submit_ref")] public string? SecondarySubmitRef { get; set; }
     [JsonPropertyName("child_submissions")] public List<AdminSubmissionListItemDto> ChildSubmissions { get; set; } = [];
 }
 

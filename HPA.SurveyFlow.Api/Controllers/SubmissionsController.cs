@@ -387,12 +387,90 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             ErrorCount = abnormalities.Count(a => a.Level == "error"),
             WarningCount = abnormalities.Count(a => a.Level == "warning"),
             SecondarySubmitStatus = s.SecondarySubmitStatus,
+            SecondarySubmitRef = ExtractIntegrationRef(s.SecondarySubmitResponse, s.Form.Json),
             ChildSubmissions = s.ChildSubmissions
                 .Where(c => c.DeletedAt == null)
                 .OrderBy(c => c.SubmittedAt)
                 .Select(MapAdminSubmissionListItem)
                 .ToList(),
         };
+    }
+
+    /// <summary>
+    /// Extracts the integration reference value (e.g. MEX requestNumber) from the stored
+    /// secondary submit response JSON. The field name is configured per-outcome in
+    /// appSettings.secondarySubmit.{outcome}.responseRefField; defaults to "requestNumber" for MEX.
+    /// </summary>
+    private static string? ExtractIntegrationRef(string? responseJson, string? formJson)
+    {
+        if (string.IsNullOrWhiteSpace(responseJson)) return null;
+
+        try
+        {
+            using var logDoc = JsonDocument.Parse(responseJson);
+            var log = logDoc.RootElement;
+
+            // Determine the configured responseRefField from appSettings
+            var refField = ResolveRefField(formJson, log);
+            if (string.IsNullOrWhiteSpace(refField)) return null;
+
+            // The response body is stored as a JSON string inside result.body
+            if (!log.TryGetProperty("result", out var result)) return null;
+            string? bodyStr = null;
+            if (result.ValueKind == JsonValueKind.Object && result.TryGetProperty("body", out var bodyEl))
+                bodyStr = bodyEl.ValueKind == JsonValueKind.String ? bodyEl.GetString() : bodyEl.GetRawText();
+
+            if (string.IsNullOrWhiteSpace(bodyStr)) return null;
+
+            using var bodyDoc = JsonDocument.Parse(bodyStr);
+            if (bodyDoc.RootElement.TryGetProperty(refField, out var refEl))
+            {
+                var val = refEl.ValueKind == JsonValueKind.String ? refEl.GetString() : refEl.GetRawText();
+                return string.IsNullOrWhiteSpace(val) ? null : val;
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    private static string? ResolveRefField(string? formJson, JsonElement log)
+    {
+        // Try to get configured responseRefField from appSettings.secondarySubmit.{outcome}
+        if (!string.IsNullOrWhiteSpace(formJson))
+        {
+            try
+            {
+                using var formDoc = JsonDocument.Parse(formJson);
+                if (formDoc.RootElement.TryGetProperty("appSettings", out var appSettings) &&
+                    appSettings.TryGetProperty("secondarySubmit", out var secondarySubmit))
+                {
+                    // Pick the outcome from the log
+                    var outcome = log.TryGetProperty("outcome", out var outcomeEl) ? outcomeEl.GetString() : null;
+                    if (!string.IsNullOrWhiteSpace(outcome) &&
+                        secondarySubmit.TryGetProperty(outcome, out var outcomeConfig) &&
+                        outcomeConfig.TryGetProperty("responseRefField", out var fieldEl) &&
+                        fieldEl.GetString() is { Length: > 0 } configured)
+                        return configured;
+
+                    // Fall back: check any outcome config that has responseRefField
+                    foreach (var prop in secondarySubmit.EnumerateObject())
+                    {
+                        if (prop.Value.TryGetProperty("responseRefField", out var f) &&
+                            f.GetString() is { Length: > 0 } fallback)
+                            return fallback;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        // Default: MEX create_request always returns requestNumber
+        if (log.TryGetProperty("integration", out var intEl) && intEl.GetString() == "mex" &&
+            log.TryGetProperty("action", out var actEl) && actEl.GetString() == "create_request")
+            return "requestNumber";
+
+        return null;
     }
 
     private static object? ParseJsonOrString(string? raw)

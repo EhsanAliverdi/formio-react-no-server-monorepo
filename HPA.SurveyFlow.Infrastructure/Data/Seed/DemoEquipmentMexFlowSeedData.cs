@@ -192,6 +192,7 @@ internal static class DemoEquipmentMexFlowSeedData
             enabled = true,
             integration = "mex",
             action = "create_request",
+            responseRefField = "requestNumber",
             fieldMappings = new
             {
                 priorityNumber = new { source = "static", value = priorityNumber },
