@@ -83,9 +83,6 @@ function buildLabelMap(schema: any): Record<string, string> {
                 : 'text-green-800'">
             {{ submitMessage() || 'Form submitted successfully!' }}
           </p>
-          @if (submitActionNote()) {
-            <p class="mt-3 text-sm text-gray-600">{{ submitActionNote() }}</p>
-          }
           @if (submitResultLevel() !== 'error') {
             <a routerLink="/forms/mysubmissions" class="mt-4 inline-flex items-center text-sm underline"
               [class]="submitResultLevel() === 'warning' ? 'text-amber-700' : 'text-green-700'">
@@ -187,8 +184,14 @@ export class FillFormComponent implements OnInit, OnDestroy {
   submitting = signal(false);
   submitted = signal(false);
   submitResultLevel = signal<'success' | 'warning' | 'error' | null>(null);
-  submitMessage = signal<string | null>(null);
-  submitActionNote = signal<string | null>(null);
+  submitMessageTemplate = signal<string | null>(null);
+  countdown = signal<number | null>(null);
+  submitMessage = computed(() => {
+    const tpl = this.submitMessageTemplate();
+    if (!tpl) return null;
+    const c = this.countdown();
+    return c != null ? tpl.replaceAll('{{countdown}}', String(c)) : tpl.replaceAll('{{countdown}}', '');
+  });
   previewOpen = signal(false);
   step = signal(0);
   previewItems = signal<{ key: string; label: string; value: string }[]>([]);
@@ -205,6 +208,7 @@ export class FillFormComponent implements OnInit, OnDestroy {
   private pendingData: any = null;
   private labelMap: Record<string, string> = {};
   private resultTimer: ReturnType<typeof setTimeout> | null = null;
+  private countdownInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -229,6 +233,7 @@ export class FillFormComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.resultTimer) clearTimeout(this.resultTimer);
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
     this.formInstance?.destroy?.(true);
     this.formInstance = null;
   }
@@ -335,7 +340,7 @@ export class FillFormComponent implements OnInit, OnDestroy {
         const settings = this.appSettings();
         const msg = settings.messageOnError || err?.error?.message || 'Failed to submit form.';
         this.submitResultLevel.set('error');
-        this.submitMessage.set(msg);
+        this.submitMessageTemplate.set(msg);
         this.submitted.set(true);
       },
     });
@@ -358,29 +363,44 @@ export class FillFormComponent implements OnInit, OnDestroy {
     }
 
     this.submitResultLevel.set(level);
-    this.submitMessage.set(this.applyMessagePlaceholders(message, level, res));
 
     const action = this.resolveResultAction(settings, level, res);
-    if (action.mode === 'stay') {
-      this.submitActionNote.set(null);
+    const delaySec = action.mode === 'stay' ? null : Math.max(0, Number(action.delaySeconds) || 0);
+    const resolvedTemplate = this.applyMessagePlaceholders(message, level, res);
+
+    this.countdown.set(delaySec);
+    this.submitMessageTemplate.set(resolvedTemplate);
+
+    if (action.mode === 'stay' || delaySec == null) return;
+
+    if (delaySec === 0) {
+      this.executeResultAction(action, res);
       return;
     }
 
-    const delayMs = Math.max(0, Number(action.delaySeconds) || 0) * 1000;
-    const when = delayMs === 0 ? 'now' : `in ${Math.round(delayMs / 1000)} second(s)`;
+    this.countdown.set(delaySec);
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
+    this.countdownInterval = setInterval(() => {
+      this.zone.run(() => {
+        const c = (this.countdown() ?? 1) - 1;
+        this.countdown.set(c);
+        if (c <= 0) {
+          clearInterval(this.countdownInterval!);
+          this.countdownInterval = null;
+          this.executeResultAction(action, res);
+        }
+      });
+    }, 1000);
+  }
 
+  private executeResultAction(action: { mode: string; url?: string; nextFormId?: number }, res: any): void {
     if (action.mode === 'redirect') {
-      this.submitActionNote.set(`Redirecting ${when}.`);
-      this.resultTimer = setTimeout(() => { window.location.href = action.url!; }, delayMs);
-      return;
-    }
-
-    this.submitActionNote.set(`Opening follow-up form ${when}.`);
-    this.resultTimer = setTimeout(() => {
+      window.location.href = action.url!;
+    } else if (action.mode === 'next_form') {
       this.router.navigate(['/forms', action.nextFormId, 'fill'], {
         queryParams: { parent_submission_id: res.id },
       });
-    }, delayMs);
+    }
   }
 
   private resolveResultAction(settings: any, level: 'success' | 'warning' | 'error', res: any): {

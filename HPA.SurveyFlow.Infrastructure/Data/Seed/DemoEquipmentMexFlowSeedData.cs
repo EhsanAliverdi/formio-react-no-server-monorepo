@@ -111,7 +111,7 @@ internal static class DemoEquipmentMexFlowSeedData
                 previewBeforeSubmit = true,
                 allowSubmissionPdfExport = true,
                 showColorCodedAnswers = true,
-                messageOnSuccess = "Pre-start submitted. No abnormal answers were detected. Returning to the pre-start menu in 10 seconds…",
+                messageOnSuccess = "Pre-start submitted. No abnormal answers were detected. Returning to the pre-start menu in {{countdown}} seconds…",
                 messageOnWarning = "Pre-start submitted with {{warning_count}} warning issue(s). A MEX request has been created and you must complete the acknowledgement before operating.",
                 messageOnError = "STOP. Equipment must not be operated. {{error_count}} critical safety issue(s) were detected and a MEX request has been created.",
                 redirectOnSuccess = "/pre-start",
@@ -151,7 +151,7 @@ internal static class DemoEquipmentMexFlowSeedData
             appSettings = new
             {
                 publicDescription = $"Acknowledgement required when the {d.EquipmentName} pre-start has warning-level abnormalities.",
-                messageOnSuccess = "Acknowledgement recorded. Operate only if site procedure allows and all warning issues have been reported. Returning to the pre-start menu in 10 seconds…",
+                messageOnSuccess = "Acknowledgement recorded. Operate only if site procedure allows and all warning issues have been reported. Returning to the pre-start menu in {{countdown}} seconds…",
                 redirectOnSuccess = "/pre-start",
                 resultActions = new
                 {

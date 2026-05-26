@@ -81,8 +81,7 @@ const PAGE_SIZE = 25;
                 </tr>
               } @else {
                 @for (r of rows(); track r.id) {
-                  <tr class="border-t border-gray-100 hover:bg-gray-50 transition cursor-pointer"
-                    (click)="openDetail(r.id)">
+                  <tr class="border-t border-gray-100 hover:bg-gray-50 transition">
                     <td class="px-5 py-4 text-gray-500 text-xs">
                       <div class="flex items-center gap-2">
                         @if ((r.child_submissions?.length ?? 0) > 0) {
@@ -124,8 +123,9 @@ const PAGE_SIZE = 25;
                           Pending
                         </span>
                       } @else if (r.secondary_submit_status === 'success') {
-                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                          ✓ Sent@if (r.secondary_submit_ref) { <span class="ml-1 font-bold">#{{ r.secondary_submit_ref }}</span> }
+                        <span class="inline-flex flex-col items-start rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                          <span>✓ Sent</span>
+                          @if (r.secondary_submit_ref) { <span class="font-bold">#{{ r.secondary_submit_ref }}</span> }
                         </span>
                       } @else {
                         <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">✗ Failed</span>
@@ -148,8 +148,7 @@ const PAGE_SIZE = 25;
                   </tr>
                   @if (childrenExpanded().has(r.id)) {
                   @for (child of r.child_submissions ?? []; track child.id) {
-                    <tr class="border-t border-gray-100 bg-indigo-50/30 hover:bg-indigo-50 transition cursor-pointer"
-                      (click)="openDetail(child.id)">
+                    <tr class="border-t border-gray-100 bg-indigo-50/30 hover:bg-indigo-50 transition">
                       <td class="px-5 py-3 pl-10 text-gray-500 text-xs">#{{ child.id }}</td>
                       <td class="px-5 py-3">
                         <div class="text-xs font-semibold uppercase tracking-wide text-indigo-600">Sub form</div>
@@ -178,8 +177,9 @@ const PAGE_SIZE = 25;
                         } @else if (child.secondary_submit_status === 'pending') {
                           <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">Pending</span>
                         } @else if (child.secondary_submit_status === 'success') {
-                          <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                            ✓ Sent@if (child.secondary_submit_ref) { <span class="ml-1 font-bold">#{{ child.secondary_submit_ref }}</span> }
+                          <span class="inline-flex flex-col items-start rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                            <span>✓ Sent</span>
+                            @if (child.secondary_submit_ref) { <span class="font-bold">#{{ child.secondary_submit_ref }}</span> }
                           </span>
                         } @else {
                           <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Failed</span>

@@ -52,7 +52,35 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex min-h-screen flex-col bg-gray-50">
+    <div class="flex min-h-screen flex-col relative overflow-hidden" style="background-color: #f0f4f8;">
+
+      <!-- Dot mesh patches — scattered -->
+      <svg class="pointer-events-none absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" style="opacity:1;">
+        <defs>
+          <pattern id="dm-pfp" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1.4" fill="#4a7fa5"/>
+          </pattern>
+        </defs>
+        <rect x="60" y="80" width="140" height="100" rx="4" fill="url(#dm-pfp)" opacity="0.14"/>
+        <rect x="78%" y="35%" width="110" height="80" rx="4" fill="url(#dm-pfp)" opacity="0.11"/>
+        <rect x="22%" y="68%" width="90" height="70" rx="4" fill="url(#dm-pfp)" opacity="0.10"/>
+        <rect x="82%" y="8%" width="120" height="90" rx="4" fill="url(#dm-pfp)" opacity="0.12"/>
+        <rect x="4%" y="78%" width="100" height="75" rx="4" fill="url(#dm-pfp)" opacity="0.09"/>
+      </svg>
+
+      <!-- Decorative circles — bottom-right -->
+      <svg class="pointer-events-none absolute" xmlns="http://www.w3.org/2000/svg"
+           style="bottom:-60px;right:-120px;width:700px;height:700px;overflow:visible;">
+        <circle cx="500" cy="580" r="390" fill="#4a7fa5" opacity="0.02"/>
+        <circle cx="460" cy="520" r="255" fill="#4a7fa5" opacity="0.035"/>
+      </svg>
+
+      <!-- Decorative circles — top-left -->
+      <svg class="pointer-events-none absolute" xmlns="http://www.w3.org/2000/svg"
+           style="top:-40px;left:-90px;width:620px;height:620px;overflow:visible;">
+        <circle cx="80" cy="60" r="330" fill="#4a7fa5" opacity="0.02"/>
+        <circle cx="140" cy="110" r="200" fill="#4a7fa5" opacity="0.035"/>
+      </svg>
       @if (showPublicFormLogo()) {
         <header class="px-4 pt-4 sm:px-6">
           <a href="/" class="inline-flex items-center">
@@ -233,7 +261,15 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
   form = signal<any>(null);
   loading = signal(true);
   submitting = signal(false);
-  submitResult = signal<SubmitResult | null>(null);
+  submitResultRaw = signal<SubmitResult | null>(null);
+  countdown = signal<number | null>(null);
+  submitResult = computed<SubmitResult | null>(() => {
+    const r = this.submitResultRaw();
+    if (!r) return null;
+    const c = this.countdown();
+    const message = c != null ? r.message.replaceAll('{{countdown}}', String(c)) : r.message.replaceAll('{{countdown}}', '');
+    return { ...r, message };
+  });
   previewOpen = signal(false);
   step = signal(0);
   previewItems = signal<{ key: string; label: string; value: string }[]>([]);
@@ -263,6 +299,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
   private formInstance: any = null;
   private pendingData: any = null;
   private labelMap: Record<string, string> = {};
+  private countdownInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     this.settingsService.getSiteSettings().subscribe({ next: s => this.siteSettings.set(s), error: () => {} });
@@ -286,6 +323,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
     this.formInstance?.destroy?.(true);
     this.formInstance = null;
   }
@@ -390,7 +428,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
           'error',
           err?.error
         );
-        this.submitResult.set({ level: 'error', message: msg });
+        this.submitResultRaw.set({ level: 'error', message: msg });
       },
     });
   }
@@ -399,33 +437,77 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
     const settings = this.appSettings();
     let level: 'success' | 'warning' | 'error';
     let message: string;
-    let redirect: string | undefined;
 
     if (res?.has_errors) {
       level = 'error';
       message = settings.messageOnError || 'Your submission contains errors.';
-      redirect = settings.redirectOnError;
     } else if (res?.has_warnings) {
       level = 'warning';
       message = settings.messageOnWarning || 'Submission received with warnings.';
-      redirect = settings.redirectOnWarning;
     } else {
       level = 'success';
       message = settings.messageOnSuccess || 'Form submitted successfully!';
-      redirect = settings.redirectOnSuccess;
     }
 
-    this.submitResult.set({ level, message: this.applyMessagePlaceholders(message, level, res) });
+    const resolvedTemplate = this.applyMessagePlaceholders(message, level, res);
+    const action = this.resolveResultAction(settings, level, res);
+    const delaySec = action.mode === 'stay' ? null : Math.max(0, Number(action.delaySeconds) || 0);
 
-    if (redirect) {
-      setTimeout(() => { window.location.href = redirect!; }, 10_000);
+    this.countdown.set(delaySec);
+    this.submitResultRaw.set({ level, message: resolvedTemplate });
+
+    if (action.mode === 'stay' || delaySec == null) return;
+
+    if (delaySec === 0) {
+      this.executeResultAction(action, res);
       return;
     }
 
-    if (res?.next_form_id) {
-      setTimeout(() => {
-        window.location.href = `/form-public/${res.next_form_id}?parent_submission_id=${res.id}`;
-      }, 2_000);
+    this.countdown.set(delaySec);
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
+    this.countdownInterval = setInterval(() => {
+      this.zone.run(() => {
+        const c = (this.countdown() ?? 1) - 1;
+        this.countdown.set(c);
+        if (c <= 0) {
+          clearInterval(this.countdownInterval!);
+          this.countdownInterval = null;
+          this.executeResultAction(action, res);
+        }
+      });
+    }, 1000);
+  }
+
+  private resolveResultAction(settings: any, level: 'success' | 'warning' | 'error', res: any): {
+    mode: 'stay' | 'redirect' | 'next_form';
+    delaySeconds: number;
+    url?: string;
+    nextFormId?: number;
+  } {
+    const configured = settings?.resultActions?.[level];
+    const redirect = level === 'success' ? settings.redirectOnSuccess
+      : level === 'warning' ? settings.redirectOnWarning
+      : settings.redirectOnError;
+    const nextFormId = Number(res?.next_form_id);
+
+    if (configured?.mode === 'redirect' && redirect) {
+      return { mode: 'redirect', delaySeconds: Number(configured.delaySeconds) || 0, url: redirect };
+    }
+    if (configured?.mode === 'next_form' && Number.isFinite(nextFormId) && nextFormId > 0) {
+      return { mode: 'next_form', delaySeconds: Number(configured.delaySeconds) || 0, nextFormId };
+    }
+    if (configured) return { mode: 'stay', delaySeconds: 0 };
+
+    if (redirect) return { mode: 'redirect', delaySeconds: 10, url: redirect };
+    if (Number.isFinite(nextFormId) && nextFormId > 0) return { mode: 'next_form', delaySeconds: 2, nextFormId };
+    return { mode: 'stay', delaySeconds: 0 };
+  }
+
+  private executeResultAction(action: { mode: string; url?: string; nextFormId?: number }, res: any): void {
+    if (action.mode === 'redirect') {
+      window.location.href = action.url!;
+    } else if (action.mode === 'next_form') {
+      window.location.href = `/form-public/${action.nextFormId}?parent_submission_id=${res.id}`;
     }
   }
 
