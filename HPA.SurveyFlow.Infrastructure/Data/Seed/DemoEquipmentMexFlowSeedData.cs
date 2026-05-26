@@ -9,15 +9,15 @@ internal static class DemoEquipmentMexFlowSeedData
     public static readonly EquipmentDemoDefinition[] Definitions =
     [
         new("Forklift Pre-Start to MEX Flow (Demo)", "Forklift Warning Acknowledgement (Demo)", "forklift-pre-start-mex-flow-demo", "forklift", "10902", "fa:FaTruckLoading",
-            "Forklift must be isolated and reported to maintenance."),
+            "Forklift must be isolated and reported to maintenance.", "Forklift.png"),
         new("Reach Stacker Pre-Start Checklist (Demo)", "Reach Stacker Warning Acknowledgement (Demo)", "reach-stacker-pre-start-mex-flow-demo", "reach stacker", "1075", "fa:FaWarehouse",
-            "Reach stacker must be isolated and reported to maintenance."),
+            "Reach stacker must be isolated and reported to maintenance.", "Reach Stacker.png"),
         new("Shuttle & Straddle Pre-Start Checklist (Demo)", "Shuttle & Straddle Warning Acknowledgement (Demo)", "shuttle-straddle-pre-start-mex-flow-demo", "shuttle/straddle carrier", "1076", "fa:FaTruckMoving",
-            "Equipment must be isolated and reported to maintenance."),
+            "Equipment must be isolated and reported to maintenance.", "Shuttle.png"),
         new("Light Vehicle Pre-Start Checklist (Demo)", "Light Vehicle Warning Acknowledgement (Demo)", "light-vehicle-pre-start-mex-flow-demo", "light vehicle", "73", "fa:FaCar",
-            "Vehicle must be isolated and reported to maintenance."),
+            "Vehicle must be isolated and reported to maintenance.", "Light Vehicle.png"),
         new("Quay Crane Pre-Start Checklist (Demo)", "Quay Crane Warning Acknowledgement (Demo)", "quay-crane-pre-start-mex-flow-demo", "quay crane", "1074", "fa:FaIndustry",
-            "Quay crane must be isolated and reported to maintenance."),
+            "Quay crane must be isolated and reported to maintenance.", "Quay Crane.png"),
     ];
 
     public static IReadOnlyList<SeedForm> CreateInitialForms() =>
@@ -320,4 +320,5 @@ internal sealed record EquipmentDemoDefinition(
     string EquipmentName,
     string MexParentAssetId,
     string IconKey,
-    string UnsafeMessage);
+    string UnsafeMessage,
+    string? SeedImageFileName = null);

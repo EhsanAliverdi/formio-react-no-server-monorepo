@@ -35,4 +35,11 @@
     <ProjectReference Include="..\HPA.SurveyFlow.Infrastructure\HPA.SurveyFlow.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\HPA.SurveyFlow.Infrastructure\Data\Seed\images\**\*">
+      <Link>Seed\images\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

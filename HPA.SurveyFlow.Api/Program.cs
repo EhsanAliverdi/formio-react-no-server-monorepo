@@ -156,7 +156,7 @@ using (var scope = app.Services.CreateScope())
 
     var storage = app.Services.GetRequiredService<StorageService>();
     await storage.EnsureBucketAsync();
-    await DbSeeder.SeedAsync(db, seedAdminUser, adminEmail, adminPassword, seedForms, seedOverrideExisting);
+    await DbSeeder.SeedAsync(db, seedAdminUser, adminEmail, adminPassword, seedForms, seedOverrideExisting, storage);
 
     // Apply job schedules from the DB after seeding has run
     var jobScheduler = scope.ServiceProvider.GetRequiredService<JobScheduler>();

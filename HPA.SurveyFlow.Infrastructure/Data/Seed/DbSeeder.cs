@@ -13,7 +13,8 @@ public static class DbSeeder
         string? adminEmail,
         string? adminPassword,
         bool seedForms,
-        bool overrideExisting = false)
+        bool overrideExisting = false,
+        StorageService? storage = null)
     {
         await db.Database.MigrateAsync();
 
@@ -79,11 +80,80 @@ public static class DbSeeder
         if (seedForms)
         {
             await SeedFormsAsync(db, overrideExisting);
+            if (storage != null)
+                await SeedFormImagesAsync(db, storage, overrideExisting);
         }
 
         await SeedJobDefinitionsAsync(db);
 
         await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedFormImagesAsync(AppDbContext db, StorageService storage, bool overrideExisting)
+    {
+        var seedDir = Path.Combine(AppContext.BaseDirectory, "Seed", "images");
+        if (!Directory.Exists(seedDir)) return;
+
+        foreach (var definition in DemoEquipmentMexFlowSeedData.Definitions)
+        {
+            if (definition.SeedImageFileName is null) continue;
+
+            var imagePath = Path.Combine(seedDir, definition.SeedImageFileName);
+            if (!File.Exists(imagePath)) continue;
+
+            var form = await db.Forms.FirstOrDefaultAsync(f => f.Name == definition.ParentFormName);
+            if (form is null) continue;
+
+            var key = $"images/seed/{definition.SeedImageFileName}";
+            var imageUrl = $"/api/uploads/{key}";
+
+            // Parse existing preStartImage to decide whether to upload/patch
+            var existingJson = form.Json;
+            string? existingImage = null;
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(existingJson);
+                if (doc.RootElement.TryGetProperty("appSettings", out var appSettings) &&
+                    appSettings.TryGetProperty("preStartImage", out var imgProp) &&
+                    imgProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    existingImage = imgProp.GetString();
+            }
+            catch { }
+
+            // Skip upload and patch if the form already has a user-set image and we're not overriding
+            if (!overrideExisting && !string.IsNullOrWhiteSpace(existingImage))
+                continue;
+
+            // Upload to MinIO (always — idempotent, same key each time)
+            var bytes = await File.ReadAllBytesAsync(imagePath);
+            var ext = Path.GetExtension(definition.SeedImageFileName).ToLowerInvariant();
+            var contentType = ext == ".png" ? "image/png" : ext == ".jpg" || ext == ".jpeg" ? "image/jpeg" : "image/png";
+            await storage.UploadAsync(key, bytes, contentType, "public, max-age=31536000, immutable");
+
+            // Patch preStartImage into the form JSON
+            form.Json = PatchPreStartImage(existingJson, imageUrl);
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    private static string PatchPreStartImage(string existingJson, string imageUrl)
+    {
+        try
+        {
+            var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(existingJson)!;
+            if (dict.TryGetValue("appSettings", out var appSettingsEl))
+            {
+                var appSettings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(appSettingsEl.GetRawText())!;
+                appSettings["preStartImage"] = System.Text.Json.JsonSerializer.SerializeToElement(imageUrl);
+                dict["appSettings"] = System.Text.Json.JsonSerializer.SerializeToElement(appSettings);
+            }
+            return System.Text.Json.JsonSerializer.Serialize(dict);
+        }
+        catch
+        {
+            return existingJson;
+        }
     }
 
     private static async Task SeedJobDefinitionsAsync(AppDbContext db)
