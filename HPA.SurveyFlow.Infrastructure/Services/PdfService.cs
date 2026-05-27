@@ -8,6 +8,18 @@ public class PdfService
     private readonly SemaphoreSlim _browserLock = new(1, 1);
     private IBrowser? _browser;
 
+    public async Task CheckHealthAsync()
+    {
+        var browser = await GetBrowserAsync();
+        if (!browser.IsConnected)
+        {
+            throw new InvalidOperationException("Headless Chromium is not connected.");
+        }
+
+        await using var page = await browser.NewPageAsync();
+        await page.SetContentAsync("<html><body>ok</body></html>");
+    }
+
     public async Task<byte[]> GeneratePdfAsync(string html)
     {
         var browser = await GetBrowserAsync();

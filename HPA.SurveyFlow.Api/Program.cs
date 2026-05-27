@@ -2,12 +2,14 @@ using Amazon.S3;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 using Quartz;
 using Scalar.AspNetCore;
 using Serilog;
 using HPA.SurveyFlow.Api.Authentication;
 using HPA.SurveyFlow.Api.Authorization;
+using HPA.SurveyFlow.Api.Health;
 using HPA.SurveyFlow.Api.Middleware;
 using HPA.SurveyFlow.Infrastructure.Data;
 using HPA.SurveyFlow.Infrastructure.Data.Seed;
@@ -88,6 +90,13 @@ var connStr = builder.Configuration.GetConnectionString("Default")
 builder.Services.AddDbContext<AppDbContext>(opts =>
     opts.UseNpgsql(connStr));
 
+builder.Services.AddHealthChecks()
+    .AddCheck("api", () => HealthCheckResult.Healthy("API is healthy."), tags: ["live", "ready"])
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
+    .AddCheck<ObjectStorageHealthCheck>("object-storage", tags: ["ready"])
+    .AddCheck<HeadlessChromiumHealthCheck>("headless-chromium", tags: ["ready"])
+    .AddCheck<QuartzHealthCheck>("scheduler", tags: ["ready"]);
+
 // MinIO / S3
 var minioEndpoint = builder.Configuration["Minio:Endpoint"]
     ?? Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "http://localhost:9000";
@@ -105,6 +114,7 @@ var minioRegion = builder.Configuration["Minio:Region"]
 var s3Config = new AmazonS3Config { ServiceURL = minioEndpoint, ForcePathStyle = true, AuthenticationRegion = minioRegion };
 var s3Client = new AmazonS3Client(minioAccessKey, minioSecretKey, s3Config);
 builder.Services.AddSingleton<IAmazonS3>(s3Client);
+builder.Services.AddSingleton(new ObjectStorageHealthOptions(minioBucket));
 builder.Services.AddSingleton(sp => new StorageService(sp.GetRequiredService<IAmazonS3>(), minioBucket));
 
 // App services
@@ -186,6 +196,9 @@ app.UseSerilogRequestLogging(opts =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHealthChecks("/health/live", HealthCheckResponseWriter.Options(check => check.Tags.Contains("live")));
+app.MapHealthChecks("/health/ready", HealthCheckResponseWriter.Options(check => check.Tags.Contains("ready")));
+app.MapHealthChecks("/health", HealthCheckResponseWriter.Options());
 app.MapControllers();
 
 try
