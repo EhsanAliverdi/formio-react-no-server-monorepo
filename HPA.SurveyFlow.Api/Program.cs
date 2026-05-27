@@ -173,12 +173,6 @@ using (var scope = app.Services.CreateScope())
     await jobScheduler.ApplyAsync();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
-
 app.UseCors();
 
 // Correlation ID must be first so all subsequent middleware + logs carry it
@@ -203,6 +197,12 @@ app.MapHealthChecks("/health/ready", HealthCheckResponseWriter.Options(check => 
 app.MapHealthChecks("/health", HealthCheckResponseWriter.Options())
     .WithTags("Health").WithSummary("Full health report").WithDescription("Returns status of all registered health checks.").WithOpenApi();
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 try
 {
