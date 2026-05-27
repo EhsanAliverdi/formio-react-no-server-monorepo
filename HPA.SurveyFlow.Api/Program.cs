@@ -193,11 +193,11 @@ app.UseSerilogRequestLogging(opts =>
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHealthChecks("/health/live", HealthCheckResponseWriter.Options(check => check.Tags.Contains("live")))
-    .WithTags("Health").WithSummary("Liveness probe").WithDescription("Returns healthy when the API process is running.").WithOpenApi();
+    .WithTags("Health").WithSummary("Liveness probe").WithDescription("Returns healthy when the API process is running.");
 app.MapHealthChecks("/health/ready", HealthCheckResponseWriter.Options(check => check.Tags.Contains("ready")))
-    .WithTags("Health").WithSummary("Readiness probe").WithDescription("Returns healthy when all dependencies (database, storage, scheduler, Chromium) are reachable.").WithOpenApi();
+    .WithTags("Health").WithSummary("Readiness probe").WithDescription("Returns healthy when all dependencies (database, storage, scheduler, Chromium) are reachable.");
 app.MapHealthChecks("/health", HealthCheckResponseWriter.Options())
-    .WithTags("Health").WithSummary("Full health report").WithDescription("Returns status of all registered health checks.").WithOpenApi();
+    .WithTags("Health").WithSummary("Full health report").WithDescription("Returns status of all registered health checks.");
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())

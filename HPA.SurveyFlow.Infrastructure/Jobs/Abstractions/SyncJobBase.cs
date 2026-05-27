@@ -28,6 +28,8 @@ public abstract class SyncJobBase<TRecord>(
     ILogger logger) : IScheduledJob
     where TRecord : ISyncRecord
 {
+    protected AppDbContext Db { get; } = db;
+
     /// <summary>Unique job key — matches ScheduledJobDefinition.JobKey.</summary>
     protected abstract string GetJobKey();
 

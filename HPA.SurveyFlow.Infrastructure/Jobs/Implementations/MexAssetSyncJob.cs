@@ -57,11 +57,11 @@ public sealed class MexAssetSyncJob(
 
     protected override async Task<int> PurgeAsync(CancellationToken ct)
     {
-        var count = await db.ExternalAssets.CountAsync(a => a.Source == "mex", ct);
-        await db.ExternalAssets.Where(a => a.Source == "mex").ExecuteDeleteAsync(ct);
+        var count = await Db.ExternalAssets.CountAsync(a => a.Source == "mex", ct);
+        await Db.ExternalAssets.Where(a => a.Source == "mex").ExecuteDeleteAsync(ct);
 
         // Also clear the last-run tracking so the next scheduled run starts fresh
-        await db.SiteSettings
+        await Db.SiteSettings
             .Where(s => s.Key.StartsWith("job.mex-asset-sync.last_run_"))
             .ExecuteDeleteAsync(ct);
 
@@ -75,7 +75,7 @@ public sealed class MexAssetSyncJob(
         int pageNumber, int pageSize,
         CancellationToken ct)
     {
-        var settings = (await db.SiteSettings.ToListAsync(ct))
+        var settings = (await Db.SiteSettings.ToListAsync(ct))
             .ToDictionary(s => s.Key, s => s.Value);
 
         var baseUrl = settings.GetValueOrDefault("integration.mex.baseUrl");
@@ -135,7 +135,7 @@ public sealed class MexAssetSyncJob(
         IEnumerable<string> externalIds, CancellationToken ct)
     {
         var ids = externalIds.ToList();
-        return (await db.ExternalAssets
+        return (await Db.ExternalAssets
             .Where(a => a.Source == "mex" && ids.Contains(a.ExternalId))
             .ToListAsync(ct))
             .ToDictionary<ExternalAsset, string, object>(a => a.ExternalId, a => a);
@@ -151,7 +151,7 @@ public sealed class MexAssetSyncJob(
         var now = DateTime.UtcNow;
 
         foreach (var r in toInsert)
-            db.ExternalAssets.Add(new ExternalAsset
+            Db.ExternalAssets.Add(new ExternalAsset
             {
                 Source            = "mex",
                 ExternalId        = r.ExternalId,
@@ -178,7 +178,7 @@ public sealed class MexAssetSyncJob(
             asset.LastSyncedAt     = now;
         }
 
-        await db.SaveChangesAsync(ct);
+        await Db.SaveChangesAsync(ct);
         return new UpsertResult(toInsert.Count, toUpdate.Count, 0, 0);
     }
 
@@ -191,7 +191,7 @@ public sealed class MexAssetSyncJob(
     /// </summary>
     protected override async Task ValidateAndRepairAsync(CancellationToken ct)
     {
-        var settings = (await db.SiteSettings.ToListAsync(ct))
+        var settings = (await Db.SiteSettings.ToListAsync(ct))
             .ToDictionary(s => s.Key, s => s.Value);
 
         var baseUrl = settings.GetValueOrDefault("integration.mex.baseUrl");
@@ -212,7 +212,7 @@ public sealed class MexAssetSyncJob(
             ct.ThrowIfCancellationRequested();
 
             // All parent IDs referenced by our assets
-            var referencedParentIds = await db.ExternalAssets
+            var referencedParentIds = await Db.ExternalAssets
                 .Where(a => a.Source == "mex" && a.ParentExternalId != null)
                 .Select(a => a.ParentExternalId!)
                 .Distinct()
@@ -221,7 +221,7 @@ public sealed class MexAssetSyncJob(
             if (referencedParentIds.Count == 0) break;
 
             // Which of those parents don't exist in our DB?
-            var existingIds = await db.ExternalAssets
+            var existingIds = await Db.ExternalAssets
                 .Where(a => a.Source == "mex" && referencedParentIds.Contains(a.ExternalId))
                 .Select(a => a.ExternalId)
                 .ToListAsync(ct);
@@ -254,10 +254,10 @@ public sealed class MexAssetSyncJob(
                     if (rec is null) continue;
 
                     // Only insert if still missing (concurrent run guard)
-                    if (!await db.ExternalAssets.AnyAsync(
+                    if (!await Db.ExternalAssets.AnyAsync(
                             a => a.Source == "mex" && a.ExternalId == rec.ExternalId, ct))
                     {
-                        db.ExternalAssets.Add(new ExternalAsset
+                        Db.ExternalAssets.Add(new ExternalAsset
                         {
                             Source           = "mex",
                             ExternalId       = rec.ExternalId,
@@ -281,7 +281,7 @@ public sealed class MexAssetSyncJob(
 
             if (fetched > 0)
             {
-                await db.SaveChangesAsync(ct);
+                await Db.SaveChangesAsync(ct);
                 totalFetched += fetched;
                 logger.LogInformation("MexAssetSyncJob: pass {Pass} fetched {Count} missing parent(s)", pass, fetched);
             }
