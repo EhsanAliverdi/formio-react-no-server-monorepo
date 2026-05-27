@@ -19,7 +19,7 @@ namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/forms")]
-public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService, NotificationRuleEvaluatorService notificationEvaluator, NotificationRuleSenderService notificationSender, ILogger<FormsController> logger) : ControllerBase
+public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService, NotificationRuleEvaluatorService notificationEvaluator, NotificationRuleSenderService notificationSender, IntegrationRuleExecutorService integrationExecutor, ILogger<FormsController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> ListForms([FromQuery] string? mode, [FromQuery] string? category)
@@ -274,6 +274,11 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
                 var matched = notificationEvaluator.Evaluate(rules, submissionDoc.RootElement);
                 await notificationSender.SendAsync(matched, form, submission, currentUser, abnormalities, errorCount, warningCount, submissionDoc.RootElement);
             }
+
+            // Evaluate and fire integration rules (runs alongside existing appSettings.secondarySubmit)
+            integrationExecutor.DispatchAsync(
+                form.Id, submission.Id, dataJson, form.Json, form.Name,
+                currentUser?.Email ?? string.Empty, outcome, abnormalities);
         }
         catch { /* never fail primary submit */ }
 

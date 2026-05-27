@@ -17,6 +17,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ExternalAsset> ExternalAssets { get; set; }
     public DbSet<FormNotificationRule> FormNotificationRules { get; set; }
     public DbSet<FormNotificationRuleEmail> FormNotificationRuleEmails { get; set; }
+    public DbSet<FormIntegrationRule> FormIntegrationRules { get; set; }
+    public DbSet<FormIntegrationRuleMex> FormIntegrationRuleMexConfigs { get; set; }
+    public DbSet<FormIntegrationRuleWebhook> FormIntegrationRuleWebhooks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -215,6 +218,48 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.BodyHtml).HasColumnName("body_html").HasDefaultValue(string.Empty);
             e.Property(r => r.AttachPdf).HasColumnName("attach_pdf").HasDefaultValue(false);
             e.HasOne(r => r.Rule).WithOne(r => r.EmailConfig).HasForeignKey<FormNotificationRuleEmail>(r => r.RuleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FormIntegrationRule>(e =>
+        {
+            e.ToTable("form_integration_rules");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(r => r.FormId).HasColumnName("form_id");
+            e.Property(r => r.Name).HasColumnName("name").IsRequired();
+            e.Property(r => r.Enabled).HasColumnName("enabled").HasDefaultValue(true);
+            e.Property(r => r.Channel).HasColumnName("channel").HasDefaultValue("mex");
+            e.Property(r => r.ConditionGroupJson).HasColumnName("condition_group_json").IsRequired();
+            e.Property(r => r.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
+            e.Property(r => r.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(r => r.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.HasOne(r => r.Form).WithMany().HasForeignKey(r => r.FormId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FormIntegrationRuleMex>(e =>
+        {
+            e.ToTable("form_integration_rule_mex");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(r => r.RuleId).HasColumnName("rule_id");
+            e.Property(r => r.Action).HasColumnName("action").HasDefaultValue("create_request");
+            e.Property(r => r.ContactIdField).HasColumnName("contact_id_field");
+            e.Property(r => r.JobTypeField).HasColumnName("job_type_field");
+            e.Property(r => r.FieldMappingsJson).HasColumnName("field_mappings_json").HasDefaultValue("{}");
+            e.HasOne(r => r.Rule).WithOne(r => r.MexConfig).HasForeignKey<FormIntegrationRuleMex>(r => r.RuleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FormIntegrationRuleWebhook>(e =>
+        {
+            e.ToTable("form_integration_rule_webhooks");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(r => r.RuleId).HasColumnName("rule_id");
+            e.Property(r => r.Url).HasColumnName("url").HasDefaultValue(string.Empty);
+            e.Property(r => r.Method).HasColumnName("method").HasDefaultValue("POST");
+            e.Property(r => r.HeadersJson).HasColumnName("headers_json").HasDefaultValue("[]");
+            e.Property(r => r.BodyTemplate).HasColumnName("body_template").HasDefaultValue(string.Empty);
+            e.HasOne(r => r.Rule).WithOne(r => r.WebhookConfig).HasForeignKey<FormIntegrationRuleWebhook>(r => r.RuleId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -13,6 +13,7 @@ import { IconPickerComponent } from '../../../shared/components/icon-picker/icon
 import { IconService } from '../../../core/services/icon.service';
 import { Form, User } from '../../../core/models';
 import { NotificationRulesEditorComponent } from '../components/notification-rules-editor/notification-rules-editor.component';
+import { IntegrationRulesEditorComponent } from '../components/integration-rules-editor/integration-rules-editor.component';
 
 type WizardPanel = { key: string; title: string };
 type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
@@ -144,7 +145,7 @@ function ensureWizardHasPage(schema: any): any {
 @Component({
   selector: 'app-admin-form-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent, NotificationRulesEditorComponent],
+  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent, NotificationRulesEditorComponent, IntegrationRulesEditorComponent],
   template: `
     <div class="p-6">
       <!-- Header -->
@@ -655,6 +656,14 @@ function ensureWizardHasPage(schema: any): any {
         <!-- Notification Rules -->
         <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
           <app-notification-rules-editor
+            [formId]="formId"
+            [formSchema]="currentSchema"
+          />
+        </div>
+
+        <!-- Integration Rules -->
+        <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
+          <app-integration-rules-editor
             [formId]="formId"
             [formSchema]="currentSchema"
           />
