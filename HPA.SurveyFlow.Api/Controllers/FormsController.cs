@@ -1,24 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using HPA.SurveyFlow.Api.Extensions;
 using HPA.SurveyFlow.Domain.DTOs.Requests;
 using HPA.SurveyFlow.Domain.DTOs.Responses;
+using HPA.SurveyFlow.Domain.Email;
 using HPA.SurveyFlow.Domain.Entities;
 using HPA.SurveyFlow.Domain.Enums;
 using HPA.SurveyFlow.Infrastructure.Data;
+using HPA.SurveyFlow.Infrastructure.Email;
 using HPA.SurveyFlow.Infrastructure.Services;
+using Microsoft.Extensions.Logging;
 
 namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/forms")]
-public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService, NotificationRuleEvaluatorService notificationEvaluator, NotificationRuleSenderService notificationSender) : ControllerBase
+public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService, NotificationRuleEvaluatorService notificationEvaluator, NotificationRuleSenderService notificationSender, ILogger<FormsController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> ListForms([FromQuery] string? mode, [FromQuery] string? category)
@@ -418,7 +419,8 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             return;
 
         var settings = (await db.SiteSettings.ToListAsync()).ToDictionary(s => s.Key, s => (string?)s.Value);
-        if (settings.GetValueOrDefault("integration.email.enabled") != "true")
+        var emailSender = EmailSenderFactory.Create(settings, logger);
+        if (emailSender == null)
             return;
 
         var recipients = ParseRecipients(config.To);
@@ -441,7 +443,13 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             pdfBytes = await pdfService.GeneratePdfAsync(pdfHtml);
         }
 
-        await SendEmailAsync(settings, recipients, subject, bodyHtml, pdfBytes, $"submission-{submission.Id}.pdf");
+        await emailSender.SendAsync(new EmailMessage
+        {
+            To = recipients,
+            Subject = subject,
+            BodyHtml = bodyHtml,
+            Attachment = pdfBytes == null ? null : new EmailAttachment { Bytes = pdfBytes, FileName = $"submission-{submission.Id}.pdf" }
+        });
     }
 
     private static bool TryGetEmailNotificationConfig(JsonElement formSchema, string outcome, out EmailNotificationConfig config)
@@ -531,85 +539,6 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         foreach (var (key, value) in placeholders)
             result = result.Replace($"{{{{{key}}}}}", value ?? string.Empty, StringComparison.OrdinalIgnoreCase);
         return result;
-    }
-
-    private static async Task SendEmailAsync(
-        IReadOnlyDictionary<string, string?> settings,
-        IReadOnlyList<string> recipients,
-        string subject,
-        string bodyHtml,
-        byte[]? attachmentBytes,
-        string attachmentFileName)
-    {
-        var provider = settings.GetValueOrDefault("integration.email.provider") ?? "smtp";
-        var fromEmail = settings.GetValueOrDefault("integration.email.fromEmail") ?? "noreply@surveyflow.local";
-        var fromName = settings.GetValueOrDefault("integration.email.fromName") ?? "SurveyFlow";
-
-        if (provider == "sendgrid")
-        {
-          var apiKey = settings.GetValueOrDefault("integration.email.sendgridApiKey");
-          if (string.IsNullOrWhiteSpace(apiKey)) return;
-
-          using var http = new HttpClient();
-          http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-          var attachments = attachmentBytes == null ? Array.Empty<object>() :
-          [new
-          {
-              content = Convert.ToBase64String(attachmentBytes),
-              filename = attachmentFileName,
-              type = "application/pdf",
-              disposition = "attachment"
-          }];
-
-          var payload = new
-          {
-              personalizations = new[] { new { to = recipients.Select(email => new { email }).ToArray() } },
-              from = new { email = fromEmail, name = fromName },
-              subject,
-              content = new[] { new { type = "text/html", value = bodyHtml } },
-              attachments
-          };
-
-          var response = await http.PostAsJsonAsync("https://api.sendgrid.com/v3/mail/send", payload);
-          response.EnsureSuccessStatusCode();
-          return;
-        }
-
-        var host = settings.GetValueOrDefault("integration.email.smtpHost");
-        if (string.IsNullOrWhiteSpace(host)) return;
-
-        var portStr = settings.GetValueOrDefault("integration.email.smtpPort") ?? "587";
-        var username = settings.GetValueOrDefault("integration.email.smtpUsername");
-        var password = settings.GetValueOrDefault("integration.email.smtpPassword");
-        var tls = settings.GetValueOrDefault("integration.email.smtpTls") != "false";
-        if (!int.TryParse(portStr, out var port)) port = 587;
-
-        using var client = new SmtpClient(host, port)
-        {
-            EnableSsl = tls,
-            DeliveryMethod = SmtpDeliveryMethod.Network,
-            UseDefaultCredentials = false,
-        };
-
-        if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
-            client.Credentials = new NetworkCredential(username, password);
-
-        using var message = new MailMessage
-        {
-            From = new MailAddress(fromEmail, fromName),
-            Subject = subject,
-            Body = bodyHtml,
-            IsBodyHtml = true,
-        };
-
-        foreach (var recipient in recipients)
-            message.To.Add(new MailAddress(recipient));
-
-        if (attachmentBytes != null)
-            message.Attachments.Add(new Attachment(new MemoryStream(attachmentBytes), attachmentFileName, "application/pdf"));
-
-        await client.SendMailAsync(message);
     }
 
     private static string BuildSubmissionPdfHtml(Form form, FormSubmission submission, JsonElement submissionData)
