@@ -476,32 +476,44 @@ function ensureWizardHasPage(schema: any): any {
           </div>
         </div>
 
-        <!-- Appearance (PreStart) -->
+        <!-- Category card appearance -->
         <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
-          <h2 class="text-base font-semibold text-gray-800 mb-4">Appearance &amp; Pre-Start</h2>
+          <h2 class="text-base font-semibold text-gray-800 mb-4">Category Card</h2>
           <div class="space-y-4">
             <label class="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" [(ngModel)]="preStartEnabled"
+              <input type="checkbox" [(ngModel)]="categoryEnabled"
                 class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-              <span class="text-sm text-gray-700 font-medium">Show on Pre-Start page</span>
-              <span class="text-xs text-gray-400">(No login required, card view at <code>/pre-start</code>)</span>
+              <span class="text-sm text-gray-700 font-medium">Show on a category page</span>
             </label>
 
-            @if (preStartEnabled) {
+            @if (categoryEnabled) {
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Category slug <span class="text-red-500">*</span></label>
+                  <input type="text" [(ngModel)]="categorySlug" placeholder="pre-start"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                  <p class="mt-1 text-xs text-gray-500">Used in the public URL, for example <code>/category/pre-start</code>.</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Category name</label>
+                  <input type="text" [(ngModel)]="categoryName" placeholder="Pre-Start"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                </div>
+              </div>
               <!-- Image upload -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Card Image (optional)</label>
-                @if (preStartImage) {
+                @if (categoryImage) {
                   <div class="mb-3 flex items-start gap-3">
-                    <img [src]="preStartImage" alt="Card image" class="h-24 w-40 rounded-lg object-cover border border-gray-200"/>
-                    <button type="button" (click)="clearPreStartImage()"
+                    <img [src]="categoryImage" alt="Card image" class="h-24 w-40 rounded-lg object-cover border border-gray-200"/>
+                    <button type="button" (click)="clearCategoryImage()"
                       class="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition">
                       Remove
                     </button>
                   </div>
                 }
                 <div class="flex items-center gap-3">
-                  <input #imageFileInput type="file" accept="image/*" class="hidden" (change)="uploadPreStartImage($event)"/>
+                  <input #imageFileInput type="file" accept="image/*" class="hidden" (change)="uploadCategoryImage($event)"/>
                   <button type="button" (click)="imageFileInput.click()" [disabled]="imageUploading()"
                     class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium rounded-lg transition disabled:opacity-50">
                     @if (imageUploading()) {
@@ -519,9 +531,9 @@ function ensureWizardHasPage(schema: any): any {
                   </button>
                   <span class="text-xs text-gray-400">Recommended: <strong>400 × 300 px</strong> (4:3) or square. Max 10MB. Image takes priority over icon.</span>
                 </div>
-                @if (preStartImage) {
+                @if (categoryImage) {
                   <label class="mt-3 flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" [(ngModel)]="preStartImageFullWidth"
+                    <input type="checkbox" [(ngModel)]="categoryImageFullWidth"
                       class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
                     <span class="text-sm text-gray-700">Full-width image <span class="text-gray-400 font-normal">(edge-to-edge, <code>object-cover</code>)</span></span>
                   </label>
@@ -532,10 +544,10 @@ function ensureWizardHasPage(schema: any): any {
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Card Icon (used when no image)</label>
                 <div class="flex items-center gap-3">
-                  @if (preStartIcon) {
-                    <img [src]="preStartIconSvgUrl()" alt="Selected icon" class="w-10 h-10 object-contain border border-gray-200 rounded-lg p-1"/>
-                    <span class="text-xs text-gray-500">{{ preStartIcon }}</span>
-                    <button type="button" (click)="preStartIcon = ''"
+                  @if (categoryIcon) {
+                    <img [src]="categoryIconSvgUrl()" alt="Selected icon" class="w-10 h-10 object-contain border border-gray-200 rounded-lg p-1"/>
+                    <span class="text-xs text-gray-500">{{ categoryIcon }}</span>
+                    <button type="button" (click)="categoryIcon = ''"
                       class="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition">
                       Clear
                     </button>
@@ -545,7 +557,7 @@ function ensureWizardHasPage(schema: any): any {
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    {{ preStartIcon ? 'Change Icon' : 'Pick Icon' }}
+                    {{ categoryIcon ? 'Change Icon' : 'Pick Icon' }}
                   </button>
                 </div>
               </div>
@@ -554,18 +566,18 @@ function ensureWizardHasPage(schema: any): any {
               <div class="border-t pt-4 space-y-3">
                 <p class="text-sm font-medium text-gray-700">Card display options</p>
                 <label class="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" [(ngModel)]="preStartShowTitle"
+                  <input type="checkbox" [(ngModel)]="categoryShowTitle"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
                   <span class="text-sm text-gray-700">Show form title on card</span>
                 </label>
                 <label class="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" [(ngModel)]="preStartShowDescription"
+                  <input type="checkbox" [(ngModel)]="categoryShowDescription"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
                   <span class="text-sm text-gray-700">Show description on card</span>
                 </label>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Button text</label>
-                  <input type="text" [(ngModel)]="preStartButtonText" placeholder="Start Checklist"
+                  <input type="text" [(ngModel)]="categoryButtonText" placeholder="Start"
                     class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
                 </div>
               </div>
@@ -575,7 +587,7 @@ function ensureWizardHasPage(schema: any): any {
 
         @if (showIconPicker()) {
           <app-icon-picker
-            [selectedIcon]="preStartIcon"
+            [selectedIcon]="categoryIcon"
             (iconSelected)="onIconSelected($event)"
           />
         }
@@ -693,13 +705,15 @@ export class FormEditComponent implements OnInit {
   allowedUserIds: number[] = [];
   parentFormId: number | null = null;
   appSettings: any = {};
-  preStartEnabled = false;
-  preStartImage = '';
-  preStartImageFullWidth = false;
-  preStartIcon = '';
-  preStartShowTitle = true;
-  preStartShowDescription = true;
-  preStartButtonText = '';
+  categoryEnabled = false;
+  categorySlug = '';
+  categoryName = '';
+  categoryImage = '';
+  categoryImageFullWidth = false;
+  categoryIcon = '';
+  categoryShowTitle = true;
+  categoryShowDescription = true;
+  categoryButtonText = '';
   placeholderHelp = 'Available placeholders: {{outcome}}, {{submission_id}}, {{form_name}}, {{user_email}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
   secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
   secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = normalizeSecondarySubmitConfig(null);
@@ -738,13 +752,15 @@ export class FormEditComponent implements OnInit {
         if (typeof schema === 'string') { try { schema = JSON.parse(schema); } catch { schema = {}; } }
         this.appSettings = { nextForms: {}, ...(schema.appSettings ?? {}) };
         this.appSettings.nextForms = { success: null, warning: null, error: null, ...(this.appSettings.nextForms ?? {}) };
-        this.preStartEnabled = !!(schema.appSettings?.preStart);
-        this.preStartImage = schema.appSettings?.preStartImage || '';
-        this.preStartImageFullWidth = !!(schema.appSettings?.preStartImageFullWidth);
-        this.preStartIcon = schema.appSettings?.preStartIcon || schema.appSettings?.formsListIconKey || '';
-        this.preStartShowTitle = schema.appSettings?.preStartShowTitle !== false;
-        this.preStartShowDescription = schema.appSettings?.preStartShowDescription !== false;
-        this.preStartButtonText = schema.appSettings?.preStartButtonText || '';
+        this.categoryEnabled = !!(schema.appSettings?.categorySlug || schema.appSettings?.preStart);
+        this.categorySlug = schema.appSettings?.categorySlug || (schema.appSettings?.preStart ? 'pre-start' : '');
+        this.categoryName = schema.appSettings?.categoryName || (schema.appSettings?.preStart ? 'Pre-Start' : '');
+        this.categoryImage = schema.appSettings?.categoryImage || schema.appSettings?.preStartImage || '';
+        this.categoryImageFullWidth = !!(schema.appSettings?.categoryImageFullWidth ?? schema.appSettings?.preStartImageFullWidth);
+        this.categoryIcon = schema.appSettings?.categoryIcon || schema.appSettings?.preStartIcon || schema.appSettings?.formsListIconKey || '';
+        this.categoryShowTitle = schema.appSettings?.categoryShowTitle !== false;
+        this.categoryShowDescription = schema.appSettings?.categoryShowDescription !== false;
+        this.categoryButtonText = schema.appSettings?.categoryButtonText || schema.appSettings?.preStartButtonText || '';
         this.secondarySubmitConfigs = normalizeSecondarySubmitConfig(schema.appSettings?.secondarySubmit);
         this.resultActions = normalizeResultActions(schema.appSettings?.resultActions);
         this.emailNotifications = normalizeEmailNotificationConfig(schema.appSettings?.emailNotifications);
@@ -838,22 +854,22 @@ export class FormEditComponent implements OnInit {
     this.activePageIndex.set(j);
   }
 
-  preStartIconSvgUrl = computed(() => {
-    if (!this.preStartIcon || !this.preStartIcon.includes(':')) return '';
-    const [pack, name] = this.preStartIcon.split(':', 2);
+  categoryIconSvgUrl = computed(() => {
+    if (!this.categoryIcon || !this.categoryIcon.includes(':')) return '';
+    const [pack, name] = this.categoryIcon.split(':', 2);
     return this.iconService.getSvgUrl(pack, name);
   });
 
   onIconSelected(iconKey: string): void {
     this.showIconPicker.set(false);
-    this.preStartIcon = iconKey;
+    this.categoryIcon = iconKey;
   }
 
-  clearPreStartImage(): void {
-    this.preStartImage = '';
+  clearCategoryImage(): void {
+    this.categoryImage = '';
   }
 
-  uploadPreStartImage(event: Event): void {
+  uploadCategoryImage(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -864,7 +880,7 @@ export class FormEditComponent implements OnInit {
     this.imageUploading.set(true);
     this.http.post<{ url: string }>(this.apiService.apiUrl('/api/uploads'), formData).subscribe({
       next: (res) => {
-        this.preStartImage = res.url;
+        this.categoryImage = res.url;
         this.imageUploading.set(false);
         this.toastr.success('Image uploaded.');
       },
@@ -913,6 +929,11 @@ export class FormEditComponent implements OnInit {
 
   save(): void {
     if (!this.name.trim()) { this.saveError.set('Form name is required.'); return; }
+    const categorySlug = this.normalizeCategorySlug(this.categorySlug);
+    if (this.categoryEnabled && !categorySlug) {
+      this.saveError.set('Category slug is required when category page is enabled.');
+      return;
+    }
     this.saveError.set(null);
     const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
     const secondarySubmit = {
@@ -938,18 +959,27 @@ export class FormEditComponent implements OnInit {
         resultActions,
         secondarySubmit,
         emailNotifications,
-        preStart: this.preStartEnabled,
-        preStartImage: this.preStartImage || null,
-        preStartImageFullWidth: this.preStartImageFullWidth,
-        preStartIcon: this.preStartIcon || null,
-        preStartShowTitle: this.preStartShowTitle,
-        preStartShowDescription: this.preStartShowDescription,
-        preStartButtonText: this.preStartButtonText.trim() || null,
-        // keep formsListIconKey in sync for backward compat
-        formsListIconKey: this.preStartIcon || this.appSettings.formsListIconKey || null,
-        showIconInFormsList: this.preStartEnabled || this.appSettings.showIconInFormsList || false,
+        categorySlug: this.categoryEnabled ? categorySlug : null,
+        categoryName: this.categoryEnabled ? this.categoryName.trim() || null : null,
+        categoryImage: this.categoryImage || null,
+        categoryImageFullWidth: this.categoryImageFullWidth,
+        categoryIcon: this.categoryIcon || null,
+        categoryShowTitle: this.categoryShowTitle,
+        categoryShowDescription: this.categoryShowDescription,
+        categoryButtonText: this.categoryButtonText.trim() || null,
+        formsListIconKey: this.categoryIcon || this.appSettings.formsListIconKey || null,
+        showIconInFormsList: this.categoryEnabled,
       },
     };
+    delete finalSchema.appSettings.preStart;
+    delete finalSchema.appSettings.preStartImage;
+    delete finalSchema.appSettings.preStartImageFullWidth;
+    delete finalSchema.appSettings.preStartIcon;
+    delete finalSchema.appSettings.preStartShowTitle;
+    delete finalSchema.appSettings.preStartShowDescription;
+    delete finalSchema.appSettings.preStartButtonText;
+    delete finalSchema.appSettings.showStartOver;
+    delete finalSchema.appSettings.startOverUrl;
     this.saving.set(true);
     this.formService.update(this.formId, {
       name: this.name.trim(),
@@ -963,5 +993,13 @@ export class FormEditComponent implements OnInit {
       next: () => { this.toastr.success('Form updated.'); this.router.navigate(['/admin/forms']); },
       error: (err) => { this.saving.set(false); this.saveError.set(err?.error?.error || 'Failed to update form.'); this.toastr.error(this.saveError()!); },
     });
+  }
+
+  private normalizeCategorySlug(value: string): string {
+    return (value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 }

@@ -107,16 +107,21 @@ public static class DbSeeder
             var key = $"images/seed/{definition.SeedImageFileName}";
             var imageUrl = $"/api/uploads/{key}";
 
-            // Parse existing preStartImage to decide whether to upload/patch
+            // Parse existing categoryImage to decide whether to upload/patch
             var existingJson = form.Json;
             string? existingImage = null;
             try
             {
                 using var doc = System.Text.Json.JsonDocument.Parse(existingJson);
-                if (doc.RootElement.TryGetProperty("appSettings", out var appSettings) &&
-                    appSettings.TryGetProperty("preStartImage", out var imgProp) &&
-                    imgProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                    existingImage = imgProp.GetString();
+                if (doc.RootElement.TryGetProperty("appSettings", out var appSettings))
+                {
+                    if (appSettings.TryGetProperty("categoryImage", out var imgProp) &&
+                        imgProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                        existingImage = imgProp.GetString();
+                    else if (appSettings.TryGetProperty("preStartImage", out var legacyImgProp) &&
+                             legacyImgProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                        existingImage = legacyImgProp.GetString();
+                }
             }
             catch { }
 
@@ -130,14 +135,14 @@ public static class DbSeeder
             var contentType = ext == ".png" ? "image/png" : ext == ".jpg" || ext == ".jpeg" ? "image/jpeg" : "image/png";
             await storage.UploadAsync(key, bytes, contentType, "public, max-age=31536000, immutable");
 
-            // Patch preStartImage into the form JSON
-            form.Json = PatchPreStartImage(existingJson, imageUrl);
+            // Patch categoryImage into the form JSON
+            form.Json = PatchCategoryImage(existingJson, imageUrl);
         }
 
         await db.SaveChangesAsync();
     }
 
-    private static string PatchPreStartImage(string existingJson, string imageUrl)
+    private static string PatchCategoryImage(string existingJson, string imageUrl)
     {
         try
         {
@@ -145,7 +150,7 @@ public static class DbSeeder
             if (dict.TryGetValue("appSettings", out var appSettingsEl))
             {
                 var appSettings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(appSettingsEl.GetRawText())!;
-                appSettings["preStartImage"] = System.Text.Json.JsonSerializer.SerializeToElement(imageUrl);
+                appSettings["categoryImage"] = System.Text.Json.JsonSerializer.SerializeToElement(imageUrl);
                 dict["appSettings"] = System.Text.Json.JsonSerializer.SerializeToElement(appSettings);
             }
             return System.Text.Json.JsonSerializer.Serialize(dict);
@@ -249,9 +254,38 @@ public static class DbSeeder
             else
             {
                 // Patch only nextForms.warning inside the existing JSON so user edits
-                // (e.g. preStartImage) are preserved
+                // (e.g. categoryImage) are preserved
                 parent.Json = PatchNextFormsWarning(parent.Json, acknowledgement.Id);
+                parent.Json = PatchCategorySettings(parent.Json, "pre-start", "Pre-Start", definition.IconKey);
+                acknowledgement.Json = PatchCategorySettings(acknowledgement.Json, "pre-start", "Pre-Start", null);
             }
+        }
+    }
+
+    private static string PatchCategorySettings(string existingJson, string categorySlug, string categoryName, string? iconKey)
+    {
+        try
+        {
+            var dict = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(existingJson)!;
+            var appSettings = dict.TryGetValue("appSettings", out var appSettingsEl)
+                ? System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(appSettingsEl.GetRawText())!
+                : new System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>();
+
+            appSettings["categorySlug"] = System.Text.Json.JsonSerializer.SerializeToElement(categorySlug);
+            appSettings["categoryName"] = System.Text.Json.JsonSerializer.SerializeToElement(categoryName);
+            if (iconKey is not null)
+            {
+                appSettings["categoryIcon"] = System.Text.Json.JsonSerializer.SerializeToElement(iconKey);
+                appSettings["formsListIconKey"] = System.Text.Json.JsonSerializer.SerializeToElement(iconKey);
+                appSettings["showIconInFormsList"] = System.Text.Json.JsonSerializer.SerializeToElement(true);
+            }
+
+            dict["appSettings"] = System.Text.Json.JsonSerializer.SerializeToElement(appSettings);
+            return System.Text.Json.JsonSerializer.Serialize(dict);
+        }
+        catch
+        {
+            return existingJson;
         }
     }
 

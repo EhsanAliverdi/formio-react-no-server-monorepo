@@ -118,14 +118,17 @@ function buildLabelMap(schema: any): Record<string, string> {
         @if (isWizard() && panels().length > 1) {
           <div class="mb-4 flex flex-wrap gap-2">
             @for (panel of panels(); track panel.key; let i = $index) {
-              <div class="inline-flex items-center rounded-full border px-3 py-1 text-sm"
+              <button type="button" (click)="goToStep(i)"
+                class="inline-flex items-center rounded-full border px-3 py-1 text-sm transition"
                 [class]="step() === i
                   ? 'border-blue-200 bg-blue-50 font-semibold text-blue-700'
                   : i < step()
-                    ? 'border-green-200 bg-green-50 text-green-700'
-                    : 'border-gray-200 bg-white text-gray-500'">
+                    ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
+                    : 'border-gray-200 bg-white text-gray-500'"
+                [class.cursor-pointer]="i < step()"
+                [class.cursor-default]="i >= step()">
                 {{ i + 1 }}. {{ panelTitle(panel, i) }}
-              </div>
+              </button>
             }
           </div>
         }
@@ -257,10 +260,20 @@ export class FillFormComponent implements OnInit, OnDestroy {
 
     const isLastStep = !this.isWizard() || this.step() === this.panels().length - 1;
 
+    const submission = { data: structuredClone(this.pendingData ?? {}) };
+
     Formio.createForm(this.containerRef.nativeElement, schema, {
       noDefaultSubmitButton: true,
+      submission,
     }).then((instance: any) => {
       this.formInstance = instance;
+      if (Object.keys(submission.data).length > 0) {
+        if (typeof instance.setSubmission === 'function') {
+          instance.setSubmission(submission);
+        } else {
+          instance.submission = submission;
+        }
+      }
       if (this.appSettings().showColorCodedAnswers) {
         scheduleAbnormalAnswerColors(this.containerRef.nativeElement, schema);
       }
@@ -291,14 +304,21 @@ export class FillFormComponent implements OnInit, OnDestroy {
 
   prevStep(): void {
     if (this.step() > 0) {
+      this.mergeCurrentFormData();
       this.step.update(s => s - 1);
       setTimeout(() => this.mountForm(), 0);
     }
   }
 
+  goToStep(index: number): void {
+    if (index < 0 || index >= this.panels().length || index >= this.step()) return;
+    this.mergeCurrentFormData();
+    this.step.set(index);
+    setTimeout(() => this.mountForm(), 0);
+  }
+
   handleSubmitClick(): void {
-    const data = this.formInstance?.submission?.data ?? {};
-    this.pendingData = { ...(this.pendingData ?? {}), ...data };
+    this.mergeCurrentFormData();
 
     if (this.appSettings().previewBeforeSubmit) {
       this.previewItems.set(
@@ -321,7 +341,13 @@ export class FillFormComponent implements OnInit, OnDestroy {
   }
 
   confirmSubmit(): void {
+    this.mergeCurrentFormData();
     this.doSubmit();
+  }
+
+  private mergeCurrentFormData(): void {
+    const data = this.formInstance?.submission?.data ?? {};
+    this.pendingData = { ...(this.pendingData ?? {}), ...data };
   }
 
   private doSubmit(): void {

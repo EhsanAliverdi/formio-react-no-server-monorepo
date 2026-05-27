@@ -9,10 +9,13 @@ export class FormService {
   private http = inject(HttpClient);
   private api = inject(ApiService);
 
-  list(mode?: string): Observable<Form[]> {
+  list(mode?: string, category?: string): Observable<Form[]> {
     let params = new HttpParams();
     if (mode !== undefined) {
       params = params.set('mode', mode);
+    }
+    if (category !== undefined) {
+      params = params.set('category', category);
     }
     return this.http.get<Form[]>(this.api.apiUrl('/api/forms'), { params });
   }

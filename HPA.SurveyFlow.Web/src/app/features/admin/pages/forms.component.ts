@@ -231,8 +231,8 @@ export class AdminFormsComponent implements OnInit {
   formThumbnailUrl(form: Form): string | null {
     const s = this.parseFormJson(form);
     if (!s?.appSettings) return null;
-    if (s.appSettings.preStartImage) return s.appSettings.preStartImage;
-    const key: string | null = s.appSettings.preStartIcon || s.appSettings.formsListIconKey || null;
+    if (s.appSettings.categoryImage || s.appSettings.preStartImage) return s.appSettings.categoryImage || s.appSettings.preStartImage;
+    const key: string | null = s.appSettings.categoryIcon || s.appSettings.preStartIcon || s.appSettings.formsListIconKey || null;
     if (!key || !key.includes(':')) return null;
     const [pack, name] = key.split(':', 2);
     return this.iconService.getSvgUrl(pack, name);

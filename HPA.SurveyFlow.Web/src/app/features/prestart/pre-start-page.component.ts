@@ -6,13 +6,13 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormService } from '../../core/services/form.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { IconService } from '../../core/services/icon.service';
 import { Form, SiteSettings } from '../../core/models';
 
-interface PreStartCard {
+interface CategoryCard {
   id: number;
   name: string;
   description: string | null;
@@ -123,7 +123,7 @@ interface PreStartCard {
               <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
           } @else if (cards().length === 0) {
-            <div class="text-center py-24 text-gray-400 text-lg">No pre-start forms available.</div>
+            <div class="text-center py-24 text-gray-400 text-lg">No forms available in this category.</div>
           } @else {
             <div class="flex flex-wrap justify-center gap-6">
               @for (card of cards(); track card.id) {
@@ -184,10 +184,12 @@ export class PreStartPageComponent implements OnInit {
   private formService = inject(FormService);
   private settingsService = inject(SettingsService);
   private iconService = inject(IconService);
+  private route = inject(ActivatedRoute);
 
   forms = signal<Form[]>([]);
   loading = signal(true);
   siteSettings = signal<SiteSettings | null>(null);
+  categorySlug = signal('');
 
   logoSrc = computed(() => {
     const s = this.siteSettings();
@@ -196,18 +198,24 @@ export class PreStartPageComponent implements OnInit {
 
   siteName = computed(() => this.siteSettings()?.siteName?.trim() || 'SurveyFlow');
 
-  cards = computed<PreStartCard[]>(() =>
+  categoryTitle = computed(() => {
+    const first = this.forms()[0];
+    const appSettings = first ? this.parseJson(first.json)?.appSettings ?? {} : {};
+    return appSettings.categoryName?.trim() || this.categorySlug().replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  });
+
+  cards = computed<CategoryCard[]>(() =>
     this.forms().map(f => {
       const schema = this.parseJson(f.json);
       const appSettings = schema?.appSettings ?? {};
 
-      const imageUrl: string | null = appSettings.preStartImage || null;
+      const imageUrl: string | null = appSettings.categoryImage || appSettings.preStartImage || null;
 
       let iconPack: string | null = null;
       let iconName: string | null = null;
       let iconSvgUrl: string | null = null;
 
-      const iconKey: string | null = appSettings.preStartIcon || appSettings.formsListIconKey || null;
+      const iconKey: string | null = appSettings.categoryIcon || appSettings.preStartIcon || appSettings.formsListIconKey || null;
       if (!imageUrl && iconKey && iconKey.includes(':')) {
         [iconPack, iconName] = iconKey.split(':', 2);
         iconSvgUrl = this.iconService.getSvgUrl(iconPack, iconName);
@@ -218,26 +226,31 @@ export class PreStartPageComponent implements OnInit {
         name: f.name,
         description: appSettings.publicDescription || null,
         imageUrl,
-        imageFullWidth: !!(appSettings.preStartImageFullWidth),
+        imageFullWidth: !!(appSettings.categoryImageFullWidth ?? appSettings.preStartImageFullWidth),
         iconPack,
         iconName,
         iconSvgUrl,
         questions: this.countQuestions(schema),
-        showTitle: appSettings.preStartShowTitle !== false,
-        showDescription: appSettings.preStartShowDescription !== false,
-        buttonText: appSettings.preStartButtonText?.trim() || 'Start Checklist',
+        showTitle: appSettings.categoryShowTitle !== false,
+        showDescription: appSettings.categoryShowDescription !== false,
+        buttonText: appSettings.categoryButtonText?.trim() || appSettings.preStartButtonText?.trim() || 'Start',
       };
     })
   );
 
   ngOnInit(): void {
     this.settingsService.getSiteSettings().subscribe({ next: s => this.siteSettings.set(s), error: () => {} });
-    this.formService.list('prestart').subscribe({
-      next: forms => {
-        this.forms.set(forms);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
+    this.route.paramMap.subscribe(params => {
+      const slug = params.get('categorySlug')?.trim() || '';
+      this.categorySlug.set(slug);
+      this.loading.set(true);
+      this.formService.list(undefined, slug).subscribe({
+        next: forms => {
+          this.forms.set(forms);
+          this.loading.set(false);
+        },
+        error: () => this.loading.set(false),
+      });
     });
   }
 

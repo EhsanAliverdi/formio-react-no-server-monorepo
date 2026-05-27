@@ -8,7 +8,7 @@ export const routes: Routes = [
       import('./features/auth/login.component').then(m => m.LoginComponent),
   },
   {
-    path: 'pre-start',
+    path: 'category/:categorySlug',
     loadComponent: () =>
       import('./features/prestart/pre-start-page.component').then(m => m.PreStartPageComponent),
   },

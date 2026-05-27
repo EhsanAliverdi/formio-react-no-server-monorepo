@@ -21,28 +21,17 @@ namespace HPA.SurveyFlow.Api.Controllers;
 public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> ListForms([FromQuery] string? mode)
+    public async Task<IActionResult> ListForms([FromQuery] string? mode, [FromQuery] string? category)
     {
-        // PreStart mode: anonymous, returns only forms with appSettings.preStart == true
-        if (string.Equals(mode, "prestart", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(category))
         {
+            var categorySlug = category.Trim();
             var allForms = await db.Forms.ToListAsync();
-            var preStartForms = allForms.Where(f =>
-            {
-                try
-                {
-                    var schema = f.Json is string s ? JsonDocument.Parse(s).RootElement : JsonDocument.Parse(f.Json).RootElement;
-                    if (schema.TryGetProperty("appSettings", out var appSettings) &&
-                        appSettings.TryGetProperty("preStart", out var preStartProp))
-                    {
-                        return preStartProp.ValueKind == JsonValueKind.True ||
-                               (preStartProp.ValueKind == JsonValueKind.String && preStartProp.GetString() == "true");
-                    }
-                }
-                catch { /* ignore malformed JSON */ }
-                return false;
-            }).ToList();
-            return Ok(preStartForms.Select(f => MapFormDto(f, false)).ToList());
+            var categoryForms = allForms
+                .Where(f => f.ParentFormId == null && f.Visibility == FormVisibility.Public && f.AllowAnonymousSubmit)
+                .Where(f => FormCategoryMatches(f.Json, categorySlug))
+                .ToList();
+            return Ok(categoryForms.Select(f => MapFormDto(f, false)).ToList());
         }
 
         var currentUser = HttpContext.GetCurrentUser();
@@ -311,6 +300,24 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             AllowedRoles = includeRestricted ? f.AllowedRoles.Select(r => r.Role).ToList() : null,
             AllowedUserIds = includeRestricted ? f.AllowedUsers.Select(u => u.UserId).ToList() : null
         };
+    }
+
+    private static bool FormCategoryMatches(string formJson, string categorySlug)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(formJson);
+            if (!doc.RootElement.TryGetProperty("appSettings", out var appSettings)
+                || !appSettings.TryGetProperty("categorySlug", out var categoryEl)
+                || categoryEl.ValueKind != JsonValueKind.String)
+                return false;
+
+            return string.Equals(categoryEl.GetString()?.Trim(), categorySlug, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     internal static bool TryGetNextFormId(string formJson, string outcome, out int nextFormId)

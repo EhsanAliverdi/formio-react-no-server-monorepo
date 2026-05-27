@@ -122,9 +122,9 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
                   : 'text-green-800'">
               {{ submitResult()!.message }}
             </p>
-            @if (isPreStart()) {
+            @if (showStartOver()) {
               <div class="mt-5">
-                <a href="/pre-start"
+                <a [href]="startOverHref()"
                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6" />
@@ -171,8 +171,8 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
                 <p class="text-sm text-gray-600 mt-1">{{ publicDescription() }}</p>
               }
             </div>
-            @if (isPreStart()) {
-              <a href="/pre-start"
+            @if (showStartOver()) {
+              <a [href]="startOverHref()"
                  class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -189,14 +189,17 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
           @if (isWizard() && panels().length > 1) {
             <div class="mb-4 flex flex-wrap gap-2">
               @for (panel of panels(); track panel.key; let i = $index) {
-                <div class="inline-flex items-center rounded-full border px-3 py-1 text-sm"
+                <button type="button" (click)="goToStep(i)"
+                  class="inline-flex items-center rounded-full border px-3 py-1 text-sm transition"
                   [class]="step() === i
                     ? 'border-blue-200 bg-blue-50 font-semibold text-blue-700'
                     : i < step()
-                      ? 'border-green-200 bg-green-50 text-green-700'
-                      : 'border-gray-200 bg-white text-gray-500'">
+                      ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
+                      : 'border-gray-200 bg-white text-gray-500'"
+                  [class.cursor-pointer]="i < step()"
+                  [class.cursor-default]="i >= step()">
                   {{ i + 1 }}. {{ panelTitle(panel, i) }}
-                </div>
+                </button>
               }
             </div>
           }
@@ -280,7 +283,9 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
   formTitle = computed(() => this.form()?.title || this.form()?.name || '');
   publicDescription = computed(() => this.form()?.appSettings?.publicDescription?.trim() || null);
   appSettings = computed(() => this.form()?.appSettings ?? {});
-  isPreStart = computed(() => !!this.appSettings().preStart);
+  categorySlug = computed(() => this.appSettings().categorySlug?.trim() || '');
+  showStartOver = computed(() => !!this.categorySlug());
+  startOverHref = computed(() => `/category/${encodeURIComponent(this.categorySlug())}`);
   copyrightText = computed(() => this.siteSettings()?.copyrightText?.trim() || null);
   showCopyright = computed(() => !!this.siteSettings()?.showCopyright && !!this.copyrightText());
   showPublicFormLogo = computed(() => !!this.siteSettings()?.showPublicFormLogo);
@@ -345,10 +350,20 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
 
     const isLastStep = !this.isWizard() || this.step() === this.panels().length - 1;
 
+    const submission = { data: structuredClone(this.pendingData ?? {}) };
+
     Formio.createForm(this.containerRef.nativeElement, schema, {
       noDefaultSubmitButton: true,
+      submission,
     }).then((instance: any) => {
       this.formInstance = instance;
+      if (Object.keys(submission.data).length > 0) {
+        if (typeof instance.setSubmission === 'function') {
+          instance.setSubmission(submission);
+        } else {
+          instance.submission = submission;
+        }
+      }
       if (this.appSettings().showColorCodedAnswers) {
         scheduleAbnormalAnswerColors(this.containerRef.nativeElement, schema);
       }
@@ -378,14 +393,21 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
 
   prevStep(): void {
     if (this.step() > 0) {
+      this.mergeCurrentFormData();
       this.step.update(s => s - 1);
       setTimeout(() => this.mountForm(), 0);
     }
   }
 
+  goToStep(index: number): void {
+    if (index < 0 || index >= this.panels().length || index >= this.step()) return;
+    this.mergeCurrentFormData();
+    this.step.set(index);
+    setTimeout(() => this.mountForm(), 0);
+  }
+
   handleSubmitClick(): void {
-    const data = this.formInstance?.submission?.data ?? {};
-    this.pendingData = { ...(this.pendingData ?? {}), ...data };
+    this.mergeCurrentFormData();
 
     if (this.appSettings().previewBeforeSubmit) {
       this.previewItems.set(
@@ -408,7 +430,13 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
   }
 
   confirmSubmit(): void {
+    this.mergeCurrentFormData();
     this.doSubmit();
+  }
+
+  private mergeCurrentFormData(): void {
+    const data = this.formInstance?.submission?.data ?? {};
+    this.pendingData = { ...(this.pendingData ?? {}), ...data };
   }
 
   private doSubmit(): void {

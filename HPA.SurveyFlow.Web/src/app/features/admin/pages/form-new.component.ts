@@ -220,6 +220,26 @@ function ensureWizardHasPage(schema: any): any {
               </span>
             </span>
           </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="categoryEnabled"
+              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+            <span class="text-sm text-gray-700">Show on a category page</span>
+          </label>
+          @if (categoryEnabled) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Category slug <span class="text-red-500">*</span></label>
+                <input type="text" [(ngModel)]="categorySlug" placeholder="pre-start"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                <p class="mt-1 text-xs text-gray-500">Used in the public URL, for example <code>/category/pre-start</code>.</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Category name</label>
+                <input type="text" [(ngModel)]="categoryName" placeholder="Pre-Start"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+              </div>
+            </div>
+          }
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Public description</label>
             <textarea [(ngModel)]="appSettings.publicDescription" rows="2"
@@ -500,6 +520,9 @@ export class FormNewComponent implements OnInit {
   allowedRoles: string[] = [];
   allowedUserIds: number[] = [];
   appSettings: any = { nextForms: { success: null, warning: null, error: null } };
+  categoryEnabled = false;
+  categorySlug = '';
+  categoryName = '';
   placeholderHelp = 'Available placeholders: {{outcome}}, {{submission_id}}, {{form_name}}, {{user_email}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
   secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
   secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = {
@@ -632,6 +655,11 @@ export class FormNewComponent implements OnInit {
 
   save(): void {
     if (!this.name.trim()) { this.error.set('Form name is required.'); return; }
+    const categorySlug = this.normalizeCategorySlug(this.categorySlug);
+    if (this.categoryEnabled && !categorySlug) {
+      this.error.set('Category slug is required when category page is enabled.');
+      return;
+    }
     this.error.set(null);
     const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
     const secondarySubmit = {
@@ -649,7 +677,18 @@ export class FormNewComponent implements OnInit {
       warning: { ...this.emailNotifications.warning },
       error: { ...this.emailNotifications.error },
     };
-    const finalSchema = { ...schema, display: this.formDisplay, appSettings: { ...this.appSettings, resultActions, secondarySubmit, emailNotifications } };
+    const finalSchema = {
+      ...schema,
+      display: this.formDisplay,
+      appSettings: {
+        ...this.appSettings,
+        resultActions,
+        secondarySubmit,
+        emailNotifications,
+        categorySlug: this.categoryEnabled ? categorySlug : null,
+        categoryName: this.categoryEnabled ? this.categoryName.trim() || null : null,
+      },
+    };
     this.saving.set(true);
     this.formService.create({
       name: this.name.trim(),
@@ -663,5 +702,13 @@ export class FormNewComponent implements OnInit {
       next: () => { this.toastr.success('Form created.'); this.router.navigate(['/admin/forms']); },
       error: (err) => { this.saving.set(false); this.error.set(err?.error?.error || 'Failed to create form.'); this.toastr.error(this.error()!); },
     });
+  }
+
+  private normalizeCategorySlug(value: string): string {
+    return (value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 }
