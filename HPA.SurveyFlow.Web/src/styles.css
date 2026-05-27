@@ -1,0 +1,368 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* ── TailAdmin Component Utilities ──────────────────────────────────── */
+@layer components {
+  .menu-item {
+    @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-sm cursor-pointer;
+  }
+  .menu-item-active {
+    @apply bg-brand-50 text-brand-500 dark:bg-brand-500/20 dark:text-brand-400;
+  }
+  .menu-item-inactive {
+    @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
+  }
+  .menu-item-icon-active {
+    @apply text-brand-500 dark:text-brand-400;
+  }
+  .menu-item-icon-inactive {
+    @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300;
+  }
+  .menu-dropdown-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium;
+  }
+  .menu-dropdown-item-active {
+    @apply bg-brand-50 text-brand-500 dark:bg-brand-500/20 dark:text-brand-400;
+  }
+  .menu-dropdown-item-inactive {
+    @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
+  }
+  .ta-card {
+    @apply rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800;
+  }
+  .ta-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .ta-btn-primary {
+    @apply bg-brand-500 text-white shadow-sm hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40;
+  }
+  .ta-btn-secondary {
+    @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700;
+  }
+  .ta-field-label {
+    @apply mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+  .ta-field {
+    @apply h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-brand-300 focus:ring-2 focus:ring-brand-500/10 disabled:bg-gray-50 dark:border-gray-600 dark:text-white/90 dark:placeholder:text-gray-500 dark:focus:border-brand-800 dark:disabled:bg-gray-700;
+  }
+  .ta-alert-error {
+    @apply rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400;
+  }
+  .ta-alert-success {
+    @apply rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ── Form.io + Bootstrap-compat overrides (ported from React app) ─── */
+
+.formio-scope .formio-error-wrapper,
+.formio-scope .has-message,
+.formio-scope .has-feedback { background: none !important; }
+.formio-scope .formio-errors,
+.formio-scope .invalid-feedback,
+.formio-scope .form-text.error { @apply text-red-600 bg-transparent; }
+.formio-scope input.is-invalid,
+.formio-scope select.is-invalid,
+.formio-scope textarea.is-invalid { @apply border-red-500; }
+.formio-scope input,
+.formio-scope select,
+.formio-scope textarea { border-color: #c3c3c3 !important; }
+
+.formio-scope .row { @apply flex flex-wrap -mx-2; }
+.formio-scope [class*="col-"] { @apply px-2; }
+.formio-scope .col-xs-12,.formio-scope .col-sm-12,.formio-scope .col-md-12,.formio-scope .col-lg-12 { @apply w-full; }
+.formio-scope .col-xs-6,.formio-scope .col-sm-6,.formio-scope .col-md-6,.formio-scope .col-lg-6 { @apply w-full md:w-1/2; }
+.formio-scope .col-xs-4,.formio-scope .col-sm-4,.formio-scope .col-md-4,.formio-scope .col-lg-4 { @apply w-full md:w-1/3; }
+.formio-scope .col-xs-3,.formio-scope .col-sm-3,.formio-scope .col-md-3,.formio-scope .col-lg-3 { @apply w-full md:w-1/4; }
+.formio-scope .col-xs-8,.formio-scope .col-sm-8,.formio-scope .col-md-8,.formio-scope .col-lg-8 { @apply w-full md:w-2/3; }
+.formio-scope .col-xs-9,.formio-scope .col-sm-9,.formio-scope .col-md-9,.formio-scope .col-lg-9 { @apply w-full md:w-3/4; }
+
+.formio-scope .form-group { @apply mb-4; }
+.formio-scope .control-label,
+.formio-scope label { @apply block text-sm font-medium text-gray-700 mb-1; }
+.formio-scope .help-block { @apply mt-1.5 text-xs text-gray-500; }
+
+.formio-scope .form-control,
+.formio-scope input.form-control,
+.formio-scope select.form-control,
+.formio-scope textarea.form-control {
+  @apply w-full rounded-lg appearance-none px-4 py-2.5 text-sm shadow-sm bg-transparent text-gray-800;
+  @apply placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-500/20;
+  border: 1px solid #c3c3c3;
+}
+
+.formio-scope .btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg transition shadow-sm px-5 py-3.5 text-sm font-medium;
+}
+.formio-scope .btn-primary,.formio-scope .btn-info { @apply bg-blue-600 text-white hover:bg-blue-700; }
+.formio-scope .btn-default,.formio-scope .btn-secondary { @apply bg-white text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50; }
+.formio-scope .btn-success { @apply bg-green-600 text-white hover:bg-green-700; }
+.formio-scope .btn-danger { @apply bg-red-600 text-white hover:bg-red-700; }
+
+.alert { @apply rounded border p-3; }
+.alert-danger { @apply border-red-200 bg-red-50 text-red-700; }
+.alert-warning { @apply border-yellow-200 bg-yellow-50 text-yellow-800; }
+.alert-success { @apply border-green-200 bg-green-50 text-green-800; }
+
+.card { @apply rounded border border-gray-200 bg-white; }
+.card-header { @apply border-b border-gray-200 px-4 py-3 font-semibold text-gray-900 bg-gray-50; }
+.card-body { @apply px-4 py-4; }
+.panel { @apply rounded border border-gray-200 bg-white; }
+.panel-heading { @apply border-b border-gray-200 px-4 py-3 font-semibold text-gray-900; }
+.panel-body { @apply px-4 py-4; }
+
+.table { @apply w-full border-collapse; }
+.table th { @apply text-left text-sm font-semibold text-gray-900 border-b border-gray-200 px-3 py-2; }
+.table td { @apply text-sm text-gray-900 border-b border-gray-100 px-3 py-2; }
+.table-bordered { @apply border border-gray-200; }
+.table-bordered th,.table-bordered td { @apply border border-gray-200; }
+
+.list-group { @apply overflow-hidden rounded border border-gray-200 bg-white; }
+.list-group-item { @apply border-b border-gray-200 px-4 py-3 text-sm text-gray-900; }
+
+.formio-scope .form-check { @apply flex items-start gap-2; }
+.formio-scope .form-check-label { @apply inline-flex items-start gap-2 text-sm text-gray-800; }
+.formio-scope .form-check-input { @apply mt-1 h-4 w-4 rounded border border-gray-300 text-blue-600; }
+
+/* Wizard stepper */
+.flowbite-stepper-wizard .formio-wizard-nav-container,
+.flowbite-stepper-wizard .formio-wizard-nav,
+.flowbite-stepper-wizard .formio-wizard-navigation,
+.flowbite-stepper-wizard .formio-wizard-buttons,
+.flowbite-stepper-wizard .btn-wizard-nav-cancel,
+.flowbite-stepper-wizard .btn-wizard-nav-previous,
+.flowbite-stepper-wizard .btn-wizard-nav-next,
+.flowbite-stepper-wizard .btn-wizard-nav-submit,
+.flowbite-stepper-wizard [id^="wizard-"][id$="-header"],
+.flowbite-stepper-wizard [id^="wizard-"][id$="-nav"],
+.flowbite-stepper-wizard .wizard-header,
+.flowbite-stepper-wizard .pagination,
+.flowbite-stepper-wizard nav[aria-label="Wizard navigation"] {
+  display: none !important; visibility: hidden !important; height: 0 !important;
+}
+
+/* File component */
+.formio-component-file { position: relative; }
+.formio-component-file .fileSelector { position: relative; @apply rounded border-2 border-dashed border-gray-300 p-4; }
+.formio-component-file .fileSelector.fileDragOver { @apply border-blue-500 bg-blue-50; }
+
+/* ── Form.io Builder layout (formio-builder-shell) ───────────────────── */
+.formio-builder-shell .formbuilder { @apply w-full; }
+.formio-builder-shell .formbuilder.row {
+  @apply flex flex-nowrap gap-4;
+  margin-left: 0; margin-right: 0;
+}
+.formio-builder-shell .formbuilder.row > [class*="col-"] { padding-left: 0; padding-right: 0; }
+.formio-builder-shell .formbuilder .formcomponents {
+  @apply w-72 shrink-0 rounded-lg border border-gray-200 bg-white p-4;
+}
+.formio-builder-shell .formbuilder .formarea {
+  @apply flex-1 min-w-0 rounded-lg border border-gray-200 bg-white p-4;
+}
+.formio-builder-shell .builder-sidebar { @apply w-full p-3; }
+.builder-sidebar .collapse:not(.show) { display: none !important; }
+.builder-sidebar .collapse.show { display: block !important; height: auto !important; visibility: visible !important; }
+.builder-sidebar_scroll { @apply sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto; }
+.builder-sidebar_search { @apply w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 mb-3; }
+.builder-sidebar_search:focus { @apply outline-none ring-2 ring-blue-500 border-blue-500; }
+.form-builder-panel { @apply mb-2 overflow-hidden rounded-lg border border-gray-200 bg-white; }
+.form-builder-group-header { @apply border-b border-gray-200 bg-gray-50 px-4 py-3; }
+.builder-group-button { @apply w-full text-left text-sm font-semibold text-gray-900; }
+.formcomponents .formcomponent {
+  @apply mt-1 w-full cursor-grab select-none rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-50;
+}
+.builder-component {
+  @apply relative mb-4 rounded-lg border border-dashed border-gray-300 bg-white p-3;
+}
+.component-btn-group .btn,
+.component-btn-group .component-settings-button {
+  @apply inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50;
+}
+
+.formio-scope .sf-answer-choice {
+  @apply rounded-md border px-2 py-1 transition;
+}
+
+.formio-scope .sf-answer-normal {
+  @apply border-green-200 bg-green-50 text-green-800;
+}
+
+.formio-scope .sf-answer-normal .form-check-input,
+.formio-scope .sf-answer-normal input[type="radio"],
+.formio-scope .sf-answer-normal input[type="checkbox"] {
+  accent-color: #16a34a;
+}
+
+.formio-scope .sf-answer-warning {
+  @apply border-amber-200 bg-amber-50 text-amber-800;
+}
+
+.formio-scope .sf-answer-warning .form-check-input,
+.formio-scope .sf-answer-warning input[type="radio"],
+.formio-scope .sf-answer-warning input[type="checkbox"] {
+  accent-color: #d97706;
+}
+
+.formio-scope .sf-answer-error {
+  @apply border-red-200 bg-red-50 text-red-800;
+}
+
+.formio-scope .sf-answer-error .form-check-input,
+.formio-scope .sf-answer-error input[type="radio"],
+.formio-scope .sf-answer-error input[type="checkbox"] {
+  accent-color: #dc2626;
+}
+
+.formio-scope select.sf-answer-select.sf-answer-normal {
+  @apply border-green-300 bg-green-50 text-green-800;
+  border-color: #86efac !important;
+}
+
+.formio-scope select.sf-answer-select.sf-answer-warning {
+  @apply border-amber-300 bg-amber-50 text-amber-800;
+  border-color: #fcd34d !important;
+}
+
+.formio-scope select.sf-answer-select.sf-answer-error {
+  @apply border-red-300 bg-red-50 text-red-800;
+  border-color: #fca5a5 !important;
+}
+.wizard-pages { @apply mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2; }
+.wizard-page-label { @apply cursor-pointer rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50; }
+.wizard-page-label .sf-wizard-page-actions { @apply ml-2 inline-flex items-center gap-1 align-middle; }
+.wizard-page-label .sf-wizard-page-actions button { @apply rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800; }
+
+/* Builder component editor */
+.component-edit-container { @apply text-sm; }
+.component-edit-container input,
+.component-edit-container select,
+.component-edit-container textarea { border-color: #c3c3c3 !important; }
+.component-edit-container .row { @apply flex flex-wrap -mx-2; }
+.component-edit-container [class*="col-"] { @apply px-2; }
+.component-edit-container .col-sm-6 { @apply w-full md:w-1/2; }
+.component-edit-container .col-sm-12 { @apply w-full; }
+.component-edit-container .lead { @apply text-lg font-semibold text-gray-900 mb-2; }
+.component-edit-container .float-right { float: none !important; @apply flex justify-end; }
+.component-edit-container .card { @apply rounded-lg border border-gray-200 bg-white shadow-sm; }
+.component-edit-container .card-header { @apply border-b border-gray-200 px-4 py-3 font-semibold text-gray-900 bg-gray-50; }
+.component-edit-container .card-body { @apply px-4 py-4; }
+.component-edit-container .form-control {
+  @apply w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-sm bg-transparent text-gray-800;
+  @apply placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-blue-300 focus:ring-blue-500/20;
+}
+.component-edit-container .form-group { @apply mb-4; }
+.component-edit-container .help-block { @apply mt-1.5 text-xs text-gray-500; }
+.component-edit-container .btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg transition shadow-sm px-5 py-2.5 text-sm font-medium;
+}
+.component-edit-container .btn-success { @apply bg-green-600 text-white hover:bg-green-700; }
+.component-edit-container .btn-secondary { @apply bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50; }
+.component-edit-container .btn-danger { @apply bg-red-600 text-white hover:bg-red-700; }
+.component-edit-container .nav.nav-tabs {
+  display: flex !important; flex-direction: row !important;
+  @apply flex-wrap items-center text-center text-sm font-medium bg-gray-50 border-b border-gray-200;
+  list-style: none; padding-left: 0; margin: 0;
+}
+.component-edit-container .nav.nav-tabs .nav-item { @apply mr-2; width: auto !important; }
+.component-edit-container .nav.nav-tabs .nav-link {
+  @apply inline-block px-4 py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100;
+}
+.component-edit-container .nav.nav-tabs .nav-link.active {
+  @apply font-semibold text-blue-600 border-blue-600 bg-white;
+}
+.component-edit-container .table { @apply w-full border-collapse; }
+.component-edit-container .table th { @apply text-left text-sm font-semibold text-gray-900 border-b border-gray-200 px-3 py-2; }
+.component-edit-container .table td { @apply text-sm text-gray-900 border-b border-gray-100 px-3 py-2; }
+.component-edit-container .list-group { @apply overflow-hidden rounded border border-gray-200 bg-white; }
+.component-edit-container .list-group-item { @apply border-b border-gray-200 px-4 py-3 text-sm text-gray-900; }
+
+/* Form.io builder dialogs */
+
+/*
+  formiojs appends .formio-dialog directly to <body>. Keep it above the admin
+  shell and cover the full viewport so the sidebar cannot receive clicks while
+  a component settings modal is open.
+*/
+.formio-builder-shell {
+  position: relative;
+}
+
+:root {
+  --sidebar-width: 290px;
+}
+
+/* Override formio-dialog: cover full viewport, centered, blocks sidebar clicks */
+.formio-dialog {
+  inset: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  z-index: 10000 !important;
+  pointer-events: all !important;
+}
+
+.formio-dialog.formio-dialog-theme-default {
+  padding: 0 !important;
+}
+
+.formio-dialog-overlay {
+  inset: 0 !important;
+  margin-right: 0 !important;
+  pointer-events: all !important;
+}
+
+/* Block sidebar and header interactions when a formio dialog is open */
+body.formio-dialog-open app-sidebar aside,
+body.formio-dialog-open app-header header {
+  pointer-events: none !important;
+}
+
+.formio-dialog.formio-dialog-theme-default .formio-dialog-content {
+  width: 80% !important;
+  max-width: 80% !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+  margin: 0 !important;
+  position: relative !important;
+  @apply bg-white rounded-lg border border-gray-200 shadow-xl;
+}
+
+/* Builder dialog tabs */
+.formio-dialog .nav-tabs { @apply border-b border-gray-200; }
+.formio-dialog .nav-tabs > li > a,
+.formio-dialog .nav-tabs .nav-link { @apply inline-flex items-center rounded-t px-3 py-2 text-sm font-medium text-gray-600; }
+.formio-dialog .nav-tabs > li > a.active,
+.formio-dialog .nav-tabs .nav-link.active { @apply bg-white text-gray-900 border border-gray-200; }
+.formio-dialog .nav-tabs-vertical { @apply border-r border-gray-200 pr-2 mr-4; }
+.formio-dialog .nav-tabs-vertical > li > a,
+.formio-dialog .nav-link-vertical { @apply block rounded px-3 py-2 text-sm font-medium text-gray-600; }
+.formio-dialog .nav-tabs-vertical > li > a.active,
+.formio-dialog .nav-link-vertical.active { @apply bg-gray-100 text-gray-900; }
+.mr-2, .me-2 { margin-right: 0.5rem; }
+.badge-primary, .bg-primary { @apply border-blue-200 bg-blue-50 text-blue-700; }
+
+/* ── Filepond overrides ───────────────────────────────────────────── */
+.filepond--root { @apply font-sans text-sm; }
+.filepond--drop-label { @apply text-gray-500; }
+.filepond--label-action { @apply text-blue-600 underline cursor-pointer; }
+.filepond--panel-root { @apply rounded-lg border-2 border-dashed border-gray-300 bg-gray-50; }
+.filepond--item-panel { @apply bg-blue-50; }
+.filepond--file-action-button { @apply cursor-pointer; }
+
+/* ── ngx-toastr overrides ────────────────────────────────────────── */
+.toast-container { pointer-events: none; }
+.toast-container .ngx-toastr {
+  pointer-events: auto;
+  @apply rounded-lg shadow-lg text-sm;
+}

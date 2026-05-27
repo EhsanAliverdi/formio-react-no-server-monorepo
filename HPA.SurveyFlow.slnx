@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj" />
+  <Project Path="HPA.SurveyFlow.Domain/HPA.SurveyFlow.Domain.csproj" />
+  <Project Path="HPA.SurveyFlow.Docker/HPA.SurveyFlow.Docker.csproj" />
+  <Project Path="HPA.SurveyFlow.Infrastructure/HPA.SurveyFlow.Infrastructure.csproj" />
+  <Project Path="HPA.SurveyFlow.Test/HPA.SurveyFlow.Test.csproj" />
+</Solution>

@@ -4,16 +4,14 @@ npm-debug.log
 .DS_Store
 .vscode
 
-# Backend
-backend/node_modules
-backend/.next
-backend/npm-debug.log
-
-# Frontend
-frontend/node_modules
-frontend/dist
-frontend/.vite
-frontend/npm-debug.log
+# Project build artifacts
+HPA.SurveyFlow.*/**/node_modules
+HPA.SurveyFlow.*/**/dist
+HPA.SurveyFlow.*/**/.angular
+HPA.SurveyFlow.*/**/bin
+HPA.SurveyFlow.*/**/obj
+HPA.SurveyFlow.*/**/.vs
+HPA.SurveyFlow.*/**/npm-debug.log
 
 # Git
 .git

@@ -1,0 +1,52 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dev
+
+ENV ASPNETCORE_ENVIRONMENT=Development
+ENV ASPNETCORE_URLS=http://+:5000
+ENV DOTNET_USE_POLLING_FILE_WATCHER=true
+
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="$PATH:/root/.dotnet/tools"
+
+WORKDIR /app
+
+COPY HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj HPA.SurveyFlow.Api/
+COPY HPA.SurveyFlow.Domain/HPA.SurveyFlow.Domain.csproj HPA.SurveyFlow.Domain/
+COPY HPA.SurveyFlow.Infrastructure/HPA.SurveyFlow.Infrastructure.csproj HPA.SurveyFlow.Infrastructure/
+RUN dotnet restore HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj
+
+EXPOSE 5000
+CMD ["dotnet", "watch", "--project", "HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj", "run", "--no-hot-reload", "--urls", "http://+:5000"]
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+
+WORKDIR /workspace
+
+COPY HPA.SurveyFlow.slnx ./
+COPY HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj HPA.SurveyFlow.Api/
+COPY HPA.SurveyFlow.Domain/HPA.SurveyFlow.Domain.csproj HPA.SurveyFlow.Domain/
+COPY HPA.SurveyFlow.Infrastructure/HPA.SurveyFlow.Infrastructure.csproj HPA.SurveyFlow.Infrastructure/
+RUN dotnet restore HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj
+
+COPY HPA.SurveyFlow.Api/ HPA.SurveyFlow.Api/
+COPY HPA.SurveyFlow.Domain/ HPA.SurveyFlow.Domain/
+COPY HPA.SurveyFlow.Infrastructure/ HPA.SurveyFlow.Infrastructure/
+RUN dotnet publish HPA.SurveyFlow.Api/HPA.SurveyFlow.Api.csproj \
+    -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS prod
+
+ARG APP_VERSION
+ARG BUILD_TIME
+ARG APP_ENVIRONMENT=production
+
+ENV APP_VERSION=${APP_VERSION}
+ENV BUILD_TIME=${BUILD_TIME}
+ENV APP_ENVIRONMENT=${APP_ENVIRONMENT}
+ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+WORKDIR /app
+COPY --from=build /app/publish .
+
+EXPOSE 5000
+ENTRYPOINT ["dotnet", "HPA.SurveyFlow.Api.dll"]

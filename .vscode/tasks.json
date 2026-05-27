@@ -1,33 +1,19 @@
 {
   "version": "2.0.0",
   "tasks": [
-    // Development Mode Tasks (uses docker-compose.override.yml automatically)
     {
-      "label": "Docker: Start Dev Mode",
+      "label": "Docker: Dev Up",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "up",
-        "-d"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "up", "-d"],
       "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      }
+      "problemMatcher": []
     },
     {
-      "label": "Docker: Start Dev Mode (Logs)",
+      "label": "Docker: Dev Up With Logs",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "up"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "up"],
       "isBackground": true,
       "problemMatcher": [],
       "presentation": {
@@ -36,226 +22,68 @@
       }
     },
     {
-      "label": "Docker: Rebuild Dev Mode",
+      "label": "Docker: Dev Rebuild",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "up",
-        "--build",
-        "-d"
-      ],
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      }
-    },
-    {
-      "label": "Docker: Stop Dev Mode",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "down"
-      ],
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Restart Backend (Dev)",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "restart",
-        "dotnet-backend"
-      ],
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Restart Frontend (Dev)",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "restart",
-        "angular-frontend"
-      ],
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: View Backend Logs",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "logs",
-        "-f",
-        "dotnet-backend"
-      ],
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "label": "Docker: View Frontend Logs",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "logs",
-        "-f",
-        "angular-frontend"
-      ],
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    // Production Mode Tasks
-    {
-      "label": "Docker: Build Production",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "-p",
-        "surveyflow-prod",
-        "--env-file",
-        ".env.production",
-        "-f",
-        "docker-compose.yml",
-        "build"
-      ],
-      "isBackground": false,
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Start Production",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "-p",
-        "surveyflow-prod",
-        "--env-file",
-        ".env.production",
-        "-f",
-        "docker-compose.yml",
-        "up",
-        "-d"
-      ],
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "up", "--build", "-d"],
       "isBackground": true,
       "problemMatcher": []
     },
     {
-      "label": "Docker: Stop Production",
+      "label": "Docker: Dev Down",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "-p",
-        "surveyflow-prod",
-        "-f",
-        "docker-compose.yml",
-        "down"
-      ],
-      "isBackground": false,
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "down"],
       "problemMatcher": []
     },
     {
-      "label": "Docker: View Production Logs",
+      "label": "Docker: UAT Config",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "-p",
-        "surveyflow-prod",
-        "-f",
-        "docker-compose.yml",
-        "logs",
-        "-f"
-      ],
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
-    },
-    // Database Tasks
-    {
-      "label": "Docker: Seed Database",
-      "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "exec",
-        "dotnet-backend",
-        "npm",
-        "run",
-        "seed"
-      ],
-      "isBackground": false,
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/uat.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.uat.yml", "config"],
       "problemMatcher": []
     },
     {
-      "label": "Docker: Prisma Generate",
+      "label": "Docker: Prod Config",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "exec",
-        "dotnet-backend",
-        "npx",
-        "prisma",
-        "generate"
-      ],
-      "isBackground": false,
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/production.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.production.yml", "config"],
       "problemMatcher": []
     },
     {
-      "label": "Docker: Prisma DB Push",
+      "label": "Docker: Restart API",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "--env-file",
-        ".env.development",
-        "exec",
-        "dotnet-backend",
-        "npx",
-        "prisma",
-        "db",
-        "push"
-      ],
-      "isBackground": false,
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "restart", "api"],
       "problemMatcher": []
+    },
+    {
+      "label": "Docker: Restart Web",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "restart", "web"],
+      "problemMatcher": []
+    },
+    {
+      "label": "EF: Add Migration",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "exec", "api", "dotnet", "ef", "migrations", "add", "${input:migrationName}", "--project", "HPA.SurveyFlow.Infrastructure", "--startup-project", "HPA.SurveyFlow.Api"],
+      "problemMatcher": []
+    },
+    {
+      "label": "EF: Update Database",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "exec", "api", "dotnet", "ef", "database", "update", "--project", "HPA.SurveyFlow.Infrastructure", "--startup-project", "HPA.SurveyFlow.Api"],
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "migrationName",
+      "type": "promptString",
+      "description": "Migration name, for example AddUserTable"
     }
   ]
 }

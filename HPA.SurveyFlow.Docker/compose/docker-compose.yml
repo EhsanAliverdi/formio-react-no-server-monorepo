@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16
+    pull_policy: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-surveyflow}
+      POSTGRES_USER: ${POSTGRES_USER:-surveyflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-surveyflow123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-surveyflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    pull_policy: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+
+  chromium:
+    image: browserless/chrome:latest
+    pull_policy: always
+
+  api:
+    pull_policy: build
+    build:
+      context: ../..
+      dockerfile: HPA.SurveyFlow.Docker/Dockerfile.Api
+      target: prod
+      args:
+        APP_VERSION: ${API_APP_VERSION:-}
+        BUILD_TIME: ${BUILD_TIME:-}
+        APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__Default: "Host=${POSTGRES_HOST:-postgres};Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:-surveyflow};Username=${POSTGRES_USER:-surveyflow};Password=${POSTGRES_PASSWORD:-surveyflow123}"
+      Minio__Endpoint: ${MINIO_ENDPOINT:-http://minio:9000}
+      Minio__Region: ${MINIO_REGION:-us-east-1}
+      Minio__Bucket: ${MINIO_BUCKET:-uploads}
+      Minio__AccessKey: ${MINIO_ACCESS_KEY:-minioadmin}
+      Minio__SecretKey: ${MINIO_SECRET_KEY:-minioadmin}
+      Seed__AdminUser: ${SEED_ADMIN_USER:-false}
+      Seed__Forms: ${SEED_FORMS:-false}
+      Seed__OverrideExisting: ${SEED_OVERRIDE_EXISTING:-false}
+      Admin__Email: ${ADMIN_EMAIL:-}
+      Admin__Password: ${ADMIN_PASSWORD:-}
+      APP_VERSION: ${API_APP_VERSION:-}
+      BUILD_TIME: ${BUILD_TIME:-}
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
+      CHROMIUM_WS_ENDPOINT: ${CHROMIUM_WS_ENDPOINT:-ws://chromium:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      chromium:
+        condition: service_started
+
+  web:
+    pull_policy: build
+    build:
+      context: ../..
+      dockerfile: HPA.SurveyFlow.Docker/Dockerfile.Web
+      target: prod
+      pull: true
+      args:
+        ANGULAR_API_BASE_URL: ${ANGULAR_API_BASE_URL:-}
+        APP_VERSION: ${API_APP_VERSION:-local}
+        APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
+    environment:
+      API_PROXY_TARGET: ${API_PROXY_TARGET:-http://api:5000}
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  minio_data:

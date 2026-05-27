@@ -6,27 +6,25 @@ _reference/
 # Environment files
 .env
 .env.*
-!.env.development
-!.env.production
+!HPA.SurveyFlow.Docker/env/*.env
 
 # Docker / local artifacts
 docker-pdf-test.pdf
+HPA.SurveyFlow.Api/logs/
 
 # Local databases
-backend/data/*.db
-backend/var/*.db
+HPA.SurveyFlow.*/**/data/*.db
+HPA.SurveyFlow.*/**/var/*.db
 
 # Node / build outputs
 node_modules/
-backend/.next/
-frontend/dist/
+HPA.SurveyFlow.*/**/node_modules/
+HPA.SurveyFlow.*/**/dist/
+HPA.SurveyFlow.*/**/.angular/
+HPA.SurveyFlow.Web/ng-serve.log
 
 # .NET build outputs
-dotnet-backend/**/bin/
-dotnet-backend/**/obj/
-dotnet-backend/*.user
-dotnet-backend/**/.vs/
-
-# Angular build outputs
-angular-frontend/dist/
-angular-frontend/.angular/
+HPA.SurveyFlow.*/*.user
+HPA.SurveyFlow.*/**/bin/
+HPA.SurveyFlow.*/**/obj/
+HPA.SurveyFlow.*/**/.vs/

@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**;**/bin/**;**/obj/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HPA_DOCKER_DEV)' == 'true'">
+    <BaseOutputPath>/tmp/hpa-surveyflow/bin/$(MSBuildProjectName)/</BaseOutputPath>
+    <BaseIntermediateOutputPath>/tmp/hpa-surveyflow/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Watch Remove="**/bin/**" />
+    <Watch Remove="**/obj/**" />
+  </ItemGroup>
+</Project>

@@ -1,77 +1,64 @@
-﻿# SurveyFlow
+# HPA SurveyFlow
 
-A Docker-first survey and form management platform built with Angular 19 and .NET 10.
+Enterprise survey and form management platform built with Angular, ASP.NET Core, PostgreSQL, MinIO, and Docker.
 
-## Stack
+## Solution Structure
 
-| Layer | Technology | Directory |
-|-------|-----------|-----------|
-| Frontend | Angular 19 + Tailwind CSS + Form.io | `angular-frontend/` |
-| Backend | .NET 10 ASP.NET Core Web API | `dotnet-backend/` |
-| Database | PostgreSQL 16 | — |
-| Object storage | MinIO (S3-compatible) | — |
+The repository root is the solution boundary. Each top-level `HPA.*` directory is a project.
 
-## Quick Start
+| Project | Purpose |
+|---------|---------|
+| `HPA.SurveyFlow.Web` | Angular application |
+| `HPA.SurveyFlow.Api` | ASP.NET Core HTTP API |
+| `HPA.SurveyFlow.Domain` | Entities, enums, and DTO contracts |
+| `HPA.SurveyFlow.Infrastructure` | EF Core, persistence, storage, PDF, and application services |
+| `HPA.SurveyFlow.Docker` | Dockerfiles, compose files, environment files, Traefik overlays, and Octopus notes |
 
-**Development (hot reload):**
+Solution file: `HPA.SurveyFlow.slnx`
+
+## Docker Layout
+
+Docker configuration lives under `HPA.SurveyFlow.Docker`:
+
+| Path | Purpose |
+|------|---------|
+| `compose/docker-compose.yml` | Shared service definitions |
+| `compose/docker-compose.development.yml` | Local development ports, bind mounts, and hot reload |
+| `compose/docker-compose.uat.yml` | UAT VM overlay with Traefik routing |
+| `compose/docker-compose.production.yml` | Production VM overlay with Traefik routing |
+| `env/development.env` | Local development variables |
+| `env/uat.env` | UAT variable template |
+| `env/production.env` | Production variable template |
+| `octopus/deployment-process.md` | Octopus deployment notes |
+
+`.dockerignore` remains at the repository root because the Docker build context is the repository root.
+
+## Development
 
 ```bash
-docker compose up --build
+docker compose --env-file HPA.SurveyFlow.Docker/env/development.env -f HPA.SurveyFlow.Docker/compose/docker-compose.yml -f HPA.SurveyFlow.Docker/compose/docker-compose.development.yml up --build
 ```
 
-- Angular frontend: http://localhost:4200
-- .NET API: http://localhost:5000
+- Web: http://localhost:4200
+- API: http://localhost:5000
 - MinIO console: http://localhost:9003
 - PostgreSQL: localhost:5432
 
-**Production:**
+## UAT
 
 ```bash
-docker compose -f docker-compose.yml up --build -d
+docker compose --env-file HPA.SurveyFlow.Docker/env/uat.env -f HPA.SurveyFlow.Docker/compose/docker-compose.yml -f HPA.SurveyFlow.Docker/compose/docker-compose.uat.yml up --build -d
 ```
 
-- Angular frontend: http://localhost:4201
-- .NET API: http://localhost:5000
-
-For detailed Docker docs see [DOCKER.md](DOCKER.md).
-
-## Seed the database
+## Production
 
 ```bash
-docker compose exec dotnet-backend dotnet run --seed
+docker compose --env-file HPA.SurveyFlow.Docker/env/production.env -f HPA.SurveyFlow.Docker/compose/docker-compose.yml -f HPA.SurveyFlow.Docker/compose/docker-compose.production.yml up --build -d
 ```
 
-Default admin credentials: `admin@example.com` / `admin12345`
+## Build Locally
 
-## Environment variables
-
-### .NET backend (`dotnet-backend/`)
-
-| Variable | Description |
-|----------|-------------|
-| `ConnectionStrings__Default` | PostgreSQL connection string |
-| `Minio__Endpoint` | MinIO S3 endpoint URL |
-| `Minio__AccessKey`, `Minio__SecretKey` | MinIO credentials |
-| `Minio__Bucket` | Upload bucket name |
-| `Superuser__Email`, `Superuser__Password` | Seed admin credentials |
-
-### Angular frontend
-
-No server-side env vars required in production — all API calls are relative URLs proxied by nginx.
-
-In dev mode `proxy.conf.json` forwards `/api` to `http://dotnet-backend:5000`.
-
-## MinIO
-
-- Console: http://localhost:9003
-- S3 API: http://localhost:9002
-
-## VS Code Tasks
-
-`Ctrl+Shift+P` → **Tasks: Run Task**:
-
-- **Docker: Start Dev Mode** — `docker compose up -d`
-- **Docker: Rebuild Dev Mode** — `docker compose up --build -d`
-- **Docker: Stop Dev Mode** — `docker compose down`
-- **Docker: Prisma DB Push** — push schema changes
-- **Docker: View Backend Logs** / **Docker: View Frontend Logs**
+```bash
+dotnet build HPA.SurveyFlow.slnx
+npm.cmd --prefix HPA.SurveyFlow.Web run build
+```

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+    <NoWarn>$(NoWarn);NETSDK1005</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="compose\*.yml" />
+    <None Include="env\*.env" />
+    <None Include="octopus\*.md" />
+    <None Include="Dockerfile.Api" />
+    <None Include="Dockerfile.Web" />
+    <None Include="nginx.web.conf" />
+  </ItemGroup>
+
+</Project>

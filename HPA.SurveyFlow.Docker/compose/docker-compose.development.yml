@@ -1,0 +1,56 @@
+name: hpa-surveyflow-development
+
+services:
+  postgres:
+    container_name: hpa-surveyflow-postgres-dev
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  minio:
+    container_name: hpa-surveyflow-minio-dev
+    ports:
+      - "${MINIO_PORT:-9002}:9000"
+      - "${MINIO_CONSOLE_PORT:-9003}:9001"
+
+  chromium:
+    container_name: hpa-surveyflow-chromium-dev
+    ports:
+      - "${CHROMIUM_PORT:-3000}:3000"
+
+  api:
+    container_name: hpa-surveyflow-api-dev
+    build:
+      target: dev
+    volumes:
+      - ../..:/app
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      APP_ENVIRONMENT: development
+      HPA_DOCKER_DEV: "true"
+      ConnectionStrings__Default: "Host=${POSTGRES_HOST:-postgres};Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:-surveyflow};Username=${POSTGRES_USER:-surveyflow};Password=${POSTGRES_PASSWORD:-surveyflow123}"
+      Minio__Endpoint: ${MINIO_ENDPOINT:-http://minio:9000}
+      Minio__AccessKey: ${MINIO_ACCESS_KEY:-minioadmin}
+      Minio__SecretKey: ${MINIO_SECRET_KEY:-minioadmin}
+      Seed__AdminUser: ${SEED_ADMIN_USER:-false}
+      Seed__Forms: ${SEED_FORMS:-false}
+      Seed__OverrideExisting: ${SEED_OVERRIDE_EXISTING:-false}
+      Admin__Email: ${ADMIN_EMAIL:-}
+      Admin__Password: ${ADMIN_PASSWORD:-}
+      CHROMIUM_WS_ENDPOINT: ${CHROMIUM_WS_ENDPOINT:-ws://chromium:3000}
+    ports:
+      - "${API_PORT:-5000}:5000"
+
+  web:
+    container_name: hpa-surveyflow-web-dev
+    build:
+      target: dev
+    volumes:
+      - ../../HPA.SurveyFlow.Web:/app/HPA.SurveyFlow.Web
+      - web_node_modules:/app/HPA.SurveyFlow.Web/node_modules
+    environment:
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
+    ports:
+      - "${WEB_DEV_PORT:-4200}:4200"
+
+volumes:
+  web_node_modules:

@@ -1,0 +1,33 @@
+FROM node:22-alpine AS dev
+
+WORKDIR /app/HPA.SurveyFlow.Web
+
+COPY HPA.SurveyFlow.Web/.npmrc HPA.SurveyFlow.Web/package.json HPA.SurveyFlow.Web/package-lock.json ./
+RUN npm install
+
+EXPOSE 4200
+CMD ["npm", "run", "start", "--", "--host", "0.0.0.0", "--port", "4200"]
+
+FROM node:22-alpine AS build
+
+ARG ANGULAR_API_BASE_URL
+ARG APP_VERSION=local
+ARG APP_ENVIRONMENT=production
+
+WORKDIR /app/HPA.SurveyFlow.Web
+
+COPY HPA.SurveyFlow.Web/.npmrc HPA.SurveyFlow.Web/package.json HPA.SurveyFlow.Web/package-lock.json ./
+RUN npm ci
+
+COPY HPA.SurveyFlow.Web/ ./
+RUN node -e "const fs=require('fs'); const p='src/environments/environment.prod.ts'; let s=fs.readFileSync(p,'utf8'); const esc=v=>String(v ?? '').replace(/\\/g,'\\\\').replace(/'/g,\"\\\\'\"); s=s.replace(/appVersion: '[^']*'/, \"appVersion: '\" + esc(process.env.APP_VERSION) + \"'\"); s=s.replace(/appEnvironment: '[^']*'/, \"appEnvironment: '\" + esc(process.env.APP_ENVIRONMENT) + \"'\"); fs.writeFileSync(p,s);" \
+    && npm run build
+
+FROM nginx:alpine AS prod
+
+COPY HPA.SurveyFlow.Docker/nginx.web.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /app/HPA.SurveyFlow.Web/dist/hpa-surveyflow-web/browser /usr/share/nginx/html
+
+EXPOSE 80
+# nginx docker image processes /etc/nginx/templates/*.template via envsubst before starting
+CMD ["nginx", "-g", "daemon off;"]
