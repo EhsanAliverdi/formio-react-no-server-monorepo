@@ -213,3 +213,70 @@ export interface PaginatedResult<T> {
   offset: number;
 }
 
+// ── Notification Rules ────────────────────────────────────────────────────────
+
+export type NotificationChannel = 'email'; // future: 'sms' | 'webhook'
+
+export type ConditionOperator =
+  | 'equals' | 'not_equals'
+  | 'contains'
+  | 'greater_than' | 'less_than'
+  | 'greater_than_or_equal' | 'less_than_or_equal'
+  | 'is_empty' | 'is_not_empty';
+
+export interface ConditionLeaf {
+  fieldKey: string;
+  conditionOperator: ConditionOperator;
+  value?: any;
+}
+
+export interface ConditionGroup {
+  operator: 'AND' | 'OR';
+  children: (ConditionGroup | ConditionLeaf)[];
+}
+
+export function isConditionGroup(node: ConditionGroup | ConditionLeaf): node is ConditionGroup {
+  return 'children' in node;
+}
+
+export interface NotificationRuleEmailConfig {
+  to_addresses: string[];
+  subject: string;
+  body_html: string;
+  attach_pdf: boolean;
+}
+
+export interface NotificationRule {
+  id: number;
+  form_id: number;
+  name: string;
+  enabled: boolean;
+  channel: NotificationChannel;
+  condition_group: ConditionGroup;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  email_config?: NotificationRuleEmailConfig;
+}
+
+export interface SaveNotificationRuleRequest {
+  name: string;
+  enabled: boolean;
+  channel: NotificationChannel;
+  condition_group: ConditionGroup;
+  sort_order: number;
+  email_config?: NotificationRuleEmailConfig;
+}
+
+// Available placeholder categories for the email body builder
+export interface PlaceholderCategory {
+  label: string;
+  placeholders: PlaceholderDef[];
+}
+
+export interface PlaceholderDef {
+  key: string;       // e.g. "submission_id"
+  label: string;     // e.g. "Submission ID"
+  description?: string;
+}
+

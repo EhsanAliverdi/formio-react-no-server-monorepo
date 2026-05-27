@@ -122,6 +122,8 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<FormAccessService>();
 builder.Services.AddSingleton<SecondarySubmitService>();
 builder.Services.AddSingleton<PdfService>();
+builder.Services.AddScoped<NotificationRuleEvaluatorService>();
+builder.Services.AddScoped<NotificationRuleSenderService>();
 
 // ── Event Bus (in-process, zero dependencies) ──────────────────────────────
 builder.Services.AddScoped<IEventBus, EventBus>();

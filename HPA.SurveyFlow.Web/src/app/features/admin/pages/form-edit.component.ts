@@ -12,6 +12,7 @@ import { IntegrationPayloadMappingComponent } from '../../../shared/components/i
 import { IconPickerComponent } from '../../../shared/components/icon-picker/icon-picker.component';
 import { IconService } from '../../../core/services/icon.service';
 import { Form, User } from '../../../core/models';
+import { NotificationRulesEditorComponent } from '../components/notification-rules-editor/notification-rules-editor.component';
 
 type WizardPanel = { key: string; title: string };
 type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
@@ -143,7 +144,7 @@ function ensureWizardHasPage(schema: any): any {
 @Component({
   selector: 'app-admin-form-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent],
+  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent, NotificationRulesEditorComponent],
   template: `
     <div class="p-6">
       <!-- Header -->
@@ -651,6 +652,14 @@ function ensureWizardHasPage(schema: any): any {
           <app-form-editor #editorRef [formSchema]="currentSchema" (schemaChange)="onSchemaChange($event)"/>
         </div>
 
+        <!-- Notification Rules -->
+        <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
+          <app-notification-rules-editor
+            [formId]="formId"
+            [formSchema]="currentSchema"
+          />
+        </div>
+
         <!-- Actions -->
         <div class="flex items-center gap-3">
           <button type="button" (click)="save()" [disabled]="saving()"
@@ -727,7 +736,7 @@ export class FormEditComponent implements OnInit {
     { value: 'viewer', label: 'Viewer' },
   ];
 
-  private formId!: number;
+  formId!: number;
 
   publicFormUrl = computed(() =>
     this.formId ? `${window.location.origin}/form-public/${this.formId}` : ''

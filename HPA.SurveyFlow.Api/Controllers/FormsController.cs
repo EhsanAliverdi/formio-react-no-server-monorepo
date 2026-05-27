@@ -18,7 +18,7 @@ namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/forms")]
-public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService) : ControllerBase
+public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService, NotificationRuleEvaluatorService notificationEvaluator, NotificationRuleSenderService notificationSender) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> ListForms([FromQuery] string? mode, [FromQuery] string? category)
@@ -259,6 +259,20 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             }
 
             await TrySendOutcomeEmailAsync(form, submission, currentUser, formSchema, outcome, abnormalities, errorCount, warningCount, dataJson);
+
+            // Evaluate and fire notification rules
+            var rules = await db.FormNotificationRules
+                .Include(r => r.EmailConfig)
+                .Where(r => r.FormId == form.Id && r.Enabled)
+                .OrderBy(r => r.SortOrder)
+                .ToListAsync();
+
+            if (rules.Count > 0)
+            {
+                using var submissionDoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(dataJson) ? "{}" : dataJson);
+                var matched = notificationEvaluator.Evaluate(rules, submissionDoc.RootElement);
+                await notificationSender.SendAsync(matched, form, submission, currentUser, abnormalities, errorCount, warningCount, submissionDoc.RootElement);
+            }
         }
         catch { /* never fail primary submit */ }
 

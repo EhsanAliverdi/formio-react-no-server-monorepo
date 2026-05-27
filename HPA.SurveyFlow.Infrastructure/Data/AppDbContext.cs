@@ -15,6 +15,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ScheduledJobDefinition> ScheduledJobDefinitions { get; set; }
     public DbSet<JobRun> JobRuns { get; set; }
     public DbSet<ExternalAsset> ExternalAssets { get; set; }
+    public DbSet<FormNotificationRule> FormNotificationRules { get; set; }
+    public DbSet<FormNotificationRuleEmail> FormNotificationRuleEmails { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -184,6 +186,35 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(a => a.LastSyncedAt).HasColumnName("last_synced_at").HasDefaultValueSql("now()");
             e.Property(a => a.SourceModifiedAt).HasColumnName("source_modified_at");
             e.HasIndex(a => new { a.Source, a.ExternalId }).IsUnique();
+        });
+
+        modelBuilder.Entity<FormNotificationRule>(e =>
+        {
+            e.ToTable("form_notification_rules");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(r => r.FormId).HasColumnName("form_id");
+            e.Property(r => r.Name).HasColumnName("name").IsRequired();
+            e.Property(r => r.Enabled).HasColumnName("enabled").HasDefaultValue(true);
+            e.Property(r => r.Channel).HasColumnName("channel").HasDefaultValue("email");
+            e.Property(r => r.ConditionGroupJson).HasColumnName("condition_group_json").IsRequired();
+            e.Property(r => r.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
+            e.Property(r => r.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(r => r.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.HasOne(r => r.Form).WithMany().HasForeignKey(r => r.FormId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FormNotificationRuleEmail>(e =>
+        {
+            e.ToTable("form_notification_rule_emails");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(r => r.RuleId).HasColumnName("rule_id");
+            e.Property(r => r.ToAddressesJson).HasColumnName("to_addresses_json").HasDefaultValue("[]");
+            e.Property(r => r.Subject).HasColumnName("subject").HasDefaultValue(string.Empty);
+            e.Property(r => r.BodyHtml).HasColumnName("body_html").HasDefaultValue(string.Empty);
+            e.Property(r => r.AttachPdf).HasColumnName("attach_pdf").HasDefaultValue(false);
+            e.HasOne(r => r.Rule).WithOne(r => r.EmailConfig).HasForeignKey<FormNotificationRuleEmail>(r => r.RuleId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
