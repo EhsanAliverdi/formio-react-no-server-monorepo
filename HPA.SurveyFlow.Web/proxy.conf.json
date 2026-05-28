@@ -4,5 +4,23 @@
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
+  },
+  "/health": {
+    "target": "http://api:5000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
+  },
+  "/scalar": {
+    "target": "http://api:5000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
+  },
+  "/openapi": {
+    "target": "http://api:5000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
   }
 }

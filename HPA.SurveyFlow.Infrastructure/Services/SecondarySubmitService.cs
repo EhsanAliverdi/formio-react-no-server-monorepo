@@ -175,7 +175,9 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
             ["requestedDateTime"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss"),
         };
 
-        ApplyPayloadMappings(payload, submitConfigJson, data, formJson, abnormalities, submissionId, outcome, formName, userEmail);
+        // Pre-resolve MEX asset so template substitutions get the friendly display name
+        var resolvedAssets = await PreResolveMexAssetsAsync(db, submitConfigJson, data);
+        ApplyPayloadMappings(payload, submitConfigJson, data, formJson, abnormalities, submissionId, outcome, formName, userEmail, resolvedAssets);
         await ResolveMexAssetReferenceAsync(db, payload);
         payload = NormalizeMexCreateRequestPayload(payload);
 
@@ -198,6 +200,77 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
         });
 
         return new SecondarySubmitOutcome(response.IsSuccessStatusCode, responseJson, null);
+    }
+
+    /// <summary>
+    /// Looks at field mappings to find fields mapped from MEX asset selects and resolves
+    /// their submitted externalId to a friendly display name + asset number before template substitution.
+    /// Returns a map of fieldKey → display name.
+    /// </summary>
+    private static async Task<Dictionary<string, string>> PreResolveMexAssetsAsync(
+        AppDbContext db,
+        string? submitConfigJson,
+        JsonElement submissionData)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(submitConfigJson)) return result;
+
+        try
+        {
+            using var configDoc = JsonDocument.Parse(submitConfigJson);
+            if (!configDoc.RootElement.TryGetProperty("fieldMappings", out var mappingsEl)
+                || mappingsEl.ValueKind != JsonValueKind.Object)
+                return result;
+
+            // Find all field mappings that target "asset" — those fields contain MEX externalIds
+            foreach (var prop in mappingsEl.EnumerateObject())
+            {
+                var mapping = prop.Value;
+                if (mapping.ValueKind != JsonValueKind.Object) continue;
+                if (!mapping.TryGetProperty("source", out var src) || src.GetString() != "field") continue;
+                if (prop.Name != "asset") continue; // only asset field needs resolution
+                if (!mapping.TryGetProperty("fieldKey", out var fkEl)) continue;
+                var fieldKey = fkEl.GetString();
+                if (string.IsNullOrWhiteSpace(fieldKey)) continue;
+                if (submissionData.ValueKind != JsonValueKind.Object
+                    || !submissionData.TryGetProperty(fieldKey, out var valEl)) continue;
+
+                var submitted = valEl.ValueKind == JsonValueKind.String
+                    ? valEl.GetString()?.Trim()
+                    : valEl.ToString()?.Trim();
+                if (string.IsNullOrWhiteSpace(submitted)) continue;
+
+                var submittedLocalId = int.TryParse(submitted, out var parsedId) ? parsedId : (int?)null;
+                var assetQuery = db.ExternalAssets.Where(a => a.Source == "mex");
+                var asset = submittedLocalId.HasValue
+                    ? await assetQuery
+                        .Where(a => a.Id == submittedLocalId.Value || a.ExternalId == submitted || a.DisplayName == submitted)
+                        .OrderByDescending(a => a.IsActive)
+                        .FirstOrDefaultAsync()
+                    : await assetQuery
+                        .Where(a => a.ExternalId == submitted || a.DisplayName == submitted)
+                        .OrderByDescending(a => a.IsActive)
+                        .FirstOrDefaultAsync();
+
+                if (asset is null) continue;
+
+                var assetNumber = ReadRawString(asset.RawJson, "assetNumber", "AssetNumber");
+                var displayName = asset.DisplayName
+                    ?? ReadRawString(asset.RawJson, "assetDescription", "AssetDescription")
+                    ?? assetNumber
+                    ?? submitted;
+
+                // Prefer "assetNumber — displayName" when both exist and differ
+                var friendly = (!string.IsNullOrWhiteSpace(assetNumber) && assetNumber != displayName)
+                    ? $"{assetNumber} — {displayName}"
+                    : (displayName ?? submitted)!;
+
+                result[fieldKey] = friendly;
+            }
+        }
+        catch { }
+
+        return result;
     }
 
     private static async Task ResolveMexAssetReferenceAsync(AppDbContext db, Dictionary<string, object?> payload)
@@ -381,7 +454,8 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
         int submissionId,
         string outcome,
         string formName,
-        string userEmail)
+        string userEmail,
+        IReadOnlyDictionary<string, string>? resolvedAssets = null)
     {
         if (string.IsNullOrWhiteSpace(submitConfigJson)) return;
 
@@ -409,7 +483,7 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
             {
                 "field" => ResolveFieldMapping(mapping, submissionData),
                 "static" => ResolveStaticMapping(mapping),
-                "template" => ResolveTemplateMapping(mapping, submissionData, labelMap, abnormalities, submissionId, outcome, formName, userEmail),
+                "template" => ResolveTemplateMapping(mapping, submissionData, labelMap, abnormalities, submissionId, outcome, formName, userEmail, resolvedAssets),
                 "abnormal_answers" => ResolveAbnormalAnswersMapping(mapping, abnormalities, submissionData),
                 _ => null
             };
@@ -446,16 +520,21 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
         int submissionId,
         string outcome,
         string formName,
-        string userEmail)
+        string userEmail,
+        IReadOnlyDictionary<string, string>? resolvedAssets = null)
     {
         var template = mapping.TryGetProperty("template", out var templateEl) ? templateEl.GetString() : null;
         if (template is null) return null;
+
+        // Build a friendly asset display string from the first resolved asset (if any)
+        var firstAsset = resolvedAssets?.Values.FirstOrDefault() ?? string.Empty;
 
         var result = template
             .Replace("{{submission_id}}", submissionId.ToString(), StringComparison.OrdinalIgnoreCase)
             .Replace("{{outcome}}", outcome, StringComparison.OrdinalIgnoreCase)
             .Replace("{{form_name}}", formName, StringComparison.OrdinalIgnoreCase)
             .Replace("{{user_email}}", userEmail, StringComparison.OrdinalIgnoreCase)
+            .Replace("{{asset_display}}", firstAsset, StringComparison.OrdinalIgnoreCase)
             .Replace("{{warning_answers}}", BuildAbnormalAnswersText(abnormalities.Where(a => a.Level == "warning"), submissionData), StringComparison.OrdinalIgnoreCase)
             .Replace("{{error_answers}}", BuildAbnormalAnswersText(abnormalities.Where(a => a.Level == "error"), submissionData), StringComparison.OrdinalIgnoreCase)
             .Replace("{{abnormal_answers}}", BuildAbnormalAnswersText(abnormalities, submissionData), StringComparison.OrdinalIgnoreCase)
@@ -466,6 +545,9 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
         result = Regex.Replace(result, @"\{\{field:([^}]+)\}\}", match =>
         {
             var key = match.Groups[1].Value.Trim();
+            // Use pre-resolved friendly name for MEX asset fields when available
+            if (resolvedAssets != null && resolvedAssets.TryGetValue(key, out var resolved))
+                return resolved;
             if (submissionData.ValueKind == JsonValueKind.Object && submissionData.TryGetProperty(key, out var valueEl))
                 return JsonElementToDisplayText(valueEl);
             return string.Empty;

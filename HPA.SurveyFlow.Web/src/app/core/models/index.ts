@@ -213,3 +213,138 @@ export interface PaginatedResult<T> {
   offset: number;
 }
 
+// ── Notification Rules ────────────────────────────────────────────────────────
+
+export type NotificationChannel = 'email'; // future: 'sms' | 'webhook'
+
+export type ConditionOperator =
+  | 'equals' | 'not_equals'
+  | 'contains'
+  | 'greater_than' | 'less_than'
+  | 'greater_than_or_equal' | 'less_than_or_equal'
+  | 'is_empty' | 'is_not_empty';
+
+export interface ConditionLeaf {
+  fieldKey: string;
+  conditionOperator: ConditionOperator;
+  value?: any;
+}
+
+export interface ConditionGroup {
+  operator: 'AND' | 'OR';
+  children: (ConditionGroup | ConditionLeaf)[];
+}
+
+export function isConditionGroup(node: ConditionGroup | ConditionLeaf): node is ConditionGroup {
+  return 'children' in node;
+}
+
+export interface NotificationRuleEmailConfig {
+  to_addresses: string[];
+  subject: string;
+  body_html: string;
+  attach_pdf: boolean;
+}
+
+export interface NotificationRule {
+  id: number;
+  form_id: number;
+  name: string;
+  enabled: boolean;
+  channel: NotificationChannel;
+  condition_group: ConditionGroup;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  email_config?: NotificationRuleEmailConfig;
+}
+
+export interface SaveNotificationRuleRequest {
+  name: string;
+  enabled: boolean;
+  channel: NotificationChannel;
+  condition_group: ConditionGroup;
+  sort_order: number;
+  email_config?: NotificationRuleEmailConfig;
+}
+
+// Available placeholder categories for the email body builder
+export interface PlaceholderCategory {
+  label: string;
+  placeholders: PlaceholderDef[];
+}
+
+export interface PlaceholderDef {
+  key: string;       // e.g. "submission_id"
+  label: string;     // e.g. "Submission ID"
+  description?: string;
+}
+
+// ─── Integration Rules ────────────────────────────────────────────────────────
+
+export type IntegrationChannel = 'mex' | 'webhook';
+
+export type MexFieldMappingSource = 'default' | 'field' | 'static' | 'template' | 'abnormal_answers';
+
+export interface MexFieldMapping {
+  source: MexFieldMappingSource;
+  fieldKey?: string;    // source: 'field'
+  value?: string;       // source: 'static'
+  template?: string;    // source: 'template'
+  level?: 'all' | 'warning' | 'error';  // source: 'abnormal_answers'
+}
+
+export interface IntegrationRuleMexConfig {
+  action: 'create_request';
+  field_mappings: Record<string, MexFieldMapping>;
+}
+
+export interface WebhookHeader {
+  name: string;
+  value: string;
+}
+
+export interface IntegrationRuleWebhookConfig {
+  url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH';
+  headers: WebhookHeader[];
+  body_template: string;
+}
+
+export interface IntegrationRule {
+  id: number;
+  form_id: number;
+  name: string;
+  enabled: boolean;
+  channel: IntegrationChannel;
+  condition_group: ConditionGroup;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  mex_config?: IntegrationRuleMexConfig;
+  webhook_config?: IntegrationRuleWebhookConfig;
+}
+
+export interface SaveIntegrationRuleRequest {
+  name: string;
+  enabled: boolean;
+  channel: IntegrationChannel;
+  condition_group: ConditionGroup;
+  sort_order: number;
+  mex_config?: IntegrationRuleMexConfig;
+  webhook_config?: IntegrationRuleWebhookConfig;
+}
+
+export const MEX_FIELDS: { key: string; label: string; type: 'string' | 'number' | 'boolean' }[] = [
+  { key: 'requestNumber',    label: 'Request Number',    type: 'number' },
+  { key: 'jobTypeName',      label: 'Job Type Name',     type: 'string' },
+  { key: 'jobDescription',   label: 'Job Description',   type: 'string' },
+  { key: 'requesterDetails', label: 'Requester Details', type: 'string' },
+  { key: 'asset',            label: 'Asset',             type: 'string' },
+  { key: 'assetDescription', label: 'Asset Description', type: 'string' },
+  { key: 'location',         label: 'Location',          type: 'string' },
+  { key: 'priority',         label: 'Priority',          type: 'string' },
+  { key: 'estimatedCost',    label: 'Estimated Cost',    type: 'number' },
+  { key: 'requestedDateTime',label: 'Requested Date/Time', type: 'string' },
+];
+

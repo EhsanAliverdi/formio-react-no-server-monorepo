@@ -230,9 +230,36 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
       const json = JSON.stringify(this.formSchema ?? {});
       if (json === this.lastEmittedJson) return;
       if (json === this.lastAppliedJson) return;
+
+      const prevDisplay = changes['formSchema'].previousValue?.display;
+      const nextDisplay = this.formSchema?.display;
+      if (prevDisplay !== nextDisplay && (prevDisplay === 'wizard' || nextDisplay === 'wizard')) {
+        // Switching between wizard and single-page requires a full builder rebuild
+        this.rebuildWithSchema(structuredClone(this.formSchema));
+        return;
+      }
+
       this.lastAppliedJson = json;
       this.builder.setForm(structuredClone(this.formSchema));
     }
+  }
+
+  private rebuildWithSchema(schema: any): void {
+    this.sidebarCleanup?.();
+    this.sidebarCleanup = null;
+    this.dialogObserver?.disconnect();
+    this.wizardHeaderObserver?.disconnect();
+    this.dialogObserver = null;
+    this.wizardHeaderObserver = null;
+    this.containerRef.nativeElement.removeEventListener('click', this.onWizardHeaderClick);
+    this.builder?.destroy(true);
+    this.builder = null;
+    this.lastEmittedJson = null;
+    this.lastAppliedJson = null;
+    this.formSchema = schema;
+    this.zone.runOutsideAngular(() => {
+      requestAnimationFrame(() => this.initBuilder());
+    });
   }
 
   ngOnDestroy(): void {
@@ -357,10 +384,14 @@ export class FormEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
 
       label.insertAdjacentHTML('beforeend', `
         <span class="sf-wizard-page-actions">
-          <button type="button" data-sf-wizard-action="rename" data-sf-wizard-index="${index}" title="Rename page">Edit</button>
-          <button type="button" data-sf-wizard-action="delete" data-sf-wizard-index="${index}" title="Delete page">Delete</button>
-          ${index > 0 ? `<button type="button" data-sf-wizard-action="left" data-sf-wizard-index="${index}" title="Move page left">Left</button>` : ''}
-          ${index < items.length - 1 ? `<button type="button" data-sf-wizard-action="right" data-sf-wizard-index="${index}" title="Move page right">Right</button>` : ''}
+          <button type="button" data-sf-wizard-action="rename" data-sf-wizard-index="${index}" title="Rename page">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 112.828 2.828L11.828 13.828A2 2 0 0110 14.414H8v-2a2 2 0 01.586-1.414z"/></svg>
+          </button>
+          <button type="button" data-sf-wizard-action="delete" data-sf-wizard-index="${index}" title="Delete page">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+          ${index > 0 ? `<button type="button" data-sf-wizard-action="left" data-sf-wizard-index="${index}" title="Move left"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg></button>` : ''}
+          ${index < items.length - 1 ? `<button type="button" data-sf-wizard-action="right" data-sf-wizard-index="${index}" title="Move right"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>` : ''}
         </span>
       `);
     });

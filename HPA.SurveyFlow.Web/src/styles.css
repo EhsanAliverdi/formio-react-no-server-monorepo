@@ -239,7 +239,8 @@
 .wizard-pages { @apply mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2; }
 .wizard-page-label { @apply cursor-pointer rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50; }
 .wizard-page-label .sf-wizard-page-actions { @apply ml-2 inline-flex items-center gap-1 align-middle; }
-.wizard-page-label .sf-wizard-page-actions button { @apply rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800; }
+.wizard-page-label .sf-wizard-page-actions button { @apply inline-flex items-center justify-center rounded border border-gray-200 bg-white p-1 text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors; }
+.wizard-page-label .sf-wizard-page-actions button svg { width: 12px; height: 12px; }
 
 /* Builder component editor */
 .component-edit-container { @apply text-sm; }

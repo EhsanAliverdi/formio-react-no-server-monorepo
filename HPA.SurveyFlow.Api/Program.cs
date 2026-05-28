@@ -122,6 +122,9 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<FormAccessService>();
 builder.Services.AddSingleton<SecondarySubmitService>();
 builder.Services.AddSingleton<PdfService>();
+builder.Services.AddScoped<NotificationRuleEvaluatorService>();
+builder.Services.AddScoped<NotificationRuleSenderService>();
+builder.Services.AddSingleton<IntegrationRuleExecutorService>();
 
 // ── Event Bus (in-process, zero dependencies) ──────────────────────────────
 builder.Services.AddScoped<IEventBus, EventBus>();
@@ -173,12 +176,6 @@ using (var scope = app.Services.CreateScope())
     await jobScheduler.ApplyAsync();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
-
 app.UseCors();
 
 // Correlation ID must be first so all subsequent middleware + logs carry it
@@ -196,10 +193,19 @@ app.UseSerilogRequestLogging(opts =>
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapHealthChecks("/health/live", HealthCheckResponseWriter.Options(check => check.Tags.Contains("live")));
-app.MapHealthChecks("/health/ready", HealthCheckResponseWriter.Options(check => check.Tags.Contains("ready")));
-app.MapHealthChecks("/health", HealthCheckResponseWriter.Options());
+app.MapHealthChecks("/health/live", HealthCheckResponseWriter.Options(check => check.Tags.Contains("live")))
+    .WithTags("Health").WithSummary("Liveness probe").WithDescription("Returns healthy when the API process is running.");
+app.MapHealthChecks("/health/ready", HealthCheckResponseWriter.Options(check => check.Tags.Contains("ready")))
+    .WithTags("Health").WithSummary("Readiness probe").WithDescription("Returns healthy when all dependencies (database, storage, scheduler, Chromium) are reachable.");
+app.MapHealthChecks("/health", HealthCheckResponseWriter.Options())
+    .WithTags("Health").WithSummary("Full health report").WithDescription("Returns status of all registered health checks.");
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 try
 {

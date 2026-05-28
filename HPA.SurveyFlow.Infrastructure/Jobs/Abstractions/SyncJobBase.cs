@@ -28,6 +28,8 @@ public abstract class SyncJobBase<TRecord>(
     ILogger logger) : IScheduledJob
     where TRecord : ISyncRecord
 {
+    protected AppDbContext Db { get; } = db;
+
     /// <summary>Unique job key — matches ScheduledJobDefinition.JobKey.</summary>
     protected abstract string GetJobKey();
 
@@ -114,7 +116,7 @@ public abstract class SyncJobBase<TRecord>(
         try
         {
             // ── Load job configuration ─────────────────────────────────
-            var jobDef = await db.ScheduledJobDefinitions
+            var jobDef = await Db.ScheduledJobDefinitions
                 .FirstOrDefaultAsync(j => j.JobKey == jobKey, ct);
             var syncMode          = jobDef?.SyncMode ?? "delta";
             var onlyUpdateChanged = jobDef?.OnlyUpdateChanged ?? false;
@@ -424,7 +426,7 @@ public abstract class SyncJobBase<TRecord>(
         if (syncMode == "full")
             return (new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc), dateTo);
 
-        var lastTo   = db.SiteSettings.Find($"job.{jobKey}.last_run_date_to")?.Value;
+        var lastTo   = Db.SiteSettings.Find($"job.{jobKey}.last_run_date_to")?.Value;
         var dateFrom = lastTo is not null && DateTime.TryParse(lastTo, out var parsed)
             ? parsed
             : dateTo.AddDays(-7);
@@ -436,13 +438,13 @@ public abstract class SyncJobBase<TRecord>(
     {
         await UpsertSettingAsync($"job.{jobKey}.last_run_date_from", dateFrom.ToString("o"), ct);
         await UpsertSettingAsync($"job.{jobKey}.last_run_date_to",   dateTo.ToString("o"),   ct);
-        await db.SaveChangesAsync(ct);
+        await Db.SaveChangesAsync(ct);
     }
 
     private async Task UpsertSettingAsync(string key, string value, CancellationToken ct)
     {
-        var s = await db.SiteSettings.FindAsync([key], ct);
-        if (s is null) db.SiteSettings.Add(new HPA.SurveyFlow.Domain.Entities.SiteSetting { Key = key, Value = value });
+        var s = await Db.SiteSettings.FindAsync([key], ct);
+        if (s is null) Db.SiteSettings.Add(new HPA.SurveyFlow.Domain.Entities.SiteSetting { Key = key, Value = value });
         else           s.Value = value;
     }
 }
