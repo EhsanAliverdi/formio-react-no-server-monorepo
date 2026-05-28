@@ -395,6 +395,35 @@ export interface SaveRlsPolicyRequest {
   is_active: boolean;
 }
 
+export type ChartTypeName = 'table' | 'bar' | 'line' | 'pie' | 'doughnut' | 'number_card';
+
+export interface ChartConfig {
+  x_axis?: string;
+  y_axes?: string[];
+}
+
+export interface Dataset {
+  id: number;
+  name: string;
+  description?: string;
+  form_id: number;
+  base_filters?: ConditionGroup | null;
+  fields?: FieldDescriptor[] | null;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+}
+
+export interface SaveDatasetRequest {
+  name: string;
+  description?: string;
+  form_id: number;
+  base_filters?: ConditionGroup | null;
+  fields?: FieldDescriptor[] | null;
+  is_active: boolean;
+}
+
 export interface ReportTemplate {
   id: number;
   form_id: number;
@@ -419,6 +448,9 @@ export interface ReportTemplate {
   group_by?: GroupByDef[] | null;
   measures?: MeasureDef[] | null;
   is_favourite: boolean;
+  chart_type: ChartTypeName;
+  chart_config?: ChartConfig | null;
+  dataset_id?: number | null;
 }
 
 export interface SaveReportTemplateRequest {
@@ -437,6 +469,9 @@ export interface SaveReportTemplateRequest {
   shared_with_roles: string[];
   group_by?: GroupByDef[] | null;
   measures?: MeasureDef[] | null;
+  chart_type: ChartTypeName;
+  chart_config?: ChartConfig | null;
+  dataset_id?: number | null;
 }
 
 export interface RunReportRequest {

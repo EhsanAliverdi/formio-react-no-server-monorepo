@@ -64,6 +64,15 @@ public class SaveReportTemplateRequest
 
     [JsonPropertyName("measures")]
     public JsonElement? Measures { get; set; }
+
+    [JsonPropertyName("chart_type")]
+    public string ChartType { get; set; } = "table";
+
+    [JsonPropertyName("chart_config")]
+    public JsonElement? ChartConfig { get; set; }
+
+    [JsonPropertyName("dataset_id")]
+    public int? DatasetId { get; set; }
 }
 
 public class SaveRlsPolicyRequest

@@ -140,6 +140,9 @@ public class ReportTemplatesController(
             FieldDriftJson = null,
             GroupByJson = body.GroupBy.HasValue ? body.GroupBy.Value.GetRawText() : null,
             MeasuresJson = body.Measures.HasValue ? body.Measures.Value.GetRawText() : null,
+            ChartType = body.ChartType,
+            ChartConfigJson = body.ChartConfig.HasValue ? body.ChartConfig.Value.GetRawText() : null,
+            DatasetId = body.DatasetId,
         };
 
         db.ReportTemplates.Add(template);
@@ -184,6 +187,9 @@ public class ReportTemplatesController(
             ? JsonSerializer.Serialize(body.SharedWithRoles) : null;
         template.GroupByJson = body.GroupBy.HasValue ? body.GroupBy.Value.GetRawText() : null;
         template.MeasuresJson = body.Measures.HasValue ? body.Measures.Value.GetRawText() : null;
+        template.ChartType = body.ChartType;
+        template.ChartConfigJson = body.ChartConfig.HasValue ? body.ChartConfig.Value.GetRawText() : null;
+        template.DatasetId = body.DatasetId;
 
         await db.SaveChangesAsync();
         template.Form = form;
@@ -258,6 +264,9 @@ public class ReportTemplatesController(
             GroupBy = ParseJsonElement(t.GroupByJson),
             Measures = ParseJsonElement(t.MeasuresJson),
             IsFavourite = favouriteIds?.Contains(t.Id) ?? false,
+            ChartType = t.ChartType,
+            ChartConfig = ParseJsonElement(t.ChartConfigJson),
+            DatasetId = t.DatasetId,
         };
     }
 

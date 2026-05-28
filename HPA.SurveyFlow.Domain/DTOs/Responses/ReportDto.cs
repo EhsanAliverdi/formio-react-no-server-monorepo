@@ -106,6 +106,18 @@ public class ReportTemplateDto
     /// <summary>True if the user has starred this template as a favourite.</summary>
     [JsonPropertyName("is_favourite")]
     public bool IsFavourite { get; set; }
+
+    /// <summary>Chart type: table | bar | line | pie | doughnut | number_card.</summary>
+    [JsonPropertyName("chart_type")]
+    public string ChartType { get; set; } = "table";
+
+    /// <summary>Axis-to-alias mapping for the active chart type.</summary>
+    [JsonPropertyName("chart_config")]
+    public JsonElement? ChartConfig { get; set; }
+
+    /// <summary>Optional Dataset this template sources from (null = direct form query).</summary>
+    [JsonPropertyName("dataset_id")]
+    public int? DatasetId { get; set; }
 }
 
 public class FieldDriftEntryDto

@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ReportTemplateService } from '../../../core/services/report-template.service';
 import {
+  ChartConfig,
+  ChartTypeName,
   ConditionGroup,
   FieldDescriptor,
   FieldDriftEntry,
@@ -330,6 +332,57 @@ import { ReportDriftWizardComponent } from '../../../shared/components/report-dr
                   </select>
                 </div>
 
+                <!-- Chart type -->
+                <div>
+                  <label class="ta-field-label">Chart Type</label>
+                  <select [(ngModel)]="chartType" class="ta-field text-sm">
+                    <option value="table">Table only (no chart)</option>
+                    <option value="bar">Bar chart</option>
+                    <option value="line">Line chart</option>
+                    <option value="pie">Pie chart</option>
+                    <option value="doughnut">Doughnut chart</option>
+                    <option value="number_card">Number cards</option>
+                  </select>
+                </div>
+
+                <!-- Axis mapping (shown when chart is selected) -->
+                @if (chartType !== 'table') {
+                  <div class="flex flex-col gap-2 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50/40 dark:bg-brand-900/10 p-3">
+                    <span class="text-xs font-medium text-brand-700 dark:text-brand-300">Axis Mapping</span>
+
+                    @if (chartType !== 'number_card') {
+                      <!-- X-axis: pick from aggregation aliases or columns -->
+                      <div>
+                        <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">X-axis / Label</label>
+                        <select [(ngModel)]="chartXAxis" class="ta-field text-xs h-8 py-0">
+                          <option value="">Auto (first column)</option>
+                          @for (a of chartAxisOptions(); track a.alias) {
+                            <option [value]="a.alias">{{ a.label }}</option>
+                          }
+                        </select>
+                      </div>
+                    }
+
+                    <!-- Y-axes: multi-select via checkboxes -->
+                    <div>
+                      <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        {{ chartType === 'number_card' ? 'Values to show' : 'Y-axis series' }}
+                      </label>
+                      <div class="flex flex-col gap-1">
+                        @for (a of chartAxisOptions(); track a.alias) {
+                          <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
+                            <input type="checkbox"
+                              [checked]="chartYAxes.includes(a.alias)"
+                              (change)="toggleYAxis(a.alias)"
+                              class="rounded border-gray-300 text-brand-600 focus:ring-brand-500"/>
+                            {{ a.label }}
+                          </label>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+
                 <!-- Summary card -->
                 @if (columns().length > 0) {
                   <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 text-xs text-gray-500 dark:text-gray-400 flex flex-col gap-1">
@@ -377,6 +430,9 @@ export class ReportDesignerComponent implements OnInit {
   groupByDefs: GroupByDef[] = [];
   measureDefs: MeasureDef[] = [];
   aggPanelOpen = false;
+  chartType: ChartTypeName = 'table';
+  chartXAxis = '';
+  chartYAxes: string[] = [];
 
   readonly allRoles = [
     { value: 'admin', label: 'Admin' },
@@ -421,6 +477,9 @@ export class ReportDesignerComponent implements OnInit {
         this.groupByDefs = t.group_by ? [...t.group_by] : [];
         this.measureDefs = t.measures ? [...t.measures] : [];
         if (this.groupByDefs.length > 0 || this.measureDefs.length > 0) this.aggPanelOpen = true;
+        this.chartType = (t.chart_type as ChartTypeName) ?? 'table';
+        this.chartXAxis = t.chart_config?.x_axis ?? '';
+        this.chartYAxes = t.chart_config?.y_axes ? [...t.chart_config.y_axes] : [];
       },
     });
   }
@@ -450,6 +509,9 @@ export class ReportDesignerComponent implements OnInit {
       shared_with_roles: this.sharedWithRoles,
       group_by: this.groupByDefs.length > 0 ? this.groupByDefs : null,
       measures: this.measureDefs.length > 0 ? this.measureDefs : null,
+      chart_type: this.chartType,
+      chart_config: this.chartType !== 'table' ? this.buildChartConfig() : null,
+      dataset_id: null,
     };
 
     const isEdit = !forceNew && this.templateId() != null;
@@ -504,6 +566,31 @@ export class ReportDesignerComponent implements OnInit {
 
   fieldType(key: string): string {
     return this.fields().find(f => f.key === key)?.type ?? 'text';
+  }
+
+  // Returns alias+label options for chart axis pickers:
+  // aggregation aliases take priority; otherwise fall back to selected columns
+  chartAxisOptions(): { alias: string; label: string }[] {
+    if (this.groupByDefs.length > 0 || this.measureDefs.length > 0) {
+      const dims = this.groupByDefs.filter(g => g.alias).map(g => ({ alias: g.alias, label: g.label || g.alias }));
+      const measures = this.measureDefs.map(m => ({ alias: m.alias || m.label, label: m.label }));
+      return [...dims, ...measures];
+    }
+    return this.columns().map(c => ({ alias: c.field_key, label: c.label }));
+  }
+
+  toggleYAxis(alias: string): void {
+    if (this.chartYAxes.includes(alias))
+      this.chartYAxes = this.chartYAxes.filter(a => a !== alias);
+    else
+      this.chartYAxes = [...this.chartYAxes, alias];
+  }
+
+  private buildChartConfig(): ChartConfig {
+    const cfg: ChartConfig = {};
+    if (this.chartXAxis) cfg.x_axis = this.chartXAxis;
+    if (this.chartYAxes.length > 0) cfg.y_axes = [...this.chartYAxes];
+    return cfg;
   }
 
   goBack(): void {
