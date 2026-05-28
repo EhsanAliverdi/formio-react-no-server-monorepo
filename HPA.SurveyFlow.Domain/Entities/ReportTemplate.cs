@@ -1,0 +1,56 @@
+namespace HPA.SurveyFlow.Domain.Entities;
+
+public class ReportTemplate
+{
+    public int Id { get; set; }
+    public int FormId { get; set; }
+    public string Name { get; set; } = null!;
+    public string? Description { get; set; }
+    public bool IsPublic { get; set; } = false;
+    public int CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
+    /// <summary>Ordered JSON array of ReportColumnDefinition.</summary>
+    public string ColumnsJson { get; set; } = "[]";
+
+    /// <summary>Serialised ConditionGroup for template-level fixed filters (nullable = no filter).</summary>
+    public string? FiltersJson { get; set; }
+
+    public string? DefaultSortField { get; set; }
+    public string DefaultSortDirection { get; set; } = "asc";
+    public int DefaultPageSize { get; set; } = 25;
+
+    /// <summary>Display mode: "table" (only supported mode initially).</summary>
+    public string DisplayMode { get; set; } = "table";
+
+    /// <summary>SHA-256 fingerprint of Form.Json at the time this template was last saved.</summary>
+    public string? SchemaVersion { get; set; }
+
+    /// <summary>JSON array of per-field drift entries: [{ fieldKey, label, driftType }].</summary>
+    public string? FieldDriftJson { get; set; }
+
+    /// <summary>Comma-separated tags for discoverability.</summary>
+    public string? Tags { get; set; }
+
+    /// <summary>Freeform category name (e.g. "Safety", "Operations").</summary>
+    public string? Category { get; set; }
+
+    /// <summary>JSON array of role names that may view this template (e.g. ["admin","supervisor"]).</summary>
+    public string? SharedWithRolesJson { get; set; }
+
+    /// <summary>
+    /// JSON array of GroupByDef objects: [{ field_key, label, alias, date_trunc? }].
+    /// When present, execution routes through AggregationPipelineService.
+    /// </summary>
+    public string? GroupByJson { get; set; }
+
+    /// <summary>
+    /// JSON array of MeasureDef objects: [{ field_key?, label, aggregation, alias?, format? }].
+    /// Synthetic "_count" measure is always available.
+    /// </summary>
+    public string? MeasuresJson { get; set; }
+
+    public Form Form { get; set; } = null!;
+    public User CreatedByUser { get; set; } = null!;
+}

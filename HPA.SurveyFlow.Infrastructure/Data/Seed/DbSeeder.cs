@@ -77,17 +77,53 @@ public static class DbSeeder
             }
         }
 
+        // Seed demo users for every role so that SharedWithRoles visibility works out-of-the-box.
+        // These are development/demo accounts only — all disabled by default in production via IsActive flag.
+        await SeedDemoUsersAsync(db);
+
         if (seedForms)
         {
             await SeedFormsAsync(db, overrideExisting);
             if (storage != null)
                 await SeedFormImagesAsync(db, storage, overrideExisting);
             await DemoRulesSeedData.SeedAsync(db, overrideExisting);
+            await DemoReportTemplatesSeedData.SeedAsync(db, overrideExisting);
         }
 
         await SeedJobDefinitionsAsync(db);
 
         await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedDemoUsersAsync(AppDbContext db)
+    {
+        var authService = new AuthService(db);
+
+        // Demo accounts for each role — pre-created so SharedWithRoles report visibility works
+        // in a fresh demo environment without manual user creation.
+        var demoUsers = new[]
+        {
+            new { Email = "editor@demo.local",     Role = "editor",     DisplayName = "Demo Editor",     JobTitle = "Form Editor" },
+            new { Email = "viewer@demo.local",      Role = "viewer",     DisplayName = "Demo Viewer",     JobTitle = "Report Viewer" },
+            new { Email = "supervisor@demo.local",  Role = "supervisor", DisplayName = "Demo Supervisor", JobTitle = "Site Supervisor" },
+            new { Email = "operator@demo.local",    Role = "operator",   DisplayName = "Demo Operator",   JobTitle = "Equipment Operator" },
+        };
+
+        foreach (var u in demoUsers)
+        {
+            if (!await db.Users.AnyAsync(x => x.Email == u.Email))
+            {
+                db.Users.Add(new User
+                {
+                    Email = u.Email,
+                    PasswordHash = authService.HashPassword("Demo1234!"),
+                    Role = u.Role,
+                    IsActive = true,
+                    DisplayName = u.DisplayName,
+                    JobTitle = u.JobTitle,
+                });
+            }
+        }
     }
 
     private static async Task SeedFormImagesAsync(AppDbContext db, StorageService storage, bool overrideExisting)

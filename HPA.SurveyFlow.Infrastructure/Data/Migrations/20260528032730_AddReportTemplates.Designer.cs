@@ -3,6 +3,7 @@ using System;
 using HPA.SurveyFlow.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260528032730_AddReportTemplates")]
+    partial class AddReportTemplates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -552,53 +555,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.ToTable("job_runs", (string)null);
                 });
 
-            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.ReportExecutionLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("DurationMs")
-                        .HasColumnType("integer")
-                        .HasColumnName("duration_ms");
-
-                    b.Property<DateTime>("ExecutedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("executed_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("ExecutionType")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("view")
-                        .HasColumnName("execution_type");
-
-                    b.Property<int>("ReportTemplateId")
-                        .HasColumnType("integer")
-                        .HasColumnName("report_template_id");
-
-                    b.Property<int>("RowCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("row_count");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportTemplateId");
-
-                    b.HasIndex("UserId", "ExecutedAt");
-
-                    b.ToTable("report_execution_logs", (string)null);
-                });
-
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.ReportTemplate", b =>
                 {
                     b.Property<int>("Id")
@@ -607,10 +563,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Category")
-                        .HasColumnType("text")
-                        .HasColumnName("category");
 
                     b.Property<string>("ColumnsJson")
                         .IsRequired()
@@ -657,10 +609,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                         .HasDefaultValue("table")
                         .HasColumnName("display_mode");
 
-                    b.Property<string>("FieldDriftJson")
-                        .HasColumnType("text")
-                        .HasColumnName("field_drift_json");
-
                     b.Property<string>("FiltersJson")
                         .HasColumnType("text")
                         .HasColumnName("filters_json");
@@ -669,19 +617,11 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("form_id");
 
-                    b.Property<string>("GroupByJson")
-                        .HasColumnType("text")
-                        .HasColumnName("group_by_json");
-
                     b.Property<bool>("IsPublic")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_public");
-
-                    b.Property<string>("MeasuresJson")
-                        .HasColumnType("text")
-                        .HasColumnName("measures_json");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -691,14 +631,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.Property<string>("SchemaVersion")
                         .HasColumnType("text")
                         .HasColumnName("schema_version");
-
-                    b.Property<string>("SharedWithRolesJson")
-                        .HasColumnType("text")
-                        .HasColumnName("shared_with_roles_json");
-
-                    b.Property<string>("Tags")
-                        .HasColumnType("text")
-                        .HasColumnName("tags");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -713,52 +645,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.HasIndex("FormId");
 
                     b.ToTable("report_templates", (string)null);
-                });
-
-            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.RlsPolicy", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AppliestoRoles")
-                        .HasColumnType("text")
-                        .HasColumnName("applies_to_roles");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<int>("ReportTemplateId")
-                        .HasColumnType("integer")
-                        .HasColumnName("report_template_id");
-
-                    b.Property<string>("WhereFragment")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("where_fragment");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportTemplateId");
-
-                    b.ToTable("rls_policies", (string)null);
                 });
 
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.ScheduledJobDefinition", b =>
@@ -1029,39 +915,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.UserFavouriteReport", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<int>("ReportTemplateId")
-                        .HasColumnType("integer")
-                        .HasColumnName("report_template_id");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportTemplateId");
-
-                    b.HasIndex("UserId", "ReportTemplateId")
-                        .IsUnique();
-
-                    b.ToTable("user_favourite_reports", (string)null);
-                });
-
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.Form", b =>
                 {
                     b.HasOne("HPA.SurveyFlow.Domain.Entities.Form", "ParentForm")
@@ -1188,24 +1041,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.ReportExecutionLog", b =>
-                {
-                    b.HasOne("HPA.SurveyFlow.Domain.Entities.ReportTemplate", "ReportTemplate")
-                        .WithMany()
-                        .HasForeignKey("ReportTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HPA.SurveyFlow.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("ReportTemplate");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.ReportTemplate", b =>
                 {
                     b.HasOne("HPA.SurveyFlow.Domain.Entities.User", "CreatedByUser")
@@ -1225,17 +1060,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.Navigation("Form");
                 });
 
-            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.RlsPolicy", b =>
-                {
-                    b.HasOne("HPA.SurveyFlow.Domain.Entities.ReportTemplate", "ReportTemplate")
-                        .WithMany()
-                        .HasForeignKey("ReportTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReportTemplate");
-                });
-
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.Session", b =>
                 {
                     b.HasOne("HPA.SurveyFlow.Domain.Entities.User", "User")
@@ -1243,25 +1067,6 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.UserFavouriteReport", b =>
-                {
-                    b.HasOne("HPA.SurveyFlow.Domain.Entities.ReportTemplate", "ReportTemplate")
-                        .WithMany()
-                        .HasForeignKey("ReportTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HPA.SurveyFlow.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReportTemplate");
 
                     b.Navigation("User");
                 });

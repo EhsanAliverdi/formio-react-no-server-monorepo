@@ -335,6 +335,127 @@ export interface SaveIntegrationRuleRequest {
   webhook_config?: IntegrationRuleWebhookConfig;
 }
 
+// ─── Reporting ────────────────────────────────────────────────────────────────
+
+export interface FieldOption {
+  value: string;
+  label: string;
+}
+
+export interface FieldDescriptor {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'boolean' | 'date' | 'select';
+  options?: FieldOption[];
+  is_conditional?: boolean;
+}
+
+export interface FieldDriftEntry {
+  field_key: string;
+  label: string;
+  drift_type: 'missing' | 'type_changed' | 'parent_changed' | 'renamed';
+  message: string;
+}
+
+export interface ReportColumnDefinition {
+  field_key: string;
+  label: string;
+  width?: number;
+  format?: string;
+}
+
+export interface GroupByDef {
+  field_key: string;
+  label: string;
+  alias: string;
+  date_trunc?: 'day' | 'week' | 'month' | 'quarter' | 'year' | null;
+}
+
+export interface MeasureDef {
+  field_key?: string;   // null/absent for _count
+  label: string;
+  aggregation: 'count' | 'sum' | 'avg' | 'min' | 'max';
+  alias?: string;
+  format?: string;
+}
+
+export interface RlsPolicy {
+  id: number;
+  name: string;
+  where_fragment: string;
+  applies_to_roles?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface SaveRlsPolicyRequest {
+  name: string;
+  where_fragment: string;
+  applies_to_roles?: string;
+  is_active: boolean;
+}
+
+export interface ReportTemplate {
+  id: number;
+  form_id: number;
+  form_name: string;
+  name: string;
+  description?: string;
+  is_public: boolean;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  columns: ReportColumnDefinition[];
+  filters?: ConditionGroup | null;
+  default_sort_field?: string;
+  default_sort_direction: 'asc' | 'desc';
+  default_page_size: number;
+  display_mode: 'table';
+  has_schema_drift: boolean;
+  field_drift?: FieldDriftEntry[];
+  tags: string[];
+  category?: string;
+  shared_with_roles: string[];
+  group_by?: GroupByDef[] | null;
+  measures?: MeasureDef[] | null;
+  is_favourite: boolean;
+}
+
+export interface SaveReportTemplateRequest {
+  form_id: number;
+  name: string;
+  description?: string;
+  is_public: boolean;
+  columns: ReportColumnDefinition[];
+  filters?: ConditionGroup | null;
+  default_sort_field?: string;
+  default_sort_direction: 'asc' | 'desc';
+  default_page_size: number;
+  display_mode: 'table';
+  tags: string[];
+  category?: string;
+  shared_with_roles: string[];
+  group_by?: GroupByDef[] | null;
+  measures?: MeasureDef[] | null;
+}
+
+export interface RunReportRequest {
+  template_id: number;
+  runtime_filters?: ConditionGroup | null;
+  sort_field?: string;
+  sort_direction?: 'asc' | 'desc';
+  page: number;
+  page_size: number;
+}
+
+export interface ReportExecutionResult {
+  columns: ReportColumnDefinition[];
+  rows: Record<string, any>[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 export const MEX_FIELDS: { key: string; label: string; type: 'string' | 'number' | 'boolean' }[] = [
   { key: 'requestNumber',    label: 'Request Number',    type: 'number' },
   { key: 'jobTypeName',      label: 'Job Type Name',     type: 'string' },

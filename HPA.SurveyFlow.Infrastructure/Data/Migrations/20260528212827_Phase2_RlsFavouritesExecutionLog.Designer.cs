@@ -3,6 +3,7 @@ using System;
 using HPA.SurveyFlow.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260528212827_Phase2_RlsFavouritesExecutionLog")]
+    partial class Phase2_RlsFavouritesExecutionLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -669,19 +672,11 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("form_id");
 
-                    b.Property<string>("GroupByJson")
-                        .HasColumnType("text")
-                        .HasColumnName("group_by_json");
-
                     b.Property<bool>("IsPublic")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_public");
-
-                    b.Property<string>("MeasuresJson")
-                        .HasColumnType("text")
-                        .HasColumnName("measures_json");
 
                     b.Property<string>("Name")
                         .IsRequired()

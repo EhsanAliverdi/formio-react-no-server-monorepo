@@ -39,4 +39,10 @@ public static class Permissions
         public const string Read = "jobs.read";
         public const string Manage = "jobs.manage";
     }
+
+    public static class Reports
+    {
+        public const string Read = "reports.read";
+        public const string Manage = "reports.manage";
+    }
 }
