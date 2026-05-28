@@ -34,9 +34,12 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                 type: "text",
                 nullable: true);
 
-            // GIN index for fast JSONB path operators on form_submissions.data (text cast to jsonb)
+            // GIN index for fast JSONB path operators on form_submissions.data (stored as text, cast to jsonb).
+            // Note: CONCURRENTLY cannot run inside a transaction block (EF migrations use transactions),
+            // so we use a plain CREATE INDEX here. For a high-traffic production table this can be done
+            // manually with CONCURRENTLY after applying the migration.
             migrationBuilder.Sql(
-                "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_form_submissions_data_gin " +
+                "CREATE INDEX IF NOT EXISTS idx_form_submissions_data_gin " +
                 "ON form_submissions USING GIN ((data::jsonb));");
         }
 
@@ -44,7 +47,7 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql(
-                "DROP INDEX CONCURRENTLY IF EXISTS idx_form_submissions_data_gin;");
+                "DROP INDEX IF EXISTS idx_form_submissions_data_gin;");
             migrationBuilder.DropColumn(
                 name: "category",
                 table: "report_templates");
