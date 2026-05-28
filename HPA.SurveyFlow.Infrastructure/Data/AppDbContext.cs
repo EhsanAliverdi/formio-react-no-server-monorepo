@@ -21,6 +21,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FormIntegrationRuleMex> FormIntegrationRuleMexConfigs { get; set; }
     public DbSet<FormIntegrationRuleWebhook> FormIntegrationRuleWebhooks { get; set; }
     public DbSet<ReportTemplate> ReportTemplates { get; set; }
+    public DbSet<RlsPolicy> RlsPolicies { get; set; }
+    public DbSet<UserFavouriteReport> UserFavouriteReports { get; set; }
+    public DbSet<ReportExecutionLog> ReportExecutionLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -284,9 +287,56 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.Tags).HasColumnName("tags");
             e.Property(r => r.Category).HasColumnName("category");
             e.Property(r => r.SharedWithRolesJson).HasColumnName("shared_with_roles_json");
+            e.Property(r => r.GroupByJson).HasColumnName("group_by_json");
+            e.Property(r => r.MeasuresJson).HasColumnName("measures_json");
             e.HasOne(r => r.Form).WithMany().HasForeignKey(r => r.FormId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(r => r.CreatedByUser).WithMany().HasForeignKey(r => r.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(r => r.FormId);
+        });
+
+        modelBuilder.Entity<RlsPolicy>(e =>
+        {
+            e.ToTable("rls_policies");
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(p => p.ReportTemplateId).HasColumnName("report_template_id");
+            e.Property(p => p.Name).HasColumnName("name").IsRequired();
+            e.Property(p => p.WhereFragment).HasColumnName("where_fragment").IsRequired();
+            e.Property(p => p.AppliestoRoles).HasColumnName("applies_to_roles");
+            e.Property(p => p.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.Property(p => p.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.HasOne(p => p.ReportTemplate).WithMany().HasForeignKey(p => p.ReportTemplateId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(p => p.ReportTemplateId);
+        });
+
+        modelBuilder.Entity<UserFavouriteReport>(e =>
+        {
+            e.ToTable("user_favourite_reports");
+            e.HasKey(f => f.Id);
+            e.Property(f => f.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(f => f.UserId).HasColumnName("user_id");
+            e.Property(f => f.ReportTemplateId).HasColumnName("report_template_id");
+            e.Property(f => f.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(f => f.ReportTemplate).WithMany().HasForeignKey(f => f.ReportTemplateId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(f => new { f.UserId, f.ReportTemplateId }).IsUnique();
+        });
+
+        modelBuilder.Entity<ReportExecutionLog>(e =>
+        {
+            e.ToTable("report_execution_logs");
+            e.HasKey(l => l.Id);
+            e.Property(l => l.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(l => l.ReportTemplateId).HasColumnName("report_template_id");
+            e.Property(l => l.UserId).HasColumnName("user_id");
+            e.Property(l => l.ExecutedAt).HasColumnName("executed_at").HasDefaultValueSql("now()");
+            e.Property(l => l.DurationMs).HasColumnName("duration_ms");
+            e.Property(l => l.RowCount).HasColumnName("row_count");
+            e.Property(l => l.ExecutionType).HasColumnName("execution_type").HasDefaultValue("view");
+            e.HasOne(l => l.ReportTemplate).WithMany().HasForeignKey(l => l.ReportTemplateId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(l => l.User).WithMany().HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(l => new { l.UserId, l.ExecutedAt });
+            e.HasIndex(l => l.ReportTemplateId);
         });
     }
 }

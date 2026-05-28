@@ -9,6 +9,8 @@ import {
   RunReportRequest,
   ReportExecutionResult,
   ConditionGroup,
+  RlsPolicy,
+  SaveRlsPolicyRequest,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -77,5 +79,41 @@ export class ReportTemplateService {
     if (sortDirection) params = params.set('sortDirection', sortDirection);
     if (runtimeFilters) params = params.set('runtimeFilters', JSON.stringify(runtimeFilters));
     return `${this.api.apiUrl('/api/report-executions/export-excel')}?${params.toString()}`;
+  }
+
+  // ── Favourites ───────────────────────────────────────────────────────────
+
+  getFavourites(): Observable<number[]> {
+    return this.http.get<number[]>(this.api.apiUrl('/api/report-templates/favourites'));
+  }
+
+  addFavourite(id: number): Observable<void> {
+    return this.http.post<void>(this.api.apiUrl(`/api/report-templates/${id}/favourite`), {});
+  }
+
+  removeFavourite(id: number): Observable<void> {
+    return this.http.delete<void>(this.api.apiUrl(`/api/report-templates/${id}/favourite`));
+  }
+
+  getRecentlyUsed(): Observable<number[]> {
+    return this.http.get<number[]>(this.api.apiUrl('/api/report-templates/recently-used'));
+  }
+
+  // ── RLS Policies ─────────────────────────────────────────────────────────
+
+  getRlsPolicies(templateId: number): Observable<RlsPolicy[]> {
+    return this.http.get<RlsPolicy[]>(this.api.apiUrl(`/api/report-templates/${templateId}/rls-policies`));
+  }
+
+  addRlsPolicy(templateId: number, data: SaveRlsPolicyRequest): Observable<{ id: number }> {
+    return this.http.post<{ id: number }>(this.api.apiUrl(`/api/report-templates/${templateId}/rls-policies`), data);
+  }
+
+  updateRlsPolicy(templateId: number, policyId: number, data: SaveRlsPolicyRequest): Observable<void> {
+    return this.http.put<void>(this.api.apiUrl(`/api/report-templates/${templateId}/rls-policies/${policyId}`), data);
+  }
+
+  deleteRlsPolicy(templateId: number, policyId: number): Observable<void> {
+    return this.http.delete<void>(this.api.apiUrl(`/api/report-templates/${templateId}/rls-policies/${policyId}`));
   }
 }

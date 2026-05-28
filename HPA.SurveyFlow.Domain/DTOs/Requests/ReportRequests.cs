@@ -58,6 +58,27 @@ public class SaveReportTemplateRequest
 
     [JsonPropertyName("shared_with_roles")]
     public List<string> SharedWithRoles { get; set; } = [];
+
+    [JsonPropertyName("group_by")]
+    public JsonElement? GroupBy { get; set; }
+
+    [JsonPropertyName("measures")]
+    public JsonElement? Measures { get; set; }
+}
+
+public class SaveRlsPolicyRequest
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = null!;
+
+    [JsonPropertyName("where_fragment")]
+    public string WhereFragment { get; set; } = null!;
+
+    [JsonPropertyName("applies_to_roles")]
+    public string? AppliestoRoles { get; set; }
+
+    [JsonPropertyName("is_active")]
+    public bool IsActive { get; set; } = true;
 }
 
 public class RunReportRequest

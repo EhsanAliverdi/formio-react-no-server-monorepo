@@ -7,6 +7,8 @@ import {
   ConditionGroup,
   FieldDescriptor,
   FieldDriftEntry,
+  GroupByDef,
+  MeasureDef,
   ReportColumnDefinition,
   ReportTemplate,
   SaveReportTemplateRequest,
@@ -111,7 +113,7 @@ import { ReportDriftWizardComponent } from '../../../shared/components/report-dr
       } @else {
         <!-- Three-column layout -->
         <div class="flex-1 overflow-auto">
-          <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr_1fr] min-h-full divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
+          <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr_1fr_1fr] min-h-full divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
 
             <!-- Left: Column picker -->
             <div class="p-5 overflow-y-auto">
@@ -144,6 +146,108 @@ import { ReportDriftWizardComponent } from '../../../shared/components/report-dr
                 [collapsible]="false"
                 (valueChange)="filters.set($event)"
               />
+            </div>
+
+            <!-- Centre-right: Aggregation (GROUP BY + Measures) -->
+            <div class="p-5 overflow-y-auto">
+              <!-- Collapsible header -->
+              <button type="button" (click)="aggPanelOpen = !aggPanelOpen"
+                class="w-full flex items-center justify-between mb-3 group">
+                <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                  <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                  </svg>
+                  Aggregation
+                  <span class="text-xs font-normal text-gray-400 normal-case tracking-normal">(optional)</span>
+                </h2>
+                <svg class="w-4 h-4 text-gray-400 transition-transform" [class.rotate-180]="aggPanelOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+
+              @if (aggPanelOpen) {
+                <div class="flex flex-col gap-4">
+                  <!-- GROUP BY -->
+                  <div>
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Group By Dimensions</span>
+                      <button type="button" (click)="addGroupBy()" class="text-xs text-brand-600 hover:text-brand-800 font-medium">+ Add</button>
+                    </div>
+                    @if (groupByDefs.length === 0) {
+                      <p class="text-xs text-gray-400 italic">No grouping — shows raw rows</p>
+                    }
+                    @for (g of groupByDefs; track $index; let i = $index) {
+                      <div class="flex items-center gap-2 mb-2">
+                        <select [(ngModel)]="g.field_key" (ngModelChange)="onGroupByFieldChange(i)" class="ta-field text-xs flex-1 h-8 py-0">
+                          <option value="">— pick field —</option>
+                          @for (f of fields(); track f.key) {
+                            <option [value]="f.key">{{ f.label }}</option>
+                          }
+                        </select>
+                        @if (fieldType(g.field_key) === 'date') {
+                          <select [(ngModel)]="g.date_trunc" class="ta-field text-xs w-24 h-8 py-0">
+                            <option value="">Raw</option>
+                            <option value="day">Day</option>
+                            <option value="week">Week</option>
+                            <option value="month">Month</option>
+                            <option value="quarter">Quarter</option>
+                            <option value="year">Year</option>
+                          </select>
+                        }
+                        <button type="button" (click)="removeGroupBy(i)" class="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- MEASURES -->
+                  <div>
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Measures</span>
+                      <button type="button" (click)="addMeasure()" class="text-xs text-brand-600 hover:text-brand-800 font-medium">+ Add</button>
+                    </div>
+                    @if (measureDefs.length === 0) {
+                      <p class="text-xs text-gray-400 italic">Add measures to aggregate values</p>
+                    }
+                    @for (m of measureDefs; track $index; let i = $index) {
+                      <div class="flex items-center gap-2 mb-2">
+                        <select [(ngModel)]="m.aggregation" class="ta-field text-xs w-24 h-8 py-0">
+                          <option value="count">Count</option>
+                          <option value="sum">Sum</option>
+                          <option value="avg">Avg</option>
+                          <option value="min">Min</option>
+                          <option value="max">Max</option>
+                        </select>
+                        @if (m.aggregation !== 'count') {
+                          <select [(ngModel)]="m.field_key" class="ta-field text-xs flex-1 h-8 py-0">
+                            <option value="">— pick field —</option>
+                            @for (f of fields(); track f.key) {
+                              <option [value]="f.key">{{ f.label }}</option>
+                            }
+                          </select>
+                        } @else {
+                          <span class="text-xs text-gray-400 flex-1 italic">All rows</span>
+                        }
+                        <input type="text" [(ngModel)]="m.label" placeholder="Label" class="ta-field text-xs w-24 h-8 py-0"/>
+                        <button type="button" (click)="removeMeasure(i)" class="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </div>
+
+                  @if (groupByDefs.length > 0 || measureDefs.length > 0) {
+                    <p class="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+                      When aggregation is configured, column definitions above are used for display labels only. Query results are grouped.
+                    </p>
+                  }
+                </div>
+              }
             </div>
 
             <!-- Right: Options -->
@@ -270,6 +374,9 @@ export class ReportDesignerComponent implements OnInit {
   category = '';
   tagsInput = '';
   sharedWithRoles: string[] = [];
+  groupByDefs: GroupByDef[] = [];
+  measureDefs: MeasureDef[] = [];
+  aggPanelOpen = false;
 
   readonly allRoles = [
     { value: 'admin', label: 'Admin' },
@@ -311,6 +418,9 @@ export class ReportDesignerComponent implements OnInit {
         this.category = t.category ?? '';
         this.tagsInput = (t.tags ?? []).join(', ');
         this.sharedWithRoles = [...(t.shared_with_roles ?? [])];
+        this.groupByDefs = t.group_by ? [...t.group_by] : [];
+        this.measureDefs = t.measures ? [...t.measures] : [];
+        if (this.groupByDefs.length > 0 || this.measureDefs.length > 0) this.aggPanelOpen = true;
       },
     });
   }
@@ -338,6 +448,8 @@ export class ReportDesignerComponent implements OnInit {
       tags,
       category: this.category.trim() || undefined,
       shared_with_roles: this.sharedWithRoles,
+      group_by: this.groupByDefs.length > 0 ? this.groupByDefs : null,
+      measures: this.measureDefs.length > 0 ? this.measureDefs : null,
     };
 
     const isEdit = !forceNew && this.templateId() != null;
@@ -363,6 +475,35 @@ export class ReportDesignerComponent implements OnInit {
       this.sharedWithRoles = this.sharedWithRoles.filter(r => r !== role);
     else
       this.sharedWithRoles = [...this.sharedWithRoles, role];
+  }
+
+  addGroupBy(): void {
+    this.groupByDefs = [...this.groupByDefs, { field_key: '', label: '', alias: `dim${this.groupByDefs.length + 1}`, date_trunc: null }];
+  }
+
+  onGroupByFieldChange(index: number): void {
+    const g = this.groupByDefs[index];
+    const field = this.fields().find(f => f.key === g.field_key);
+    if (field) {
+      g.label = field.label;
+      g.alias = field.key;
+    }
+  }
+
+  removeGroupBy(index: number): void {
+    this.groupByDefs = this.groupByDefs.filter((_, i) => i !== index);
+  }
+
+  addMeasure(): void {
+    this.measureDefs = [...this.measureDefs, { field_key: undefined, label: 'Count', aggregation: 'count' }];
+  }
+
+  removeMeasure(index: number): void {
+    this.measureDefs = this.measureDefs.filter((_, i) => i !== index);
+  }
+
+  fieldType(key: string): string {
+    return this.fields().find(f => f.key === key)?.type ?? 'text';
   }
 
   goBack(): void {

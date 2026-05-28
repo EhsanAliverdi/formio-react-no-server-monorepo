@@ -94,6 +94,18 @@ public class ReportTemplateDto
 
     [JsonPropertyName("shared_with_roles")]
     public List<string> SharedWithRoles { get; set; } = [];
+
+    /// <summary>GROUP BY dimension definitions (null = flat row query).</summary>
+    [JsonPropertyName("group_by")]
+    public JsonElement? GroupBy { get; set; }
+
+    /// <summary>Measure/aggregation definitions.</summary>
+    [JsonPropertyName("measures")]
+    public JsonElement? Measures { get; set; }
+
+    /// <summary>True if the user has starred this template as a favourite.</summary>
+    [JsonPropertyName("is_favourite")]
+    public bool IsFavourite { get; set; }
 }
 
 public class FieldDriftEntryDto

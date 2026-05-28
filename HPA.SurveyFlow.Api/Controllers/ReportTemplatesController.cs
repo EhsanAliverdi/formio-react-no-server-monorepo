@@ -54,7 +54,13 @@ public class ReportTemplatesController(
         }
 
         var templates = await query.OrderByDescending(t => t.UpdatedAt).ToListAsync();
-        return Ok(templates.Select(t => MapDto(t, includeDrift: false)));
+
+        // Load user's favourites once so we can flag each template
+        var favouriteIds = user != null
+            ? (await db.UserFavouriteReports.Where(f => f.UserId == user.Id).Select(f => f.ReportTemplateId).ToListAsync()).ToHashSet()
+            : new HashSet<int>();
+
+        return Ok(templates.Select(t => MapDto(t, includeDrift: false, favouriteIds)));
     }
 
     [HttpGet("{id:int}")]
@@ -74,7 +80,8 @@ public class ReportTemplatesController(
             || (template.SharedWithRolesJson != null && template.SharedWithRolesJson.Contains(role));
         if (!canAccess) return Forbid();
 
-        return Ok(MapDto(template, includeDrift: true));
+        var isFav = user != null && await db.UserFavouriteReports.AnyAsync(f => f.UserId == user.Id && f.ReportTemplateId == id);
+        return Ok(MapDto(template, includeDrift: true, isFav ? new HashSet<int> { id } : null));
     }
 
     [HttpGet("form-fields/{formId:int}")]
@@ -131,6 +138,8 @@ public class ReportTemplatesController(
             SharedWithRolesJson = body.SharedWithRoles.Count > 0
                 ? JsonSerializer.Serialize(body.SharedWithRoles) : null,
             FieldDriftJson = null,
+            GroupByJson = body.GroupBy.HasValue ? body.GroupBy.Value.GetRawText() : null,
+            MeasuresJson = body.Measures.HasValue ? body.Measures.Value.GetRawText() : null,
         };
 
         db.ReportTemplates.Add(template);
@@ -173,6 +182,8 @@ public class ReportTemplatesController(
         template.Category = body.Category;
         template.SharedWithRolesJson = body.SharedWithRoles.Count > 0
             ? JsonSerializer.Serialize(body.SharedWithRoles) : null;
+        template.GroupByJson = body.GroupBy.HasValue ? body.GroupBy.Value.GetRawText() : null;
+        template.MeasuresJson = body.Measures.HasValue ? body.Measures.Value.GetRawText() : null;
 
         await db.SaveChangesAsync();
         template.Form = form;
@@ -190,7 +201,7 @@ public class ReportTemplatesController(
         return NoContent();
     }
 
-    private ReportTemplateDto MapDto(ReportTemplate t, bool includeDrift)
+    private ReportTemplateDto MapDto(ReportTemplate t, bool includeDrift, HashSet<int>? favouriteIds = null)
     {
         List<ReportColumnDefinitionDto> columns;
         try
@@ -244,8 +255,156 @@ public class ReportTemplatesController(
             Tags = t.Tags?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? [],
             Category = t.Category,
             SharedWithRoles = DeserializeRoles(t.SharedWithRolesJson),
+            GroupBy = ParseJsonElement(t.GroupByJson),
+            Measures = ParseJsonElement(t.MeasuresJson),
+            IsFavourite = favouriteIds?.Contains(t.Id) ?? false,
         };
     }
+
+    private static JsonElement? ParseJsonElement(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return JsonDocument.Parse(json).RootElement; } catch { return null; }
+    }
+
+    // ── Favourites ────────────────────────────────────────────────────────────
+
+    [HttpGet("favourites")]
+    public async Task<IActionResult> GetFavourites()
+    {
+        var user = HttpContext.GetCurrentUser();
+        if (user == null) return Unauthorized();
+
+        var favouriteIds = await db.UserFavouriteReports
+            .Where(f => f.UserId == user.Id)
+            .Select(f => f.ReportTemplateId)
+            .ToListAsync();
+
+        return Ok(favouriteIds);
+    }
+
+    [HttpPost("{id:int}/favourite")]
+    public async Task<IActionResult> AddFavourite(int id)
+    {
+        var user = HttpContext.GetCurrentUser();
+        if (user == null) return Unauthorized();
+
+        var template = await db.ReportTemplates.FindAsync(id);
+        if (template == null) return NotFound();
+
+        var exists = await db.UserFavouriteReports.AnyAsync(f => f.UserId == user.Id && f.ReportTemplateId == id);
+        if (!exists)
+        {
+            db.UserFavouriteReports.Add(new UserFavouriteReport { UserId = user.Id, ReportTemplateId = id });
+            await db.SaveChangesAsync();
+        }
+        return Ok();
+    }
+
+    [HttpDelete("{id:int}/favourite")]
+    public async Task<IActionResult> RemoveFavourite(int id)
+    {
+        var user = HttpContext.GetCurrentUser();
+        if (user == null) return Unauthorized();
+
+        var fav = await db.UserFavouriteReports.FirstOrDefaultAsync(f => f.UserId == user.Id && f.ReportTemplateId == id);
+        if (fav != null)
+        {
+            db.UserFavouriteReports.Remove(fav);
+            await db.SaveChangesAsync();
+        }
+        return Ok();
+    }
+
+    // ── RLS Policies ──────────────────────────────────────────────────────────
+
+    [HttpGet("{id:int}/rls-policies")]
+    [RequirePermission(Permissions.Reports.Manage)]
+    public async Task<IActionResult> GetRlsPolicies(int id)
+    {
+        var policies = await db.RlsPolicies
+            .Where(p => p.ReportTemplateId == id)
+            .OrderBy(p => p.Id)
+            .Select(p => new
+            {
+                p.Id,
+                p.Name,
+                p.WhereFragment,
+                p.AppliestoRoles,
+                p.IsActive,
+                p.CreatedAt,
+            })
+            .ToListAsync();
+        return Ok(policies);
+    }
+
+    [HttpPost("{id:int}/rls-policies")]
+    [RequirePermission(Permissions.Reports.Manage)]
+    public async Task<IActionResult> AddRlsPolicy(int id, [FromBody] SaveRlsPolicyRequest body)
+    {
+        var template = await db.ReportTemplates.FindAsync(id);
+        if (template == null) return NotFound();
+
+        var policy = new RlsPolicy
+        {
+            ReportTemplateId = id,
+            Name = body.Name,
+            WhereFragment = body.WhereFragment,
+            AppliestoRoles = body.AppliestoRoles,
+            IsActive = body.IsActive,
+        };
+        db.RlsPolicies.Add(policy);
+        await db.SaveChangesAsync();
+        return Ok(new { policy.Id });
+    }
+
+    [HttpPut("{id:int}/rls-policies/{policyId:int}")]
+    [RequirePermission(Permissions.Reports.Manage)]
+    public async Task<IActionResult> UpdateRlsPolicy(int id, int policyId, [FromBody] SaveRlsPolicyRequest body)
+    {
+        var policy = await db.RlsPolicies.FirstOrDefaultAsync(p => p.Id == policyId && p.ReportTemplateId == id);
+        if (policy == null) return NotFound();
+
+        policy.Name = body.Name;
+        policy.WhereFragment = body.WhereFragment;
+        policy.AppliestoRoles = body.AppliestoRoles;
+        policy.IsActive = body.IsActive;
+        await db.SaveChangesAsync();
+        return Ok();
+    }
+
+    [HttpDelete("{id:int}/rls-policies/{policyId:int}")]
+    [RequirePermission(Permissions.Reports.Manage)]
+    public async Task<IActionResult> DeleteRlsPolicy(int id, int policyId)
+    {
+        var policy = await db.RlsPolicies.FirstOrDefaultAsync(p => p.Id == policyId && p.ReportTemplateId == id);
+        if (policy == null) return NotFound();
+        db.RlsPolicies.Remove(policy);
+        await db.SaveChangesAsync();
+        return Ok();
+    }
+
+    // ── Execution Log ─────────────────────────────────────────────────────────
+
+    /// <summary>Returns the last 20 distinct templates executed by the current user (recently used).</summary>
+    [HttpGet("recently-used")]
+    public async Task<IActionResult> RecentlyUsed()
+    {
+        var user = HttpContext.GetCurrentUser();
+        if (user == null) return Unauthorized();
+
+        var recentIds = await db.ReportExecutionLogs
+            .Where(l => l.UserId == user.Id)
+            .OrderByDescending(l => l.ExecutedAt)
+            .Select(l => l.ReportTemplateId)
+            .Distinct()
+            .Take(20)
+            .ToListAsync();
+
+        return Ok(recentIds);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static List<string> DeserializeRoles(string? json)
     {

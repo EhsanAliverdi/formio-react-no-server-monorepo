@@ -39,6 +39,18 @@ public class ReportTemplate
     /// <summary>JSON array of role names that may view this template (e.g. ["admin","supervisor"]).</summary>
     public string? SharedWithRolesJson { get; set; }
 
+    /// <summary>
+    /// JSON array of GroupByDef objects: [{ field_key, label, alias, date_trunc? }].
+    /// When present, execution routes through AggregationPipelineService.
+    /// </summary>
+    public string? GroupByJson { get; set; }
+
+    /// <summary>
+    /// JSON array of MeasureDef objects: [{ field_key?, label, aggregation, alias?, format? }].
+    /// Synthetic "_count" measure is always available.
+    /// </summary>
+    public string? MeasuresJson { get; set; }
+
     public Form Form { get; set; } = null!;
     public User CreatedByUser { get; set; } = null!;
 }

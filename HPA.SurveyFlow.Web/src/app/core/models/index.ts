@@ -364,6 +364,37 @@ export interface ReportColumnDefinition {
   format?: string;
 }
 
+export interface GroupByDef {
+  field_key: string;
+  label: string;
+  alias: string;
+  date_trunc?: 'day' | 'week' | 'month' | 'quarter' | 'year' | null;
+}
+
+export interface MeasureDef {
+  field_key?: string;   // null/absent for _count
+  label: string;
+  aggregation: 'count' | 'sum' | 'avg' | 'min' | 'max';
+  alias?: string;
+  format?: string;
+}
+
+export interface RlsPolicy {
+  id: number;
+  name: string;
+  where_fragment: string;
+  applies_to_roles?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface SaveRlsPolicyRequest {
+  name: string;
+  where_fragment: string;
+  applies_to_roles?: string;
+  is_active: boolean;
+}
+
 export interface ReportTemplate {
   id: number;
   form_id: number;
@@ -385,6 +416,9 @@ export interface ReportTemplate {
   tags: string[];
   category?: string;
   shared_with_roles: string[];
+  group_by?: GroupByDef[] | null;
+  measures?: MeasureDef[] | null;
+  is_favourite: boolean;
 }
 
 export interface SaveReportTemplateRequest {
@@ -401,6 +435,8 @@ export interface SaveReportTemplateRequest {
   tags: string[];
   category?: string;
   shared_with_roles: string[];
+  group_by?: GroupByDef[] | null;
+  measures?: MeasureDef[] | null;
 }
 
 export interface RunReportRequest {

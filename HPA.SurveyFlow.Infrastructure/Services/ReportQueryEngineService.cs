@@ -18,7 +18,14 @@ public class ReportQueryEngineService(AppDbContext db)
     private static readonly System.Text.RegularExpressions.Regex SafeKeyRegex =
         new(@"^[a-zA-Z0-9_.\-]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
-    public async Task<ReportExecutionResultDto> ExecuteAsync(ReportTemplate template, RunReportRequest request)
+    /// <param name="rlsClause">
+    /// Optional pre-resolved RLS SQL fragment (from <see cref="UserContextService"/>).
+    /// When provided it is appended with AND to the WHERE clause before execution.
+    /// </param>
+    public async Task<ReportExecutionResultDto> ExecuteAsync(
+        ReportTemplate template,
+        RunReportRequest request,
+        string? rlsClause = null)
     {
         var columns = DeserializeColumns(template.ColumnsJson);
         if (columns.Count == 0)
@@ -29,7 +36,7 @@ public class ReportQueryEngineService(AppDbContext db)
 
         // Build WHERE predicates
         var parameters = new List<object>();
-        var whereClause = BuildWhereClause(template.FormId, mergedFilters, parameters);
+        var whereClause = BuildWhereClause(template.FormId, mergedFilters, parameters, rlsClause);
 
         // Resolve sort
         var sortField = NormaliseSortField(request.SortField ?? template.DefaultSortField, columns);
@@ -135,19 +142,23 @@ LIMIT {pageSize} OFFSET {offset}";
         return string.Join(", ", parts);
     }
 
-    private string BuildWhereClause(int formId, ConditionNode? filters, List<object> parameters)
+    private string BuildWhereClause(int formId, ConditionNode? filters, List<object> parameters, string? rlsClause = null)
     {
         // Parameter index starts after @p0 (formId)
         parameters.Add(formId);
-        var baseWhere = "form_id = {0} AND deleted_at IS NULL";
+        var sb = new StringBuilder("form_id = @p0 AND deleted_at IS NULL");
 
-        if (filters == null || (filters.Children == null && string.IsNullOrEmpty(filters.FieldKey)))
-            return string.Format(baseWhere, "@p0");
+        if (filters != null && !(filters.Children == null && string.IsNullOrEmpty(filters.FieldKey)))
+        {
+            sb.Append(" AND (");
+            BuildNodeSql(filters, sb, parameters);
+            sb.Append(')');
+        }
 
-        var sb = new StringBuilder();
-        sb.Append("form_id = @p0 AND deleted_at IS NULL AND (");
-        BuildNodeSql(filters, sb, parameters);
-        sb.Append(')');
+        // RLS clause uses pre-resolved SQL literals (no additional parameters needed)
+        if (!string.IsNullOrWhiteSpace(rlsClause))
+            sb.Append($" AND ({rlsClause})");
+
         return sb.ToString();
     }
 

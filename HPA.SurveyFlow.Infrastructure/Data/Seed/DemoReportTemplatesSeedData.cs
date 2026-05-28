@@ -29,6 +29,7 @@ public static class DemoReportTemplatesSeedData
             var fields = schemaResolver.ResolveFields(form.Json);
             var schemaVersion = DriftAnalysisService.ComputeFieldsHash(fields);
 
+            // Summary: visible to all roles (public)
             await SeedTemplateAsync(db, adminUser.Id, form, schemaVersion, overrideExisting,
                 name: $"{TitleCase(definition.EquipmentName)} Pre-Start — Summary by Machine",
                 description: $"Overview of all {definition.EquipmentName} pre-start submissions grouped by machine ID. Shows operator, safety outcomes, and fault details.",
@@ -39,8 +40,10 @@ public static class DemoReportTemplatesSeedData
                 columns: SummaryColumns(),
                 filters: null,
                 category: "Operations",
-                tags: "prestart,summary,machine");
+                tags: "prestart,summary,machine",
+                sharedWithRoles: ["admin", "editor", "viewer", "supervisor", "operator"]);
 
+            // Safety: visible to supervisors + management
             await SeedTemplateAsync(db, adminUser.Id, form, schemaVersion, overrideExisting,
                 name: $"{TitleCase(definition.EquipmentName)} Pre-Start — Safety Issues",
                 description: $"All {definition.EquipmentName} submissions where faults were found or equipment was declared unsafe. Use this to prioritise maintenance.",
@@ -51,8 +54,10 @@ public static class DemoReportTemplatesSeedData
                 columns: SafetyColumns(),
                 filters: FaultsFoundFilter(),
                 category: "Safety",
-                tags: "prestart,safety,faults");
+                tags: "prestart,safety,faults",
+                sharedWithRoles: ["admin", "editor", "supervisor"]);
 
+            // Declarations: restricted — admin + compliance supervisors only
             await SeedTemplateAsync(db, adminUser.Id, form, schemaVersion, overrideExisting,
                 name: $"{TitleCase(definition.EquipmentName)} Pre-Start — Operator Declarations",
                 description: $"Full declaration log for {definition.EquipmentName} pre-starts including operator name, employee ID, and safe-to-operate status.",
@@ -63,7 +68,8 @@ public static class DemoReportTemplatesSeedData
                 columns: DeclarationColumns(),
                 filters: null,
                 category: "Compliance",
-                tags: "prestart,declaration,operator");
+                tags: "prestart,declaration,operator",
+                sharedWithRoles: ["admin", "supervisor"]);
         }
 
         await db.SaveChangesAsync();
@@ -145,7 +151,8 @@ public static class DemoReportTemplatesSeedData
         List<ReportColumnDef> columns,
         string? filters,
         string? category = null,
-        string? tags = null)
+        string? tags = null,
+        string[]? sharedWithRoles = null)
     {
         var existing = await db.ReportTemplates
             .FirstOrDefaultAsync(t => t.FormId == form.Id && t.Name == name);
@@ -154,6 +161,9 @@ public static class DemoReportTemplatesSeedData
 
         var columnsJson = JsonSerializer.Serialize(
             columns.Select(c => new { field_key = c.FieldKey, label = c.Label }));
+
+        var rolesJson = sharedWithRoles is { Length: > 0 }
+            ? JsonSerializer.Serialize(sharedWithRoles) : null;
 
         if (existing != null)
         {
@@ -168,6 +178,7 @@ public static class DemoReportTemplatesSeedData
             existing.UpdatedAt = DateTime.UtcNow;
             existing.Category = category;
             existing.Tags = tags;
+            existing.SharedWithRolesJson = rolesJson;
         }
         else
         {
@@ -189,6 +200,7 @@ public static class DemoReportTemplatesSeedData
                 SchemaVersion = schemaVersion,
                 Category = category,
                 Tags = tags,
+                SharedWithRolesJson = rolesJson,
             });
         }
     }

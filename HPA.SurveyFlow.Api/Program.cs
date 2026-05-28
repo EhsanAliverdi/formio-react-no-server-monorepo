@@ -128,7 +128,9 @@ builder.Services.AddSingleton<IntegrationRuleExecutorService>();
 builder.Services.AddScoped<FormSchemaResolverService>();
 builder.Services.AddScoped<DriftAnalysisService>();
 builder.Services.AddScoped<ReportQueryEngineService>();
+builder.Services.AddScoped<AggregationPipelineService>();
 builder.Services.AddScoped<ExcelExportService>();
+builder.Services.AddScoped<UserContextService>();
 
 // ── Event Bus (in-process, zero dependencies) ──────────────────────────────
 builder.Services.AddScoped<IEventBus, EventBus>();
