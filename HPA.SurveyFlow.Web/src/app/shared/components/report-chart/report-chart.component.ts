@@ -9,12 +9,9 @@ import {
   AfterViewInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Chart, ChartConfiguration, ChartType } from 'chart.js/auto';
 
 export interface ChartConfig {
-  /** Column alias used as X-axis labels / pie slice labels */
   x_axis?: string;
-  /** Column aliases used as Y-axis series (one bar/line per alias) */
   y_axes?: string[];
 }
 
@@ -61,31 +58,29 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
   @Input() chartType: string = 'bar';
   @Input() config: ChartConfig = {};
   @Input() columns: { field_key: string; label: string }[] = [];
-  @Input() rows: Record<string, any>[] = [];
+  @Input() rows: Record<string, unknown>[] = [];
   @Input() chartHeight = 320;
 
-  private chart?: Chart;
+  // typed as any to avoid chart.js type resolution issues in Docker/esbuild
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private chart: any;
 
   ngAfterViewInit(): void { this.rebuild(); }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['rows'] || changes['chartType'] || changes['config'] || changes['columns']) {
-      // defer to next tick so canvas is ready after *ngIf resolves
       setTimeout(() => this.rebuild(), 0);
     }
   }
 
   ngOnDestroy(): void { this.chart?.destroy(); }
 
-  // ── Number card helpers ───────────────────────────────────────────────────
-
   numberCards(): { label: string; value: string }[] {
     if (this.rows.length === 0) return [];
     const yAxes = this.config.y_axes?.length ? this.config.y_axes : this.yAliases();
-    // Aggregate: sum all rows per y-axis (or just show first row value)
     return yAxes.map(alias => {
       const col = this.columns.find(c => c.field_key === alias);
-      const sum = this.rows.reduce((acc, r) => acc + (parseFloat(r[alias]) || 0), 0);
+      const sum = this.rows.reduce((acc, r) => acc + (parseFloat(String(r[alias] ?? 0)) || 0), 0);
       const display = Number.isInteger(sum) ? sum.toLocaleString() : sum.toFixed(2);
       return { label: col?.label ?? alias, value: display };
     });
@@ -98,8 +93,6 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
     return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
   }
 
-  // ── Chart build ───────────────────────────────────────────────────────────
-
   private rebuild(): void {
     this.chart?.destroy();
     this.chart = undefined;
@@ -108,15 +101,12 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
 
     const xAlias = this.config.x_axis ?? this.xAlias();
     const yAliases = this.config.y_axes?.length ? this.config.y_axes : this.yAliases();
-
     const labels = this.rows.map(r => String(r[xAlias] ?? ''));
-
-    const type = this.chartType as ChartType;
-    const isPie = type === 'pie' || type === 'doughnut';
+    const isPie = this.chartType === 'pie' || this.chartType === 'doughnut';
 
     const datasets = yAliases.map((alias, i) => {
       const col = this.columns.find(c => c.field_key === alias);
-      const data = this.rows.map(r => parseFloat(r[alias]) || 0);
+      const data = this.rows.map(r => parseFloat(String(r[alias] ?? 0)) || 0);
       const color = PALETTE[i % PALETTE.length];
       return {
         label: col?.label ?? alias,
@@ -124,13 +114,13 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
         backgroundColor: isPie ? PALETTE.slice(0, data.length) : color + '99',
         borderColor: isPie ? PALETTE.slice(0, data.length) : color,
         borderWidth: isPie ? 1 : 2,
-        fill: type === 'line' ? false : undefined,
-        tension: type === 'line' ? 0.3 : undefined,
+        fill: this.chartType === 'line' ? false : undefined,
+        tension: this.chartType === 'line' ? 0.3 : undefined,
       };
     });
 
-    const config: ChartConfiguration = {
-      type,
+    const config = {
+      type: this.chartType,
       data: { labels, datasets },
       options: {
         responsive: true,
@@ -146,17 +136,20 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
       },
     };
 
-    this.chart = new Chart(this.canvasRef.nativeElement, config);
+    // Dynamic import so the module is resolved at runtime, not compile-time.
+    // This avoids TypeScript/esbuild having to resolve chart.js type declarations.
+    import('chart.js/auto').then(({ Chart }) => {
+      if (!this.canvasRef) return;
+      this.chart?.destroy();
+      this.chart = new Chart(this.canvasRef.nativeElement, config as never);
+    });
   }
-
-  // ── Alias inference fallbacks (when config not yet set) ───────────────────
 
   private xAlias(): string {
     return this.columns[0]?.field_key ?? '';
   }
 
   private yAliases(): string[] {
-    // Assume all numeric-looking columns after the first are y-axes
     return this.columns.slice(1).map(c => c.field_key);
   }
 }
