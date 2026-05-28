@@ -347,6 +347,14 @@ export interface FieldDescriptor {
   label: string;
   type: 'text' | 'number' | 'boolean' | 'date' | 'select';
   options?: FieldOption[];
+  is_conditional?: boolean;
+}
+
+export interface FieldDriftEntry {
+  field_key: string;
+  label: string;
+  drift_type: 'missing' | 'type_changed' | 'parent_changed' | 'renamed';
+  message: string;
 }
 
 export interface ReportColumnDefinition {
@@ -373,6 +381,10 @@ export interface ReportTemplate {
   default_page_size: number;
   display_mode: 'table';
   has_schema_drift: boolean;
+  field_drift?: FieldDriftEntry[];
+  tags: string[];
+  category?: string;
+  shared_with_roles: string[];
 }
 
 export interface SaveReportTemplateRequest {
@@ -386,6 +398,9 @@ export interface SaveReportTemplateRequest {
   default_sort_direction: 'asc' | 'desc';
   default_page_size: number;
   display_mode: 'table';
+  tags: string[];
+  category?: string;
+  shared_with_roles: string[];
 }
 
 export interface RunReportRequest {

@@ -49,6 +49,15 @@ public class SaveReportTemplateRequest
 
     [JsonPropertyName("display_mode")]
     public string DisplayMode { get; set; } = "table";
+
+    [JsonPropertyName("tags")]
+    public List<string> Tags { get; set; } = [];
+
+    [JsonPropertyName("category")]
+    public string? Category { get; set; }
+
+    [JsonPropertyName("shared_with_roles")]
+    public List<string> SharedWithRoles { get; set; } = [];
 }
 
 public class RunReportRequest

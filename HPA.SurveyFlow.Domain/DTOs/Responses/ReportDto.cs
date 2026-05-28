@@ -17,6 +17,10 @@ public class FieldDescriptorDto
 
     [JsonPropertyName("options")]
     public List<FieldOptionDto>? Options { get; set; }
+
+    /// <summary>True when this field is only shown under a Form.io conditional rule.</summary>
+    [JsonPropertyName("is_conditional")]
+    public bool IsConditional { get; set; }
 }
 
 public class FieldOptionDto
@@ -77,6 +81,35 @@ public class ReportTemplateDto
 
     [JsonPropertyName("has_schema_drift")]
     public bool HasSchemaDrift { get; set; }
+
+    /// <summary>Per-field drift details when has_schema_drift is true.</summary>
+    [JsonPropertyName("field_drift")]
+    public List<FieldDriftEntryDto>? FieldDrift { get; set; }
+
+    [JsonPropertyName("tags")]
+    public List<string> Tags { get; set; } = [];
+
+    [JsonPropertyName("category")]
+    public string? Category { get; set; }
+
+    [JsonPropertyName("shared_with_roles")]
+    public List<string> SharedWithRoles { get; set; } = [];
+}
+
+public class FieldDriftEntryDto
+{
+    [JsonPropertyName("field_key")]
+    public string FieldKey { get; set; } = null!;
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = null!;
+
+    /// <summary>missing | type_changed | renamed</summary>
+    [JsonPropertyName("drift_type")]
+    public string DriftType { get; set; } = "missing";
+
+    [JsonPropertyName("message")]
+    public string Message { get; set; } = null!;
 }
 
 public class ReportExecutionResultDto

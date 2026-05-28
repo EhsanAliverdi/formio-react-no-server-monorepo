@@ -14,7 +14,11 @@ namespace HPA.SurveyFlow.Api.Controllers;
 [ApiController]
 [Route("api/report-executions")]
 [RequirePermission(Permissions.Reports.Read)]
-public class ReportExecutionsController(AppDbContext db, ReportQueryEngineService queryEngine, ILogger<ReportExecutionsController> logger) : ControllerBase
+public class ReportExecutionsController(
+    AppDbContext db,
+    ReportQueryEngineService queryEngine,
+    ExcelExportService excelExport,
+    ILogger<ReportExecutionsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Run([FromBody] RunReportRequest body)
@@ -97,6 +101,41 @@ public class ReportExecutionsController(AppDbContext db, ReportQueryEngineServic
         var fileName = $"{SanitiseFileName(template.Name)}_{DateTime.UtcNow:yyyyMMdd}.csv";
         var bytes = Encoding.UTF8.GetBytes(sb.ToString());
         return File(bytes, "text/csv", fileName);
+    }
+
+    [HttpGet("export-excel")]
+    public async Task<IActionResult> ExportExcel(
+        [FromQuery] int templateId,
+        [FromQuery] string? sortField,
+        [FromQuery] string? sortDirection,
+        [FromQuery] string? runtimeFilters)
+    {
+        var user = HttpContext.GetCurrentUser();
+        var isManager = user?.Role is "admin" or "editor";
+
+        var template = await db.ReportTemplates
+            .Include(t => t.Form)
+            .FirstOrDefaultAsync(t => t.Id == templateId);
+
+        if (template == null) return NotFound(new { error = "Report template not found." });
+        if (!isManager && !template.IsPublic) return Forbid();
+
+        var request = new RunReportRequest
+        {
+            TemplateId = templateId,
+            SortField = sortField,
+            SortDirection = sortDirection,
+            Page = 1,
+            PageSize = 10000,
+        };
+
+        if (!string.IsNullOrWhiteSpace(runtimeFilters))
+            try { request.RuntimeFilters = JsonDocument.Parse(runtimeFilters).RootElement; } catch { }
+
+        var result = await queryEngine.ExecuteAsync(template, request);
+        var bytes = excelExport.GenerateWorkbook(template, result.Columns, result.Rows);
+        var fileName = $"{SanitiseFileName(template.Name)}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 
     private static string CsvEscape(string value)

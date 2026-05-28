@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -27,12 +27,8 @@ import { Form, ReportTemplate } from '../../../core/models';
                 <option [value]="f.id">{{ f.name }}</option>
               }
             </select>
-            <button
-              type="button"
-              (click)="newReport()"
-              [disabled]="!newReportFormId"
-              class="ta-btn ta-btn-primary h-10 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button type="button" (click)="newReport()" [disabled]="!newReportFormId"
+              class="ta-btn ta-btn-primary h-10 disabled:opacity-50 disabled:cursor-not-allowed">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
               </svg>
@@ -48,15 +44,53 @@ import { Form, ReportTemplate } from '../../../core/models';
       }
 
       <!-- Filter bar -->
-      <div class="mb-5 flex items-center gap-3">
-        <select [(ngModel)]="filterFormId" (ngModelChange)="loadTemplates()" class="ta-field text-sm h-10 w-48">
+      <div class="mb-5 flex flex-wrap items-center gap-3">
+        <!-- Form filter -->
+        <select [(ngModel)]="filterFormId" (ngModelChange)="loadTemplates()" class="ta-field text-sm h-9 w-44">
           <option value="">All forms</option>
           @for (f of forms(); track f.id) {
             <option [value]="f.id">{{ f.name }}</option>
           }
         </select>
-        <span class="text-sm text-gray-500 dark:text-gray-400">
-          {{ loading() ? 'Loading…' : templates().length + ' template' + (templates().length !== 1 ? 's' : '') }}
+
+        <!-- Category filter -->
+        @if (categories().length > 0) {
+          <select [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()" class="ta-field text-sm h-9 w-36">
+            <option value="">All categories</option>
+            @for (cat of categories(); track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        }
+
+        <!-- Search -->
+        <div class="relative flex-1 min-w-36 max-w-64">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            type="search"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="applyFilters()"
+            placeholder="Search reports…"
+            class="ta-field text-sm h-9 pl-9"
+          />
+        </div>
+
+        <!-- Drift filter toggle -->
+        <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+          <input type="checkbox" [(ngModel)]="showDriftOnly" (ngModelChange)="applyFilters()"
+            class="rounded border-gray-300 text-brand-600 focus:ring-brand-500"/>
+          <span class="flex items-center gap-1">
+            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Outdated only
+          </span>
+        </label>
+
+        <span class="text-sm text-gray-400 ml-auto">
+          {{ loading() ? 'Loading…' : filteredTemplates().length + ' result' + (filteredTemplates().length !== 1 ? 's' : '') }}
         </span>
       </div>
 
@@ -74,28 +108,32 @@ import { Form, ReportTemplate } from '../../../core/models';
       }
 
       <!-- Empty state -->
-      @else if (templates().length === 0) {
+      @else if (filteredTemplates().length === 0) {
         <div class="ta-card flex flex-col items-center justify-center py-16 text-center">
           <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
             <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
           </div>
-          <h3 class="text-base font-semibold text-gray-800 dark:text-white mb-1">No report templates yet</h3>
-          <p class="text-sm text-gray-400 mb-6 max-w-xs">Select a form and create your first report template to get started.</p>
-          @if (forms().length > 0) {
-            <div class="flex items-center gap-2">
-              <select [(ngModel)]="newReportFormId" class="ta-field text-sm h-10 w-48">
-                <option value="">Select a form…</option>
-                @for (f of forms(); track f.id) {
-                  <option [value]="f.id">{{ f.name }}</option>
-                }
-              </select>
-              <button type="button" (click)="newReport()" [disabled]="!newReportFormId"
-                class="ta-btn ta-btn-primary h-10 disabled:opacity-50 disabled:cursor-not-allowed">
-                Create Report
-              </button>
-            </div>
+          @if (templates().length === 0) {
+            <h3 class="text-base font-semibold text-gray-800 dark:text-white mb-1">No report templates yet</h3>
+            <p class="text-sm text-gray-400 mb-6 max-w-xs">Select a form and create your first report template to get started.</p>
+            @if (forms().length > 0) {
+              <div class="flex items-center gap-2">
+                <select [(ngModel)]="newReportFormId" class="ta-field text-sm h-10 w-48">
+                  <option value="">Select a form…</option>
+                  @for (f of forms(); track f.id) {
+                    <option [value]="f.id">{{ f.name }}</option>
+                  }
+                </select>
+                <button type="button" (click)="newReport()" [disabled]="!newReportFormId"
+                  class="ta-btn ta-btn-primary h-10 disabled:opacity-50">Create Report</button>
+              </div>
+            }
+          } @else {
+            <h3 class="text-base font-semibold text-gray-800 dark:text-white mb-1">No results</h3>
+            <p class="text-sm text-gray-400 mb-4">Try adjusting your filters.</p>
+            <button type="button" (click)="clearFilters()" class="ta-btn ta-btn-secondary text-sm">Clear filters</button>
           }
         </div>
       }
@@ -103,7 +141,7 @@ import { Form, ReportTemplate } from '../../../core/models';
       <!-- Template cards grid -->
       @else {
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          @for (t of templates(); track t.id) {
+          @for (t of filteredTemplates(); track t.id) {
             <div class="ta-card flex flex-col gap-3 hover:border-brand-300 dark:hover:border-brand-600 hover:shadow-md transition-all cursor-default group">
 
               <!-- Card header -->
@@ -134,6 +172,22 @@ import { Form, ReportTemplate } from '../../../core/models';
                 </div>
               </div>
 
+              <!-- Category + Tags -->
+              @if (t.category || t.tags?.length) {
+                <div class="flex flex-wrap gap-1.5">
+                  @if (t.category) {
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 text-xs font-medium border border-brand-200 dark:border-brand-700">
+                      {{ t.category }}
+                    </span>
+                  }
+                  @for (tag of t.tags; track tag) {
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 text-xs">
+                      #{{ tag }}
+                    </span>
+                  }
+                </div>
+              }
+
               <!-- Description -->
               @if (t.description) {
                 <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{ t.description }}</p>
@@ -157,32 +211,21 @@ import { Form, ReportTemplate } from '../../../core/models';
 
               <!-- Actions -->
               <div class="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                <button
-                  type="button"
-                  (click)="runReport(t)"
-                  class="ta-btn ta-btn-primary text-xs h-8 px-3 flex-1"
-                >
+                <button type="button" (click)="runReport(t)" class="ta-btn ta-btn-primary text-xs h-8 px-3 flex-1">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                   Run
                 </button>
-                <button
-                  type="button"
-                  (click)="editReport(t)"
-                  class="ta-btn ta-btn-secondary text-xs h-8 px-3"
-                >
+                <button type="button" (click)="editReport(t)" class="ta-btn ta-btn-secondary text-xs h-8 px-3">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                   </svg>
                   Edit
                 </button>
-                <button
-                  type="button"
-                  (click)="deleteReport(t)"
+                <button type="button" (click)="deleteReport(t)"
                   class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  title="Delete template"
-                >
+                  title="Delete template">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                   </svg>
@@ -206,10 +249,6 @@ import { Form, ReportTemplate } from '../../../core/models';
             <button type="button" (click)="deletingTemplate.set(null)" class="ta-btn ta-btn-secondary text-sm">Cancel</button>
             <button type="button" (click)="confirmDelete()" [disabled]="deleting()"
               class="ta-btn text-sm bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/40 disabled:opacity-50">
-              <svg *ngIf="deleting()" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
               {{ deleting() ? 'Deleting…' : 'Delete' }}
             </button>
           </div>
@@ -225,34 +264,64 @@ export class ReportsComponent implements OnInit {
 
   templates = signal<ReportTemplate[]>([]);
   forms = signal<Form[]>([]);
+  categories = signal<string[]>([]);
   loading = signal(true);
   error = signal('');
   deletingTemplate = signal<ReportTemplate | null>(null);
   deleting = signal(false);
 
   filterFormId = '';
+  filterCategory = '';
+  searchQuery = '';
+  showDriftOnly = false;
   newReportFormId = '';
+
+  filteredTemplates = computed(() => {
+    let list = this.templates();
+    if (this.filterCategory) list = list.filter(t => t.category === this.filterCategory);
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      list = list.filter(t =>
+        t.name.toLowerCase().includes(q) ||
+        t.form_name.toLowerCase().includes(q) ||
+        t.description?.toLowerCase().includes(q) ||
+        t.tags?.some(tag => tag.toLowerCase().includes(q))
+      );
+    }
+    if (this.showDriftOnly) list = list.filter(t => t.has_schema_drift);
+    return list;
+  });
 
   ngOnInit(): void {
     this.loadForms();
     this.loadTemplates();
+    this.loadCategories();
   }
 
   loadForms(): void {
-    this.formService.list().subscribe({
-      next: res => this.forms.set(res),
-      error: () => {},
-    });
+    this.formService.list().subscribe({ next: res => this.forms.set(res), error: () => {} });
+  }
+
+  loadCategories(): void {
+    this.reportService.getCategories().subscribe({ next: c => this.categories.set(c), error: () => {} });
   }
 
   loadTemplates(): void {
     this.loading.set(true);
     this.error.set('');
     const formId = this.filterFormId ? +this.filterFormId : undefined;
-    this.reportService.list(formId).subscribe({
+    this.reportService.list({ formId }).subscribe({
       next: t => { this.templates.set(t); this.loading.set(false); },
       error: () => { this.error.set('Failed to load report templates.'); this.loading.set(false); },
     });
+  }
+
+  applyFilters(): void { /* computed() handles this reactively */ }
+
+  clearFilters(): void {
+    this.filterCategory = '';
+    this.searchQuery = '';
+    this.showDriftOnly = false;
   }
 
   newReport(): void {
@@ -260,17 +329,13 @@ export class ReportsComponent implements OnInit {
     this.router.navigate(['/admin/reports', this.newReportFormId, 'designer']);
   }
 
-  runReport(t: ReportTemplate): void {
-    this.router.navigate(['/admin/reports', t.id, 'run']);
-  }
+  runReport(t: ReportTemplate): void { this.router.navigate(['/admin/reports', t.id, 'run']); }
 
   editReport(t: ReportTemplate): void {
     this.router.navigate(['/admin/reports', t.form_id, 'designer'], { queryParams: { templateId: t.id } });
   }
 
-  deleteReport(t: ReportTemplate): void {
-    this.deletingTemplate.set(t);
-  }
+  deleteReport(t: ReportTemplate): void { this.deletingTemplate.set(t); }
 
   confirmDelete(): void {
     const t = this.deletingTemplate();

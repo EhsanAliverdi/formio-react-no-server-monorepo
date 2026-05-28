@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,30 +15,46 @@ namespace HPA.SurveyFlow.Api.Controllers;
 [ApiController]
 [Route("api/report-templates")]
 [RequirePermission(Permissions.Reports.Read)]
-public class ReportTemplatesController(AppDbContext db, FormSchemaResolverService schemaResolver) : ControllerBase
+public class ReportTemplatesController(
+    AppDbContext db,
+    FormSchemaResolverService schemaResolver,
+    DriftAnalysisService driftAnalysis) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] int? formId)
+    public async Task<IActionResult> List(
+        [FromQuery] int? formId,
+        [FromQuery] string? category,
+        [FromQuery] string? tag,
+        [FromQuery] int? createdBy)
     {
         var user = HttpContext.GetCurrentUser();
         var isManager = user?.Role is "admin" or "editor";
 
-        var query = db.ReportTemplates
-            .Include(t => t.Form)
-            .AsQueryable();
+        var query = db.ReportTemplates.Include(t => t.Form).AsQueryable();
 
         if (formId.HasValue)
             query = query.Where(t => t.FormId == formId.Value);
 
-        // Viewers only see public templates
+        if (!string.IsNullOrWhiteSpace(category))
+            query = query.Where(t => t.Category == category);
+
+        if (!string.IsNullOrWhiteSpace(tag))
+            query = query.Where(t => t.Tags != null && t.Tags.Contains(tag));
+
+        if (createdBy.HasValue)
+            query = query.Where(t => t.CreatedBy == createdBy.Value);
+
+        // Viewers see public templates + templates shared with their role
         if (!isManager)
-            query = query.Where(t => t.IsPublic);
+        {
+            var role = user?.Role ?? "";
+            query = query.Where(t =>
+                t.IsPublic ||
+                (t.SharedWithRolesJson != null && t.SharedWithRolesJson.Contains(role)));
+        }
 
-        var templates = await query
-            .OrderByDescending(t => t.UpdatedAt)
-            .ToListAsync();
-
-        return Ok(templates.Select(t => MapDto(t)));
+        var templates = await query.OrderByDescending(t => t.UpdatedAt).ToListAsync();
+        return Ok(templates.Select(t => MapDto(t, includeDrift: false)));
     }
 
     [HttpGet("{id:int}")]
@@ -54,9 +68,13 @@ public class ReportTemplatesController(AppDbContext db, FormSchemaResolverServic
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (template == null) return NotFound(new { error = "Report template not found." });
-        if (!isManager && !template.IsPublic) return Forbid();
 
-        return Ok(MapDto(template));
+        var role = user?.Role ?? "";
+        var canAccess = isManager || template.IsPublic
+            || (template.SharedWithRolesJson != null && template.SharedWithRolesJson.Contains(role));
+        if (!canAccess) return Forbid();
+
+        return Ok(MapDto(template, includeDrift: true));
     }
 
     [HttpGet("form-fields/{formId:int}")]
@@ -64,9 +82,19 @@ public class ReportTemplatesController(AppDbContext db, FormSchemaResolverServic
     {
         var form = await db.Forms.FindAsync(formId);
         if (form == null) return NotFound(new { error = "Form not found." });
+        return Ok(schemaResolver.ResolveFields(form.Json));
+    }
 
-        var fields = schemaResolver.ResolveFields(form.Json);
-        return Ok(fields);
+    [HttpGet("categories")]
+    public async Task<IActionResult> GetCategories()
+    {
+        var categories = await db.ReportTemplates
+            .Where(t => t.Category != null)
+            .Select(t => t.Category!)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToListAsync();
+        return Ok(categories);
     }
 
     [HttpPost]
@@ -78,6 +106,9 @@ public class ReportTemplatesController(AppDbContext db, FormSchemaResolverServic
 
         var form = await db.Forms.FindAsync(body.FormId);
         if (form == null) return NotFound(new { error = "Form not found." });
+
+        var fields = schemaResolver.ResolveFields(form.Json);
+        var schemaVersion = DriftAnalysisService.ComputeFieldsHash(fields);
 
         var template = new ReportTemplate
         {
@@ -94,25 +125,25 @@ public class ReportTemplatesController(AppDbContext db, FormSchemaResolverServic
             DefaultSortDirection = body.DefaultSortDirection,
             DefaultPageSize = Math.Clamp(body.DefaultPageSize, 1, 200),
             DisplayMode = body.DisplayMode,
-            SchemaVersion = ComputeSchemaVersion(form.Json),
+            SchemaVersion = schemaVersion,
+            Tags = body.Tags.Count > 0 ? string.Join(",", body.Tags) : null,
+            Category = body.Category,
+            SharedWithRolesJson = body.SharedWithRoles.Count > 0
+                ? JsonSerializer.Serialize(body.SharedWithRoles) : null,
+            FieldDriftJson = null,
         };
 
         db.ReportTemplates.Add(template);
         await db.SaveChangesAsync();
-
-        // Reload with Form navigation
         template.Form = form;
-        return CreatedAtAction(nameof(Get), new { id = template.Id }, MapDto(template));
+        return CreatedAtAction(nameof(Get), new { id = template.Id }, MapDto(template, includeDrift: false));
     }
 
     [HttpPut("{id:int}")]
     [RequirePermission(Permissions.Reports.Manage)]
     public async Task<IActionResult> Update(int id, [FromBody] SaveReportTemplateRequest body)
     {
-        var template = await db.ReportTemplates
-            .Include(t => t.Form)
-            .FirstOrDefaultAsync(t => t.Id == id);
-
+        var template = await db.ReportTemplates.Include(t => t.Form).FirstOrDefaultAsync(t => t.Id == id);
         if (template == null) return NotFound(new { error = "Report template not found." });
 
         var form = template.Form;
@@ -121,6 +152,9 @@ public class ReportTemplatesController(AppDbContext db, FormSchemaResolverServic
             form = await db.Forms.FindAsync(body.FormId);
             if (form == null) return NotFound(new { error = "Form not found." });
         }
+
+        var fields = schemaResolver.ResolveFields(form.Json);
+        var schemaVersion = DriftAnalysisService.ComputeFieldsHash(fields);
 
         template.FormId = body.FormId;
         template.Name = body.Name;
@@ -133,11 +167,16 @@ public class ReportTemplatesController(AppDbContext db, FormSchemaResolverServic
         template.DefaultSortDirection = body.DefaultSortDirection;
         template.DefaultPageSize = Math.Clamp(body.DefaultPageSize, 1, 200);
         template.DisplayMode = body.DisplayMode;
-        template.SchemaVersion = ComputeSchemaVersion(form.Json);
+        template.SchemaVersion = schemaVersion;
+        template.FieldDriftJson = null; // drift cleared on save
+        template.Tags = body.Tags.Count > 0 ? string.Join(",", body.Tags) : null;
+        template.Category = body.Category;
+        template.SharedWithRolesJson = body.SharedWithRoles.Count > 0
+            ? JsonSerializer.Serialize(body.SharedWithRoles) : null;
 
         await db.SaveChangesAsync();
         template.Form = form;
-        return Ok(MapDto(template));
+        return Ok(MapDto(template, includeDrift: false));
     }
 
     [HttpDelete("{id:int}")]
@@ -146,26 +185,42 @@ public class ReportTemplatesController(AppDbContext db, FormSchemaResolverServic
     {
         var template = await db.ReportTemplates.FindAsync(id);
         if (template == null) return NotFound(new { error = "Report template not found." });
-
         db.ReportTemplates.Remove(template);
         await db.SaveChangesAsync();
         return NoContent();
     }
 
-    private ReportTemplateDto MapDto(ReportTemplate t)
+    private ReportTemplateDto MapDto(ReportTemplate t, bool includeDrift)
     {
         List<ReportColumnDefinitionDto> columns;
-        try { columns = JsonSerializer.Deserialize<List<ReportColumnDefinitionDto>>(t.ColumnsJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? []; }
+        try
+        {
+            columns = JsonSerializer.Deserialize<List<ReportColumnDefinitionDto>>(
+                t.ColumnsJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
+        }
         catch { columns = []; }
 
         JsonElement? filters = null;
         if (!string.IsNullOrWhiteSpace(t.FiltersJson))
-        {
-            try { filters = JsonDocument.Parse(t.FiltersJson).RootElement; }
-            catch { }
-        }
+            try { filters = JsonDocument.Parse(t.FiltersJson).RootElement; } catch { }
 
-        var currentSchemaVersion = t.Form?.Json != null ? ComputeSchemaVersion(t.Form.Json) : null;
+        // Field-level drift analysis
+        List<FieldDriftEntryDto>? driftEntries = null;
+        bool hasDrift = false;
+
+        if (includeDrift && t.Form?.Json != null)
+        {
+            var drift = driftAnalysis.Analyse(t, t.Form.Json);
+            hasDrift = drift.HasDrift;
+            driftEntries = drift.HasDrift ? drift.DriftEntries : null;
+        }
+        else if (!includeDrift && t.Form?.Json != null && !string.IsNullOrEmpty(t.SchemaVersion))
+        {
+            // On list view: compute cheaply without returning entries
+            var fields = schemaResolver.ResolveFields(t.Form.Json);
+            var currentVersion = DriftAnalysisService.ComputeFieldsHash(fields);
+            hasDrift = t.SchemaVersion != currentVersion;
+        }
 
         return new ReportTemplateDto
         {
@@ -184,15 +239,18 @@ public class ReportTemplatesController(AppDbContext db, FormSchemaResolverServic
             DefaultSortDirection = t.DefaultSortDirection,
             DefaultPageSize = t.DefaultPageSize,
             DisplayMode = t.DisplayMode,
-            HasSchemaDrift = currentSchemaVersion != null
-                && !string.IsNullOrEmpty(t.SchemaVersion)
-                && t.SchemaVersion != currentSchemaVersion,
+            HasSchemaDrift = hasDrift,
+            FieldDrift = driftEntries,
+            Tags = t.Tags?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() ?? [],
+            Category = t.Category,
+            SharedWithRoles = DeserializeRoles(t.SharedWithRolesJson),
         };
     }
 
-    private static string ComputeSchemaVersion(string formJson)
+    private static List<string> DeserializeRoles(string? json)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(formJson.Trim()));
-        return Convert.ToHexString(bytes)[..16];
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try { return JsonSerializer.Deserialize<List<string>>(json) ?? []; }
+        catch { return []; }
     }
 }

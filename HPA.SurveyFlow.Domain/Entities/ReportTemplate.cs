@@ -27,6 +27,18 @@ public class ReportTemplate
     /// <summary>SHA-256 fingerprint of Form.Json at the time this template was last saved.</summary>
     public string? SchemaVersion { get; set; }
 
+    /// <summary>JSON array of per-field drift entries: [{ fieldKey, label, driftType }].</summary>
+    public string? FieldDriftJson { get; set; }
+
+    /// <summary>Comma-separated tags for discoverability.</summary>
+    public string? Tags { get; set; }
+
+    /// <summary>Freeform category name (e.g. "Safety", "Operations").</summary>
+    public string? Category { get; set; }
+
+    /// <summary>JSON array of role names that may view this template (e.g. ["admin","supervisor"]).</summary>
+    public string? SharedWithRolesJson { get; set; }
+
     public Form Form { get; set; } = null!;
     public User CreatedByUser { get; set; } = null!;
 }

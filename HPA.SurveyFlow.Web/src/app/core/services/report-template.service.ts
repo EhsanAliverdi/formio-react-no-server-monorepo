@@ -16,9 +16,12 @@ export class ReportTemplateService {
   private http = inject(HttpClient);
   private api = inject(ApiService);
 
-  list(formId?: number): Observable<ReportTemplate[]> {
+  list(options?: { formId?: number; category?: string; tag?: string; createdBy?: number }): Observable<ReportTemplate[]> {
     let params = new HttpParams();
-    if (formId != null) params = params.set('formId', formId);
+    if (options?.formId != null) params = params.set('formId', options.formId);
+    if (options?.category) params = params.set('category', options.category);
+    if (options?.tag) params = params.set('tag', options.tag);
+    if (options?.createdBy != null) params = params.set('createdBy', options.createdBy);
     return this.http.get<ReportTemplate[]>(this.api.apiUrl('/api/report-templates'), { params });
   }
 
@@ -42,6 +45,10 @@ export class ReportTemplateService {
     return this.http.get<FieldDescriptor[]>(this.api.apiUrl(`/api/report-templates/form-fields/${formId}`));
   }
 
+  getCategories(): Observable<string[]> {
+    return this.http.get<string[]>(this.api.apiUrl('/api/report-templates/categories'));
+  }
+
   execute(req: RunReportRequest): Observable<ReportExecutionResult> {
     return this.http.post<ReportExecutionResult>(this.api.apiUrl('/api/report-executions'), req);
   }
@@ -57,5 +64,18 @@ export class ReportTemplateService {
     if (sortDirection) params = params.set('sortDirection', sortDirection);
     if (runtimeFilters) params = params.set('runtimeFilters', JSON.stringify(runtimeFilters));
     return `${this.api.apiUrl('/api/report-executions/export-csv')}?${params.toString()}`;
+  }
+
+  exportExcelUrl(
+    templateId: number,
+    sortField?: string,
+    sortDirection?: string,
+    runtimeFilters?: ConditionGroup | null,
+  ): string {
+    let params = new HttpParams().set('templateId', templateId);
+    if (sortField) params = params.set('sortField', sortField);
+    if (sortDirection) params = params.set('sortDirection', sortDirection);
+    if (runtimeFilters) params = params.set('runtimeFilters', JSON.stringify(runtimeFilters));
+    return `${this.api.apiUrl('/api/report-executions/export-excel')}?${params.toString()}`;
   }
 }

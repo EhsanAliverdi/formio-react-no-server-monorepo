@@ -1,8 +1,7 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using HPA.SurveyFlow.Domain.Entities;
 using HPA.SurveyFlow.Infrastructure.Data;
+using HPA.SurveyFlow.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace HPA.SurveyFlow.Infrastructure.Data.Seed;
@@ -16,6 +15,8 @@ public static class DemoReportTemplatesSeedData
 {
     public static async Task SeedAsync(AppDbContext db, bool overrideExisting = false)
     {
+        var schemaResolver = new FormSchemaResolverService();
+
         // Find the admin user to associate templates with
         var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Role == "admin");
         if (adminUser == null) return;
@@ -25,7 +26,8 @@ public static class DemoReportTemplatesSeedData
             var form = await db.Forms.FirstOrDefaultAsync(f => f.Name == definition.ParentFormName);
             if (form == null) continue;
 
-            var schemaVersion = ComputeSchemaVersion(form.Json);
+            var fields = schemaResolver.ResolveFields(form.Json);
+            var schemaVersion = DriftAnalysisService.ComputeFieldsHash(fields);
 
             await SeedTemplateAsync(db, adminUser.Id, form, schemaVersion, overrideExisting,
                 name: $"{TitleCase(definition.EquipmentName)} Pre-Start — Summary by Machine",
@@ -35,7 +37,9 @@ public static class DemoReportTemplatesSeedData
                 defaultSortDirection: "asc",
                 defaultPageSize: 25,
                 columns: SummaryColumns(),
-                filters: null);
+                filters: null,
+                category: "Operations",
+                tags: "prestart,summary,machine");
 
             await SeedTemplateAsync(db, adminUser.Id, form, schemaVersion, overrideExisting,
                 name: $"{TitleCase(definition.EquipmentName)} Pre-Start — Safety Issues",
@@ -45,7 +49,9 @@ public static class DemoReportTemplatesSeedData
                 defaultSortDirection: "asc",
                 defaultPageSize: 25,
                 columns: SafetyColumns(),
-                filters: FaultsFoundFilter());
+                filters: FaultsFoundFilter(),
+                category: "Safety",
+                tags: "prestart,safety,faults");
 
             await SeedTemplateAsync(db, adminUser.Id, form, schemaVersion, overrideExisting,
                 name: $"{TitleCase(definition.EquipmentName)} Pre-Start — Operator Declarations",
@@ -55,7 +61,9 @@ public static class DemoReportTemplatesSeedData
                 defaultSortDirection: "asc",
                 defaultPageSize: 50,
                 columns: DeclarationColumns(),
-                filters: null);
+                filters: null,
+                category: "Compliance",
+                tags: "prestart,declaration,operator");
         }
 
         await db.SaveChangesAsync();
@@ -135,7 +143,9 @@ public static class DemoReportTemplatesSeedData
         string defaultSortDirection,
         int defaultPageSize,
         List<ReportColumnDef> columns,
-        string? filters)
+        string? filters,
+        string? category = null,
+        string? tags = null)
     {
         var existing = await db.ReportTemplates
             .FirstOrDefaultAsync(t => t.FormId == form.Id && t.Name == name);
@@ -156,6 +166,8 @@ public static class DemoReportTemplatesSeedData
             existing.DefaultPageSize = defaultPageSize;
             existing.SchemaVersion = schemaVersion;
             existing.UpdatedAt = DateTime.UtcNow;
+            existing.Category = category;
+            existing.Tags = tags;
         }
         else
         {
@@ -175,14 +187,10 @@ public static class DemoReportTemplatesSeedData
                 DefaultPageSize = defaultPageSize,
                 DisplayMode = "table",
                 SchemaVersion = schemaVersion,
+                Category = category,
+                Tags = tags,
             });
         }
-    }
-
-    private static string ComputeSchemaVersion(string formJson)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(formJson.Trim()));
-        return Convert.ToHexString(bytes)[..16];
     }
 
     private static string TitleCase(string value) =>

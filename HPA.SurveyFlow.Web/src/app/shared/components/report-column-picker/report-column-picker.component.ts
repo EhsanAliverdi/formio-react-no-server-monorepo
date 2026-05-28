@@ -39,6 +39,9 @@ import { FieldDescriptor, ReportColumnDefinition } from '../../../core/models';
                   {{ typeAbbr(field.type) }}
                 </span>
                 <span class="truncate font-medium text-gray-700 group-hover:text-blue-700">{{ field.label }}</span>
+                @if (field.is_conditional) {
+                  <span class="flex-shrink-0 text-[10px] px-1 rounded bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" title="Conditional field — may not appear in all submissions">~</span>
+                }
               </span>
               <svg class="w-4 h-4 text-gray-300 group-hover:text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>

@@ -6,17 +6,19 @@ import { ReportTemplateService } from '../../../core/services/report-template.se
 import {
   ConditionGroup,
   FieldDescriptor,
+  FieldDriftEntry,
   ReportColumnDefinition,
   ReportTemplate,
   SaveReportTemplateRequest,
 } from '../../../core/models';
 import { ReportColumnPickerComponent } from '../../../shared/components/report-column-picker/report-column-picker.component';
 import { ReportFilterPanelComponent } from '../../../shared/components/report-filter-panel/report-filter-panel.component';
+import { ReportDriftWizardComponent } from '../../../shared/components/report-drift-wizard/report-drift-wizard.component';
 
 @Component({
   selector: 'app-report-designer',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReportColumnPickerComponent, ReportFilterPanelComponent],
+  imports: [CommonModule, FormsModule, ReportColumnPickerComponent, ReportFilterPanelComponent, ReportDriftWizardComponent],
   template: `
     <div class="flex flex-col h-full">
 
@@ -74,13 +76,22 @@ import { ReportFilterPanelComponent } from '../../../shared/components/report-fi
         </div>
       </div>
 
-      <!-- Schema drift banner -->
-      @if (schemaDrift()) {
+      <!-- Schema drift wizard (field-level, collapsible) -->
+      @if (schemaDrift() && driftEntries().length > 0) {
+        <div class="px-6 pt-4">
+          <app-report-drift-wizard
+            [driftEntries]="driftEntries()"
+            [availableFields]="fields()"
+            [columns]="columns()"
+            (columnsChange)="columns.set($event)"
+          />
+        </div>
+      } @else if (schemaDrift()) {
         <div class="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700 px-6 py-2.5 text-sm text-amber-800 dark:text-amber-300">
           <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
-          The form schema has changed since this template was last saved. Re-save to update the schema snapshot and dismiss this warning.
+          The form schema has changed since this template was last saved. Re-save to update the schema snapshot.
         </div>
       }
 
@@ -145,6 +156,36 @@ import { ReportFilterPanelComponent } from '../../../shared/components/report-fi
               </h2>
 
               <div class="flex flex-col gap-4">
+                <!-- Category -->
+                <div>
+                  <label class="ta-field-label">Category <span class="text-gray-400 font-normal">(optional)</span></label>
+                  <input type="text" [(ngModel)]="category" placeholder="e.g. Safety, Operations"
+                    class="ta-field text-sm" maxlength="60"/>
+                </div>
+
+                <!-- Tags -->
+                <div>
+                  <label class="ta-field-label">Tags <span class="text-gray-400 font-normal">(comma separated)</span></label>
+                  <input type="text" [(ngModel)]="tagsInput" placeholder="prestart, daily, safety"
+                    class="ta-field text-sm" maxlength="200"/>
+                </div>
+
+                <!-- Sharing -->
+                <div>
+                  <label class="ta-field-label">Visible to roles</label>
+                  <div class="flex flex-col gap-1.5">
+                    @for (role of allRoles; track role.value) {
+                      <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                        <input type="checkbox"
+                          [checked]="sharedWithRoles.includes(role.value)"
+                          (change)="toggleRole(role.value)"
+                          class="rounded border-gray-300 text-brand-600 focus:ring-brand-500"/>
+                        {{ role.label }}
+                      </label>
+                    }
+                  </div>
+                </div>
+
                 <!-- Description -->
                 <div>
                   <label class="ta-field-label">Description <span class="text-gray-400 font-normal">(optional)</span></label>
@@ -214,6 +255,7 @@ export class ReportDesignerComponent implements OnInit {
   fields = signal<FieldDescriptor[]>([]);
   columns = signal<ReportColumnDefinition[]>([]);
   filters = signal<ConditionGroup | null>(null);
+  driftEntries = signal<FieldDriftEntry[]>([]);
   loadingFields = signal(true);
   saving = signal(false);
   saveError = signal('');
@@ -225,6 +267,17 @@ export class ReportDesignerComponent implements OnInit {
   defaultSortField = '';
   defaultSortDirection: 'asc' | 'desc' = 'asc';
   defaultPageSize = 25;
+  category = '';
+  tagsInput = '';
+  sharedWithRoles: string[] = [];
+
+  readonly allRoles = [
+    { value: 'admin', label: 'Admin' },
+    { value: 'editor', label: 'Editor' },
+    { value: 'viewer', label: 'Viewer' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'operator', label: 'Operator' },
+  ];
 
   ngOnInit(): void {
     const fid = +this.route.snapshot.paramMap.get('formId')!;
@@ -254,6 +307,10 @@ export class ReportDesignerComponent implements OnInit {
         this.defaultSortDirection = t.default_sort_direction ?? 'asc';
         this.defaultPageSize = t.default_page_size ?? 25;
         this.schemaDrift.set(t.has_schema_drift);
+        this.driftEntries.set(t.field_drift ?? []);
+        this.category = t.category ?? '';
+        this.tagsInput = (t.tags ?? []).join(', ');
+        this.sharedWithRoles = [...(t.shared_with_roles ?? [])];
       },
     });
   }
@@ -266,6 +323,7 @@ export class ReportDesignerComponent implements OnInit {
     this.saving.set(true);
     this.saveError.set('');
 
+    const tags = this.tagsInput.split(',').map(t => t.trim()).filter(Boolean);
     const req: SaveReportTemplateRequest = {
       form_id: this.formId(),
       name: this.name.trim(),
@@ -277,6 +335,9 @@ export class ReportDesignerComponent implements OnInit {
       default_sort_direction: this.defaultSortDirection,
       default_page_size: this.defaultPageSize,
       display_mode: 'table',
+      tags,
+      category: this.category.trim() || undefined,
+      shared_with_roles: this.sharedWithRoles,
     };
 
     const isEdit = !forceNew && this.templateId() != null;
@@ -295,6 +356,13 @@ export class ReportDesignerComponent implements OnInit {
         this.saveError.set('Failed to save report template. Please try again.');
       },
     });
+  }
+
+  toggleRole(role: string): void {
+    if (this.sharedWithRoles.includes(role))
+      this.sharedWithRoles = this.sharedWithRoles.filter(r => r !== role);
+    else
+      this.sharedWithRoles = [...this.sharedWithRoles, role];
   }
 
   goBack(): void {

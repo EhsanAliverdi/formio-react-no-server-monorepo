@@ -280,6 +280,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.DefaultPageSize).HasColumnName("default_page_size").HasDefaultValue(25);
             e.Property(r => r.DisplayMode).HasColumnName("display_mode").HasDefaultValue("table");
             e.Property(r => r.SchemaVersion).HasColumnName("schema_version");
+            e.Property(r => r.FieldDriftJson).HasColumnName("field_drift_json");
+            e.Property(r => r.Tags).HasColumnName("tags");
+            e.Property(r => r.Category).HasColumnName("category");
+            e.Property(r => r.SharedWithRolesJson).HasColumnName("shared_with_roles_json");
             e.HasOne(r => r.Form).WithMany().HasForeignKey(r => r.FormId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(r => r.CreatedByUser).WithMany().HasForeignKey(r => r.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(r => r.FormId);
