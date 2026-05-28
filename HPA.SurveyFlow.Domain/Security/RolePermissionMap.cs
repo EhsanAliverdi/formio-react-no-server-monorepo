@@ -24,6 +24,8 @@ public static class RolePermissionMap
             Permissions.Admin.ViewLogs,
             Permissions.Jobs.Read,
             Permissions.Jobs.Manage,
+            Permissions.Reports.Read,
+            Permissions.Reports.Manage,
         ],
         [UserRole.Editor] =
         [
@@ -35,6 +37,8 @@ public static class RolePermissionMap
             Permissions.Users.ReadSelf,
             Permissions.Users.UpdateSelf,
             Permissions.Jobs.Read,
+            Permissions.Reports.Read,
+            Permissions.Reports.Manage,
         ],
         [UserRole.Viewer] =
         [
@@ -44,6 +48,7 @@ public static class RolePermissionMap
             Permissions.Submissions.ExportPdf,
             Permissions.Users.ReadSelf,
             Permissions.Users.UpdateSelf,
+            Permissions.Reports.Read,
         ],
     };
 

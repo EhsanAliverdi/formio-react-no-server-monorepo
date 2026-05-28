@@ -62,6 +62,21 @@ export const adminRoutes: Routes = [
       import('./pages/job-dashboard.component').then(m => m.JobDashboardComponent),
   },
   {
+    path: 'reports',
+    loadComponent: () =>
+      import('./pages/reports.component').then(m => m.ReportsComponent),
+  },
+  {
+    path: 'reports/:formId/designer',
+    loadComponent: () =>
+      import('./pages/report-designer.component').then(m => m.ReportDesignerComponent),
+  },
+  {
+    path: 'reports/:id/run',
+    loadComponent: () =>
+      import('./pages/report-viewer.component').then(m => m.ReportViewerComponent),
+  },
+  {
     path: 'integrations',
     loadComponent: () =>
       import('./pages/integrations.component').then(m => m.IntegrationsComponent),

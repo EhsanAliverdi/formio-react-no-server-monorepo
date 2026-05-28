@@ -335,6 +335,76 @@ export interface SaveIntegrationRuleRequest {
   webhook_config?: IntegrationRuleWebhookConfig;
 }
 
+// ─── Reporting ────────────────────────────────────────────────────────────────
+
+export interface FieldOption {
+  value: string;
+  label: string;
+}
+
+export interface FieldDescriptor {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'boolean' | 'date' | 'select';
+  options?: FieldOption[];
+}
+
+export interface ReportColumnDefinition {
+  field_key: string;
+  label: string;
+  width?: number;
+  format?: string;
+}
+
+export interface ReportTemplate {
+  id: number;
+  form_id: number;
+  form_name: string;
+  name: string;
+  description?: string;
+  is_public: boolean;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  columns: ReportColumnDefinition[];
+  filters?: ConditionGroup | null;
+  default_sort_field?: string;
+  default_sort_direction: 'asc' | 'desc';
+  default_page_size: number;
+  display_mode: 'table';
+  has_schema_drift: boolean;
+}
+
+export interface SaveReportTemplateRequest {
+  form_id: number;
+  name: string;
+  description?: string;
+  is_public: boolean;
+  columns: ReportColumnDefinition[];
+  filters?: ConditionGroup | null;
+  default_sort_field?: string;
+  default_sort_direction: 'asc' | 'desc';
+  default_page_size: number;
+  display_mode: 'table';
+}
+
+export interface RunReportRequest {
+  template_id: number;
+  runtime_filters?: ConditionGroup | null;
+  sort_field?: string;
+  sort_direction?: 'asc' | 'desc';
+  page: number;
+  page_size: number;
+}
+
+export interface ReportExecutionResult {
+  columns: ReportColumnDefinition[];
+  rows: Record<string, any>[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 export const MEX_FIELDS: { key: string; label: string; type: 'string' | 'number' | 'boolean' }[] = [
   { key: 'requestNumber',    label: 'Request Number',    type: 'number' },
   { key: 'jobTypeName',      label: 'Job Type Name',     type: 'string' },

@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FormIntegrationRule> FormIntegrationRules { get; set; }
     public DbSet<FormIntegrationRuleMex> FormIntegrationRuleMexConfigs { get; set; }
     public DbSet<FormIntegrationRuleWebhook> FormIntegrationRuleWebhooks { get; set; }
+    public DbSet<ReportTemplate> ReportTemplates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -258,6 +259,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.HeadersJson).HasColumnName("headers_json").HasDefaultValue("[]");
             e.Property(r => r.BodyTemplate).HasColumnName("body_template").HasDefaultValue(string.Empty);
             e.HasOne(r => r.Rule).WithOne(r => r.WebhookConfig).HasForeignKey<FormIntegrationRuleWebhook>(r => r.RuleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReportTemplate>(e =>
+        {
+            e.ToTable("report_templates");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(r => r.FormId).HasColumnName("form_id");
+            e.Property(r => r.Name).HasColumnName("name").IsRequired();
+            e.Property(r => r.Description).HasColumnName("description");
+            e.Property(r => r.IsPublic).HasColumnName("is_public").HasDefaultValue(false);
+            e.Property(r => r.CreatedBy).HasColumnName("created_by");
+            e.Property(r => r.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(r => r.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.Property(r => r.ColumnsJson).HasColumnName("columns_json").HasDefaultValue("[]");
+            e.Property(r => r.FiltersJson).HasColumnName("filters_json");
+            e.Property(r => r.DefaultSortField).HasColumnName("default_sort_field");
+            e.Property(r => r.DefaultSortDirection).HasColumnName("default_sort_direction").HasDefaultValue("asc");
+            e.Property(r => r.DefaultPageSize).HasColumnName("default_page_size").HasDefaultValue(25);
+            e.Property(r => r.DisplayMode).HasColumnName("display_mode").HasDefaultValue("table");
+            e.Property(r => r.SchemaVersion).HasColumnName("schema_version");
+            e.HasOne(r => r.Form).WithMany().HasForeignKey(r => r.FormId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.CreatedByUser).WithMany().HasForeignKey(r => r.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(r => r.FormId);
         });
     }
 }

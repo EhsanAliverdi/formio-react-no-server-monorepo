@@ -125,6 +125,8 @@ builder.Services.AddSingleton<PdfService>();
 builder.Services.AddScoped<NotificationRuleEvaluatorService>();
 builder.Services.AddScoped<NotificationRuleSenderService>();
 builder.Services.AddSingleton<IntegrationRuleExecutorService>();
+builder.Services.AddScoped<FormSchemaResolverService>();
+builder.Services.AddScoped<ReportQueryEngineService>();
 
 // ── Event Bus (in-process, zero dependencies) ──────────────────────────────
 builder.Services.AddScoped<IEventBus, EventBus>();
