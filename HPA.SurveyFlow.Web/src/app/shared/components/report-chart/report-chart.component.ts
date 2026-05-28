@@ -9,32 +9,7 @@ import {
   AfterViewInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  Chart,
-  ChartConfiguration,
-  ChartType,
-  BarController,
-  LineController,
-  PieController,
-  DoughnutController,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  ArcElement,
-  Tooltip,
-  Legend,
-  Title,
-  Filler,
-} from 'chart.js';
-
-Chart.register(
-  BarController, LineController, PieController, DoughnutController,
-  CategoryScale, LinearScale,
-  BarElement, LineElement, PointElement, ArcElement,
-  Tooltip, Legend, Title, Filler,
-);
+import { Chart, ChartConfiguration, ChartType } from 'chart.js/auto';
 
 export interface ChartConfig {
   /** Column alias used as X-axis labels / pie slice labels */
