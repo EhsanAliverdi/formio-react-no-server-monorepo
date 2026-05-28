@@ -21,6 +21,7 @@
     "@angular/router": "^19.2.0",
     "@formio/angular": "^10.0.1",
     "@formio/js": "^5.3.5",
+    "chart.js": "^4.5.1",
     "filepond": "^4.32.12",
     "filepond-plugin-file-validate-size": "^2.2.8",
     "filepond-plugin-file-validate-type": "^1.2.9",

@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ReportTemplateService } from '../../../core/services/report-template.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
+  ChartConfig,
   ConditionGroup,
   FieldDescriptor,
   ReportExecutionResult,
@@ -12,11 +13,12 @@ import {
 } from '../../../core/models';
 import { ReportDataTableComponent } from '../../../shared/components/report-data-table/report-data-table.component';
 import { ReportFilterPanelComponent } from '../../../shared/components/report-filter-panel/report-filter-panel.component';
+import { ReportChartComponent } from '../../../shared/components/report-chart/report-chart.component';
 
 @Component({
   selector: 'app-report-viewer',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ReportDataTableComponent, ReportFilterPanelComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ReportDataTableComponent, ReportFilterPanelComponent, ReportChartComponent],
   template: `
     <div class="flex flex-col min-h-full">
 
@@ -41,6 +43,23 @@ import { ReportFilterPanelComponent } from '../../../shared/components/report-fi
           </div>
 
           <div class="flex items-center gap-2 flex-shrink-0">
+
+            <!-- Chart / Table toggle (only when chart_type is set) -->
+            @if (template() && template()!.chart_type !== 'table') {
+              <div class="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden text-sm">
+                <button type="button" (click)="viewMode.set('chart')"
+                  class="px-3 py-1.5 transition-colors"
+                  [class]="viewMode() === 'chart' ? 'bg-brand-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'">
+                  Chart
+                </button>
+                <button type="button" (click)="viewMode.set('table')"
+                  class="px-3 py-1.5 transition-colors border-l border-gray-300 dark:border-gray-600"
+                  [class]="viewMode() === 'table' ? 'bg-brand-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'">
+                  Table
+                </button>
+              </div>
+            }
+
             <!-- Favourite -->
             @if (template()) {
               <button type="button" (click)="toggleFavourite()"
@@ -73,8 +92,8 @@ import { ReportFilterPanelComponent } from '../../../shared/components/report-fi
               }
             </button>
 
-            <!-- Export buttons -->
-            @if (template()) {
+            <!-- Export buttons (table mode only) -->
+            @if (template() && viewMode() === 'table') {
               <a [href]="csvUrl()" class="ta-btn ta-btn-secondary text-sm" target="_blank" rel="noopener" title="Export as CSV">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -146,41 +165,55 @@ import { ReportFilterPanelComponent } from '../../../shared/components/report-fi
           </div>
         }
 
-        <!-- Toolbar -->
-        @if (result()) {
-          <div class="flex items-center justify-between gap-4 text-sm">
-            <span class="text-gray-500 dark:text-gray-400">
-              {{ result()!.total }} result{{ result()!.total !== 1 ? 's' : '' }}
-            </span>
-            <div class="flex items-center gap-2">
-              <label class="text-xs text-gray-500 dark:text-gray-400">Per page</label>
-              <select
-                [(ngModel)]="pageSize"
-                (ngModelChange)="onPageSizeChange($event)"
-                class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-              >
-                <option [value]="10">10</option>
-                <option [value]="25">25</option>
-                <option [value]="50">50</option>
-                <option [value]="100">100</option>
-              </select>
-            </div>
+        <!-- Chart view -->
+        @if (viewMode() === 'chart' && template() && result()) {
+          <div class="ta-card p-4">
+            <app-report-chart
+              [chartType]="template()!.chart_type"
+              [config]="chartConfig()"
+              [columns]="result()!.columns"
+              [rows]="result()!.rows"
+            />
           </div>
         }
 
-        <!-- Data table -->
-        <app-report-data-table
-          [columns]="result()?.columns ?? (template()?.columns ?? [])"
-          [rows]="result()?.rows ?? []"
-          [total]="result()?.total ?? 0"
-          [page]="page()"
-          [pageSize]="pageSize"
-          [loading]="loading()"
-          [sortField]="sortField()"
-          [sortDirection]="sortDirection()"
-          (sortChange)="onSortChange($event)"
-          (pageChange)="onPageChange($event)"
-        />
+        <!-- Table view -->
+        @if (viewMode() === 'table') {
+          <!-- Toolbar -->
+          @if (result()) {
+            <div class="flex items-center justify-between gap-4 text-sm">
+              <span class="text-gray-500 dark:text-gray-400">
+                {{ result()!.total }} result{{ result()!.total !== 1 ? 's' : '' }}
+              </span>
+              <div class="flex items-center gap-2">
+                <label class="text-xs text-gray-500 dark:text-gray-400">Per page</label>
+                <select
+                  [(ngModel)]="pageSize"
+                  (ngModelChange)="onPageSizeChange($event)"
+                  class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                >
+                  <option [value]="10">10</option>
+                  <option [value]="25">25</option>
+                  <option [value]="50">50</option>
+                  <option [value]="100">100</option>
+                </select>
+              </div>
+            </div>
+          }
+
+          <app-report-data-table
+            [columns]="result()?.columns ?? (template()?.columns ?? [])"
+            [rows]="result()?.rows ?? []"
+            [total]="result()?.total ?? 0"
+            [page]="page()"
+            [pageSize]="pageSize"
+            [loading]="loading()"
+            [sortField]="sortField()"
+            [sortDirection]="sortDirection()"
+            (sortChange)="onSortChange($event)"
+            (pageChange)="onPageChange($event)"
+          />
+        }
       </div>
     </div>
   `,
@@ -202,6 +235,7 @@ export class ReportViewerComponent implements OnInit {
   sortDirection = signal<'asc' | 'desc'>('asc');
   page = signal(1);
   pageSize = 25;
+  viewMode = signal<'table' | 'chart'>('table');
 
   get fields(): () => FieldDescriptor[] {
     return () => (this.template()?.columns ?? []).map(c => ({
@@ -217,6 +251,10 @@ export class ReportViewerComponent implements OnInit {
 
   get canManage(): () => boolean {
     return () => ['admin', 'editor'].includes(this.authService.currentUser()?.role ?? '');
+  }
+
+  chartConfig(): ChartConfig {
+    return this.template()?.chart_config ?? {};
   }
 
   csvUrl(): string {
@@ -246,6 +284,10 @@ export class ReportViewerComponent implements OnInit {
         this.sortField.set(t.default_sort_field ?? undefined);
         this.sortDirection.set((t.default_sort_direction as 'asc' | 'desc') ?? 'asc');
         this.pageSize = t.default_page_size ?? 25;
+        // Default to chart view when the template has a chart type configured
+        if (t.chart_type && t.chart_type !== 'table') {
+          this.viewMode.set('chart');
+        }
         this.runReport();
       },
       error: () => this.error.set('Failed to load report template.'),

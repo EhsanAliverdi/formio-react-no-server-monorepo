@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<RlsPolicy> RlsPolicies { get; set; }
     public DbSet<UserFavouriteReport> UserFavouriteReports { get; set; }
     public DbSet<ReportExecutionLog> ReportExecutionLogs { get; set; }
+    public DbSet<Dataset> Datasets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -289,6 +290,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.SharedWithRolesJson).HasColumnName("shared_with_roles_json");
             e.Property(r => r.GroupByJson).HasColumnName("group_by_json");
             e.Property(r => r.MeasuresJson).HasColumnName("measures_json");
+            e.Property(r => r.ChartType).HasColumnName("chart_type").HasDefaultValue("table");
+            e.Property(r => r.ChartConfigJson).HasColumnName("chart_config_json");
+            e.Property(r => r.DatasetId).HasColumnName("dataset_id");
             e.HasOne(r => r.Form).WithMany().HasForeignKey(r => r.FormId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(r => r.CreatedByUser).WithMany().HasForeignKey(r => r.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(r => r.FormId);
@@ -337,6 +341,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(l => l.User).WithMany().HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(l => new { l.UserId, l.ExecutedAt });
             e.HasIndex(l => l.ReportTemplateId);
+        });
+
+        modelBuilder.Entity<Dataset>(e =>
+        {
+            e.ToTable("datasets");
+            e.HasKey(d => d.Id);
+            e.Property(d => d.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(d => d.Name).HasColumnName("name").IsRequired();
+            e.Property(d => d.Description).HasColumnName("description");
+            e.Property(d => d.FormId).HasColumnName("form_id");
+            e.Property(d => d.BaseFiltersJson).HasColumnName("base_filters_json");
+            e.Property(d => d.FieldsJson).HasColumnName("fields_json");
+            e.Property(d => d.CreatedBy).HasColumnName("created_by");
+            e.Property(d => d.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(d => d.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.Property(d => d.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.HasOne(d => d.Form).WithMany().HasForeignKey(d => d.FormId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(d => d.CreatedByUser).WithMany().HasForeignKey(d => d.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(d => d.FormId);
         });
     }
 }

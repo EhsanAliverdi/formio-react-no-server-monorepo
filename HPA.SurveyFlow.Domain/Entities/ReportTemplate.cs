@@ -51,6 +51,21 @@ public class ReportTemplate
     /// </summary>
     public string? MeasuresJson { get; set; }
 
+    /// <summary>
+    /// Chart type for visualisation mode: table | bar | line | pie | doughnut | number_card.
+    /// "table" is the default; any other value enables the chart panel in the viewer.
+    /// </summary>
+    public string ChartType { get; set; } = "table";
+
+    /// <summary>
+    /// JSON object describing axis-to-alias mappings for the active chart type:
+    /// { x_axis: "alias", y_axes: ["alias"], series: "alias" }
+    /// </summary>
+    public string? ChartConfigJson { get; set; }
+
+    /// <summary>Optional Dataset this template sources from (null = direct form query).</summary>
+    public int? DatasetId { get; set; }
+
     public Form Form { get; set; } = null!;
     public User CreatedByUser { get; set; } = null!;
 }

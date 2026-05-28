@@ -70,6 +70,30 @@ public static class DemoReportTemplatesSeedData
                 category: "Compliance",
                 tags: "prestart,declaration,operator",
                 sharedWithRoles: ["admin", "supervisor"]);
+
+            // Faults by machine — bar chart
+            await SeedTemplateAsync(db, adminUser.Id, form, schemaVersion, overrideExisting,
+                name: $"{TitleCase(definition.EquipmentName)} Pre-Start — Faults by Machine (Chart)",
+                description: $"Bar chart showing total pre-start submissions and fault count per machine ID for {definition.EquipmentName}.",
+                isPublic: true,
+                defaultSortField: "machineId",
+                defaultSortDirection: "asc",
+                defaultPageSize: 100,
+                columns: SummaryColumns(),
+                filters: null,
+                category: "Operations",
+                tags: "prestart,chart,faults",
+                sharedWithRoles: ["admin", "editor", "viewer", "supervisor", "operator"],
+                groupByJson: JsonSerializer.Serialize(new[]
+                {
+                    new { field_key = "machineId", label = "Machine ID", alias = "machineId", date_trunc = (string?)null },
+                }),
+                measuresJson: JsonSerializer.Serialize(new[]
+                {
+                    new { field_key = (string?)null, label = "Total Submissions", aggregation = "count", alias = "total_count" },
+                }),
+                chartType: "bar",
+                chartConfigJson: JsonSerializer.Serialize(new { x_axis = "machineId", y_axes = new[] { "total_count" } }));
         }
 
         await db.SaveChangesAsync();
@@ -152,7 +176,11 @@ public static class DemoReportTemplatesSeedData
         string? filters,
         string? category = null,
         string? tags = null,
-        string[]? sharedWithRoles = null)
+        string[]? sharedWithRoles = null,
+        string? groupByJson = null,
+        string? measuresJson = null,
+        string chartType = "table",
+        string? chartConfigJson = null)
     {
         var existing = await db.ReportTemplates
             .FirstOrDefaultAsync(t => t.FormId == form.Id && t.Name == name);
@@ -179,6 +207,10 @@ public static class DemoReportTemplatesSeedData
             existing.Category = category;
             existing.Tags = tags;
             existing.SharedWithRolesJson = rolesJson;
+            existing.GroupByJson = groupByJson;
+            existing.MeasuresJson = measuresJson;
+            existing.ChartType = chartType;
+            existing.ChartConfigJson = chartConfigJson;
         }
         else
         {
@@ -201,6 +233,10 @@ public static class DemoReportTemplatesSeedData
                 Category = category,
                 Tags = tags,
                 SharedWithRolesJson = rolesJson,
+                GroupByJson = groupByJson,
+                MeasuresJson = measuresJson,
+                ChartType = chartType,
+                ChartConfigJson = chartConfigJson,
             });
         }
     }
