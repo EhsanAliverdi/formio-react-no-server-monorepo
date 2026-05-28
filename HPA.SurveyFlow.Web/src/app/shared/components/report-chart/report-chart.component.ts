@@ -20,6 +20,24 @@ const PALETTE = [
   '#06B6D4', '#EC4899', '#84CC16', '#F97316', '#6366F1',
 ];
 
+// Cached promise so the script is only injected once
+let chartJsReady: Promise<void> | null = null;
+
+function loadChartJs(): Promise<void> {
+  if (chartJsReady) return chartJsReady;
+  chartJsReady = new Promise<void>((resolve, reject) => {
+    // Already loaded (e.g. HMR reload)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any)['Chart']) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = '/chart.umd.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load chart.js'));
+    document.head.appendChild(script);
+  });
+  return chartJsReady;
+}
+
 @Component({
   selector: 'app-report-chart',
   standalone: true,
@@ -61,7 +79,6 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
   @Input() rows: Record<string, unknown>[] = [];
   @Input() chartHeight = 320;
 
-  // typed as any to avoid chart.js type resolution issues in Docker/esbuild
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private chart: any;
 
@@ -119,7 +136,7 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
       };
     });
 
-    const config = {
+    const chartConfig = {
       type: this.chartType,
       data: { labels, datasets },
       options: {
@@ -136,15 +153,15 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
       },
     };
 
-    // Use Function constructor to hide the import string from the Angular/esbuild
-    // compiler plugin — it cannot statically analyse or type-check a runtime string.
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
-    (Function('m', 'return import(m)')('chart.js/auto') as Promise<{ Chart: new (...a: unknown[]) => unknown }>)
-      .then(({ Chart }) => {
-        if (!this.canvasRef) return;
-        this.chart?.destroy();
-        this.chart = new Chart(this.canvasRef.nativeElement, config);
-      });
+    // Load chart.js UMD via a script tag — completely invisible to the TypeScript
+    // compiler and Angular's esbuild plugin. window.Chart is set by the UMD bundle.
+    loadChartJs().then(() => {
+      if (!this.canvasRef) return;
+      this.chart?.destroy();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ChartClass = (window as any)['Chart'];
+      this.chart = new ChartClass(this.canvasRef.nativeElement, chartConfig);
+    });
   }
 
   private xAlias(): string {
