@@ -3,48 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   NotificationRule, SaveNotificationRuleRequest,
-  ConditionGroup, PlaceholderCategory, PlaceholderDef
+  ConditionGroup, PlaceholderCategory
 } from '../../../../core/models';
 import { NotificationRulesService } from '../../../../core/services/notification-rules.service';
 import { FormField } from '../../../../shared/components/condition-group-editor/condition-group-editor.component';
 import { NotificationRuleCardComponent } from '../notification-rule-card/notification-rule-card.component';
 import { OverlapWarningPanelComponent } from '../overlap-warning-panel/overlap-warning-panel.component';
-
-const STATIC_PLACEHOLDER_CATEGORIES: PlaceholderCategory[] = [
-  {
-    label: 'Submission',
-    placeholders: [
-      { key: 'submission_id',   label: 'Submission ID' },
-      { key: 'submitted_at',    label: 'Submitted At' },
-      { key: 'outcome',         label: 'Outcome (success/warning/error)' },
-      { key: 'error_count',     label: 'Error Count' },
-      { key: 'warning_count',   label: 'Warning Count' },
-    ]
-  },
-  {
-    label: 'Form',
-    placeholders: [
-      { key: 'form_name', label: 'Form Name' },
-    ]
-  },
-  {
-    label: 'User',
-    placeholders: [
-      { key: 'user_email',    label: 'User Email' },
-      { key: 'user_fullname', label: 'User Full Name' },
-    ]
-  },
-  {
-    label: 'Aggregates',
-    placeholders: [
-      { key: 'abnormal_answers_table', label: 'Abnormal Answers (HTML table)',   description: 'Table of all fields with abnormal values' },
-      { key: 'error_answers_table',    label: 'Error Answers (HTML table)',      description: 'Table of error-level abnormalities' },
-      { key: 'warning_answers_table',  label: 'Warning Answers (HTML table)',    description: 'Table of warning-level abnormalities' },
-      { key: 'all_answers_table',      label: 'All Answers (HTML table)',        description: 'Full submission data as table' },
-      { key: 'matched_conditions',     label: 'Matched Conditions Summary' },
-    ]
-  },
-];
+import { buildPlaceholderCategories } from '../../../../core/utils/placeholder-categories';
+import { extractFormioFields } from '../../../../core/utils/formio-fields';
 
 @Component({
   selector: 'app-notification-rules-editor',
@@ -104,6 +70,7 @@ const STATIC_PLACEHOLDER_CATEGORIES: PlaceholderCategory[] = [
       }
 
       <!-- Rules list -->
+      <div class="space-y-3">
       @for (rule of rules(); track rule.id) {
         <app-notification-rule-card
           [rule]="rule"
@@ -113,6 +80,7 @@ const STATIC_PLACEHOLDER_CATEGORIES: PlaceholderCategory[] = [
           (delete)="deleteRule(rule.id)"
         />
       }
+      </div>
 
     </div>
   `
@@ -128,7 +96,7 @@ export class NotificationRulesEditorComponent implements OnInit, OnChanges {
   error = signal<string | null>(null);
 
   formFields: FormField[] = [];
-  allPlaceholderCategories: PlaceholderCategory[] = [...STATIC_PLACEHOLDER_CATEGORIES];
+  allPlaceholderCategories: PlaceholderCategory[] = buildPlaceholderCategories();
 
   ngOnInit() {
     if (this.formId) this.load();
@@ -154,20 +122,7 @@ export class NotificationRulesEditorComponent implements OnInit, OnChanges {
 
   private extractFormFields() {
     this.formFields = extractFormioFields(this.formSchema);
-
-    // Build field-specific placeholder category
-    const fieldPlaceholders: PlaceholderDef[] = this.formFields.map(f => ({
-      key: `field:${f.key}`,
-      label: f.label,
-      description: `Value of "${f.label}" field`
-    }));
-
-    this.allPlaceholderCategories = [
-      ...STATIC_PLACEHOLDER_CATEGORIES,
-      ...(fieldPlaceholders.length > 0
-        ? [{ label: 'Form Fields', placeholders: fieldPlaceholders }]
-        : [])
-    ];
+    this.allPlaceholderCategories = buildPlaceholderCategories(this.formFields);
   }
 
   addRule() {
@@ -211,33 +166,3 @@ export class NotificationRulesEditorComponent implements OnInit, OnChanges {
   }
 }
 
-// Utility: recursively extract all Formio components with key + label + type
-function extractFormioFields(schema: any): FormField[] {
-  if (!schema) return [];
-  const fields: FormField[] = [];
-
-  function walk(components: any[]) {
-    if (!Array.isArray(components)) return;
-    for (const comp of components) {
-      if (comp.key && comp.type && comp.type !== 'button' && comp.type !== 'columns' && comp.type !== 'panel' && comp.type !== 'well') {
-        fields.push({
-          key: comp.key,
-          label: comp.label || comp.key,
-          type: mapFormioType(comp.type)
-        });
-      }
-      if (comp.components) walk(comp.components);
-      if (comp.columns) comp.columns.forEach((col: any) => walk(col.components ?? []));
-      if (comp.rows) comp.rows.forEach((row: any) => row.forEach((cell: any) => walk(cell.components ?? [])));
-    }
-  }
-
-  walk(schema.components ?? []);
-  return fields;
-}
-
-function mapFormioType(type: string): string {
-  if (['number', 'currency'].includes(type)) return 'number';
-  if (['checkbox', 'radio'].includes(type)) return 'boolean';
-  return 'text';
-}

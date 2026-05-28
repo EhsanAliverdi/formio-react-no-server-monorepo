@@ -26,7 +26,8 @@ public class NotificationRuleSenderService(
         IReadOnlyList<AbnormalitiesService.Abnormality> abnormalities,
         int errorCount,
         int warningCount,
-        JsonElement submissionData)
+        JsonElement submissionData,
+        string outcome = "")
     {
         if (matchedRules.Count == 0) return;
 
@@ -40,7 +41,7 @@ public class NotificationRuleSenderService(
 
         DetectAndLogOverlaps(matchedRules, submission.Id);
 
-        var placeholders = BuildPlaceholders(form, submission, currentUser, abnormalities, errorCount, warningCount, submissionData);
+        var placeholders = await BuildPlaceholdersAsync(form, submission, currentUser, abnormalities, errorCount, warningCount, submissionData, outcome);
 
         foreach (var rule in matchedRules.Where(r => r.Channel == "email" && r.EmailConfig != null))
         {
@@ -113,18 +114,23 @@ public class NotificationRuleSenderService(
         }
     }
 
-    private static Dictionary<string, string> BuildPlaceholders(
+    private async Task<Dictionary<string, string>> BuildPlaceholdersAsync(
         Form form,
         FormSubmission submission,
         User? currentUser,
         IReadOnlyList<AbnormalitiesService.Abnormality> abnormalities,
         int errorCount,
         int warningCount,
-        JsonElement submissionData)
+        JsonElement submissionData,
+        string outcome = "")
     {
         var abnormalLabels = abnormalities.Select(a => a.Label ?? a.Key).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
         var errorLabels = abnormalities.Where(a => a.Level == "error").Select(a => a.Label ?? a.Key).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
         var warningLabels = abnormalities.Where(a => a.Level == "warning").Select(a => a.Label ?? a.Key).Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+
+        // Resolve MEX asset fields to friendly display names
+        var resolvedAssets = await ResolveMexAssetFieldsAsync(form.Json, submissionData);
+        var firstAssetDisplay = resolvedAssets.Values.FirstOrDefault() ?? string.Empty;
 
         var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -142,17 +148,121 @@ public class NotificationRuleSenderService(
             ["error_answers_table"]    = BuildAbnormalAnswersHtml(abnormalities.Where(a => a.Level == "error"), submissionData),
             ["warning_answers_table"]  = BuildAbnormalAnswersHtml(abnormalities.Where(a => a.Level == "warning"), submissionData),
             ["all_answers_table"]      = BuildAllAnswersHtml(submissionData),
-            ["matched_conditions"]     = string.Join(", ", abnormalLabels), // best-effort summary
+            ["matched_conditions"]     = string.Join(", ", abnormalLabels),
+            ["asset_display"]          = firstAssetDisplay,
+            ["outcome"]                = outcome,
         };
 
-        // Add individual field placeholders: {{field:fieldKey}}
+        // Add individual field placeholders: {{field:fieldKey}} — use resolved name for asset fields
         if (submissionData.ValueKind == JsonValueKind.Object)
         {
             foreach (var prop in submissionData.EnumerateObject())
-                dict[$"field:{prop.Name}"] = JsonElementToDisplayText(prop.Value);
+            {
+                dict[$"field:{prop.Name}"] = resolvedAssets.TryGetValue(prop.Name, out var resolved)
+                    ? resolved
+                    : JsonElementToDisplayText(prop.Value);
+            }
         }
 
         return dict;
+    }
+
+    /// <summary>
+    /// Finds all MEX asset select fields in the form schema and resolves their submitted
+    /// externalId values to friendly "assetNumber — displayName" strings.
+    /// </summary>
+    private async Task<Dictionary<string, string>> ResolveMexAssetFieldsAsync(string formJson, JsonElement submissionData)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (submissionData.ValueKind != JsonValueKind.Object) return result;
+
+        // Find field keys of MEX asset selects by scanning the form schema
+        var mexFieldKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var schemaDoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(formJson) ? "{}" : formJson);
+            CollectMexAssetFieldKeys(schemaDoc.RootElement, mexFieldKeys);
+        }
+        catch { return result; }
+
+        if (mexFieldKeys.Count == 0) return result;
+
+        foreach (var fieldKey in mexFieldKeys)
+        {
+            if (!submissionData.TryGetProperty(fieldKey, out var valEl)) continue;
+            var submitted = valEl.ValueKind == JsonValueKind.String
+                ? valEl.GetString()?.Trim()
+                : valEl.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(submitted)) continue;
+
+            var submittedLocalId = int.TryParse(submitted, out var parsedId) ? parsedId : (int?)null;
+            var assetQuery = db.ExternalAssets.Where(a => a.Source == "mex");
+            var asset = submittedLocalId.HasValue
+                ? await assetQuery
+                    .Where(a => a.Id == submittedLocalId.Value || a.ExternalId == submitted || a.DisplayName == submitted)
+                    .OrderByDescending(a => a.IsActive).FirstOrDefaultAsync()
+                : await assetQuery
+                    .Where(a => a.ExternalId == submitted || a.DisplayName == submitted)
+                    .OrderByDescending(a => a.IsActive).FirstOrDefaultAsync();
+
+            if (asset is null) continue;
+
+            var assetNumber = ReadRawString(asset.RawJson, "assetNumber", "AssetNumber");
+            var displayName = asset.DisplayName
+                ?? ReadRawString(asset.RawJson, "assetDescription", "AssetDescription")
+                ?? assetNumber
+                ?? submitted;
+
+            result[fieldKey] = (!string.IsNullOrWhiteSpace(assetNumber) && assetNumber != displayName)
+                ? $"{assetNumber} — {displayName}"
+                : (displayName ?? submitted)!;
+        }
+
+        return result;
+    }
+
+    private static void CollectMexAssetFieldKeys(JsonElement element, HashSet<string> keys)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            // Check if this component is a MEX asset select
+            if (element.TryGetProperty("properties", out var props)
+                && props.ValueKind == JsonValueKind.Object
+                && props.TryGetProperty("sfSourceKey", out var sfSourceKey)
+                && sfSourceKey.GetString() == "mex-assets"
+                && element.TryGetProperty("key", out var keyEl)
+                && keyEl.GetString() is { } key
+                && !string.IsNullOrWhiteSpace(key))
+            {
+                keys.Add(key);
+            }
+
+            // Recurse into components, columns, rows
+            foreach (var prop in element.EnumerateObject())
+            {
+                if (prop.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
+                    CollectMexAssetFieldKeys(prop.Value, keys);
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+                CollectMexAssetFieldKeys(item, keys);
+        }
+    }
+
+    private static string? ReadRawString(string? rawJson, params string[] keys)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(rawJson);
+            foreach (var key in keys)
+                if (doc.RootElement.TryGetProperty(key, out var el) && el.ValueKind == JsonValueKind.String)
+                    return el.GetString();
+        }
+        catch { }
+        return null;
     }
 
     private static string ReplacePlaceholders(string template, IReadOnlyDictionary<string, string> placeholders)

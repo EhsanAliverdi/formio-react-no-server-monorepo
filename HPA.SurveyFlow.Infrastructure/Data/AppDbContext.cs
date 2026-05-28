@@ -243,8 +243,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             e.Property(r => r.RuleId).HasColumnName("rule_id");
             e.Property(r => r.Action).HasColumnName("action").HasDefaultValue("create_request");
-            e.Property(r => r.ContactIdField).HasColumnName("contact_id_field");
-            e.Property(r => r.JobTypeField).HasColumnName("job_type_field");
             e.Property(r => r.FieldMappingsJson).HasColumnName("field_mappings_json").HasDefaultValue("{}");
             e.HasOne(r => r.Rule).WithOne(r => r.MexConfig).HasForeignKey<FormIntegrationRuleMex>(r => r.RuleId).OnDelete(DeleteBehavior.Cascade);
         });

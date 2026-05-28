@@ -284,19 +284,18 @@ export interface PlaceholderDef {
 
 export type IntegrationChannel = 'mex' | 'webhook';
 
-export type MexFieldMappingSource = 'field' | 'static' | 'template' | 'abnormal_answers';
+export type MexFieldMappingSource = 'default' | 'field' | 'static' | 'template' | 'abnormal_answers';
 
 export interface MexFieldMapping {
   source: MexFieldMappingSource;
   fieldKey?: string;    // source: 'field'
   value?: string;       // source: 'static'
   template?: string;    // source: 'template'
+  level?: 'all' | 'warning' | 'error';  // source: 'abnormal_answers'
 }
 
 export interface IntegrationRuleMexConfig {
   action: 'create_request';
-  contact_id_field?: string;
-  job_type_field?: string;
   field_mappings: Record<string, MexFieldMapping>;
 }
 

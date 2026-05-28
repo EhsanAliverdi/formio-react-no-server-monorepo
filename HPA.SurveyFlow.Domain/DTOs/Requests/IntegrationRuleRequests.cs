@@ -31,12 +31,6 @@ public class SaveIntegrationRuleMexRequest
     [JsonPropertyName("action")]
     public string Action { get; set; } = "create_request";
 
-    [JsonPropertyName("contact_id_field")]
-    public string? ContactIdField { get; set; }
-
-    [JsonPropertyName("job_type_field")]
-    public string? JobTypeField { get; set; }
-
     /// <summary>Raw JSON object: Record&lt;mexField, MexFieldMapping&gt;</summary>
     [JsonPropertyName("field_mappings")]
     public object FieldMappings { get; set; } = new { };

@@ -136,8 +136,6 @@ public class IntegrationRulesController(AppDbContext db) : ControllerBase
             if (rule.MexConfig != null)
             {
                 rule.MexConfig.Action = body.MexConfig.Action;
-                rule.MexConfig.ContactIdField = body.MexConfig.ContactIdField;
-                rule.MexConfig.JobTypeField = body.MexConfig.JobTypeField;
                 rule.MexConfig.FieldMappingsJson = mappingsJson;
             }
             else
@@ -146,8 +144,6 @@ public class IntegrationRulesController(AppDbContext db) : ControllerBase
                 {
                     RuleId = rule.Id,
                     Action = body.MexConfig.Action,
-                    ContactIdField = body.MexConfig.ContactIdField,
-                    JobTypeField = body.MexConfig.JobTypeField,
                     FieldMappingsJson = mappingsJson,
                 };
                 db.FormIntegrationRuleMexConfigs.Add(mex);
@@ -198,8 +194,6 @@ public class IntegrationRulesController(AppDbContext db) : ControllerBase
             mexDto = new IntegrationRuleMexDto
             {
                 Action = mex.Action,
-                ContactIdField = mex.ContactIdField,
-                JobTypeField = mex.JobTypeField,
                 FieldMappings = mappings,
             };
         }

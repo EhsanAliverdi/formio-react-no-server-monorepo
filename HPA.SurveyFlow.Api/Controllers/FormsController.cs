@@ -272,7 +272,7 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             {
                 using var submissionDoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(dataJson) ? "{}" : dataJson);
                 var matched = notificationEvaluator.Evaluate(rules, submissionDoc.RootElement);
-                await notificationSender.SendAsync(matched, form, submission, currentUser, abnormalities, errorCount, warningCount, submissionDoc.RootElement);
+                await notificationSender.SendAsync(matched, form, submission, currentUser, abnormalities, errorCount, warningCount, submissionDoc.RootElement, outcome);
             }
 
             // Evaluate and fire integration rules (runs alongside existing appSettings.secondarySubmit)

@@ -1,14 +1,16 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IntegrationRuleWebhookConfig, WebhookHeader } from '../../../core/models';
+import { IntegrationRuleWebhookConfig, WebhookHeader, PlaceholderDef } from '../../../core/models';
+import { PlaceholderPickerComponent } from '../placeholder-picker/placeholder-picker.component';
+import { buildPlaceholderCategories, PlaceholderFormField } from '../../../core/utils/placeholder-categories';
 
 @Component({
   selector: 'app-integration-rule-webhook-config',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PlaceholderPickerComponent],
   template: `
-    <div class="space-y-4">
+    <div class="space-y-5">
 
       <!-- URL + Method -->
       <div class="flex gap-3">
@@ -44,15 +46,25 @@ import { IntegrationRuleWebhookConfig, WebhookHeader } from '../../../core/model
 
         <div class="space-y-2">
           @for (header of config.headers; track $index; let i = $index) {
-            <div class="flex gap-2 items-center">
+            <div class="flex gap-2 items-start">
               <input type="text" [ngModel]="header.name" (ngModelChange)="updateHeader(i, 'name', $event)"
                 placeholder="Header-Name"
                 class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:ring-1 focus:ring-blue-500" />
-              <input type="text" [ngModel]="header.value" (ngModelChange)="updateHeader(i, 'value', $event)"
-                [placeholder]="headerValuePlaceholder"
-                class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:ring-1 focus:ring-blue-500" />
+              <div class="flex-1 flex flex-col gap-1">
+                <div class="flex items-center gap-1">
+                  <input type="text" [id]="'hdr-' + i"
+                    [ngModel]="header.value" (ngModelChange)="updateHeader(i, 'value', $event)"
+                    placeholder="value or {{'{{'}}placeholder{{'}}'}}"
+                    class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:ring-1 focus:ring-blue-500" />
+                  <app-placeholder-picker
+                    [categories]="categories()"
+                    [alignRight]="true"
+                    (placeholderSelected)="insertIntoHeader(i, $event)"
+                  />
+                </div>
+              </div>
               <button type="button" (click)="removeHeader(i)"
-                class="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                class="text-gray-400 hover:text-red-500 transition-colors p-1.5 shrink-0 mt-0.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -64,20 +76,22 @@ import { IntegrationRuleWebhookConfig, WebhookHeader } from '../../../core/model
 
       <!-- Body Template -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-          Body Template
-          <span class="text-gray-400 font-normal ml-1">(JSON — leave empty for no body)</span>
-        </label>
-        <textarea [ngModel]="config.body_template" (ngModelChange)="update({ body_template: $event })"
-          rows="6"
-          [placeholder]="bodyPlaceholder"
+        <div class="flex items-center justify-between mb-1">
+          <label class="block text-sm font-medium text-gray-700">
+            Body Template
+            <span class="text-gray-400 font-normal ml-1">(JSON — leave empty for no body)</span>
+          </label>
+          <app-placeholder-picker
+            [categories]="categories()"
+            [alignRight]="true"
+            (placeholderSelected)="insertIntoBody($event)"
+          />
+        </div>
+        <textarea id="webhook-body" [ngModel]="config.body_template" (ngModelChange)="update({ body_template: $event })"
+          rows="7"
+          placeholder='{&#10;  "submissionId": "{{"{{"}}submission_id{{"}}"}}",&#10;  "outcome": "{{"{{"}}outcome{{"}}"}}",&#10;  "user": "{{"{{"}}user_email{{"}}"}}"&#10;}'
           class="w-full text-sm font-mono border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 resize-y">
         </textarea>
-        <p class="text-xs text-gray-500 mt-1">
-          Available placeholders: <code>{{ '{{submission_id}}' }}</code>, <code>{{ '{{form_name}}' }}</code>,
-          <code>{{ '{{user_email}}' }}</code>, <code>{{ '{{outcome}}' }}</code>,
-          <code>{{ '{{field:fieldKey}}' }}</code>
-        </p>
       </div>
 
     </div>
@@ -85,17 +99,14 @@ import { IntegrationRuleWebhookConfig, WebhookHeader } from '../../../core/model
 })
 export class IntegrationRuleWebhookConfigComponent implements OnChanges {
   @Input() config: IntegrationRuleWebhookConfig = { url: '', method: 'POST', headers: [], body_template: '' };
+  @Input() formFields: PlaceholderFormField[] = [];
   @Output() configChange = new EventEmitter<IntegrationRuleWebhookConfig>();
 
-  readonly bodyPlaceholder = '{ "submissionId": "{{submission_id}}", "form": "{{form_name}}", "user": "{{user_email}}", "outcome": "{{outcome}}" }';
-  readonly headerValuePlaceholder = 'value or {{placeholder}}';
+  categories = computed(() => buildPlaceholderCategories(this.formFields, false));
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['config'] && this.config) {
-      // Ensure headers is always an array
-      if (!Array.isArray(this.config.headers)) {
-        this.config = { ...this.config, headers: [] };
-      }
+    if (changes['config'] && this.config && !Array.isArray(this.config.headers)) {
+      this.config = { ...this.config, headers: [] };
     }
   }
 
@@ -113,6 +124,36 @@ export class IntegrationRuleWebhookConfigComponent implements OnChanges {
     const headers = this.config.headers.map((h, i) => i === index ? { ...h, [key]: value } : h);
     this.config = { ...this.config, headers };
     this.configChange.emit(this.config);
+  }
+
+  insertIntoHeader(index: number, ph: PlaceholderDef) {
+    const tag = `{{${ph.key}}}`;
+    const el = document.getElementById(`hdr-${index}`) as HTMLInputElement | null;
+    const current = this.config.headers[index]?.value ?? '';
+    if (el) {
+      const start = el.selectionStart ?? current.length;
+      const end = el.selectionEnd ?? current.length;
+      const updated = current.slice(0, start) + tag + current.slice(end);
+      this.updateHeader(index, 'value', updated);
+      setTimeout(() => { el.selectionStart = el.selectionEnd = start + tag.length; el.focus(); });
+    } else {
+      this.updateHeader(index, 'value', current + tag);
+    }
+  }
+
+  insertIntoBody(ph: PlaceholderDef) {
+    const tag = `{{${ph.key}}}`;
+    const el = document.getElementById('webhook-body') as HTMLTextAreaElement | null;
+    const current = this.config.body_template ?? '';
+    if (el) {
+      const start = el.selectionStart ?? current.length;
+      const end = el.selectionEnd ?? current.length;
+      const updated = current.slice(0, start) + tag + current.slice(end);
+      this.update({ body_template: updated });
+      setTimeout(() => { el.selectionStart = el.selectionEnd = start + tag.length; el.focus(); });
+    } else {
+      this.update({ body_template: current + tag });
+    }
   }
 
   update(patch: Partial<IntegrationRuleWebhookConfig>) {

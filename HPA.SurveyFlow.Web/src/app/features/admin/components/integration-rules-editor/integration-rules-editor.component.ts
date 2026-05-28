@@ -6,6 +6,7 @@ import {
 import { IntegrationRulesService } from '../../../../core/services/integration-rules.service';
 import { FormField } from '../../../../shared/components/condition-group-editor/condition-group-editor.component';
 import { IntegrationRuleCardComponent } from '../integration-rule-card/integration-rule-card.component';
+import { extractFormioFields } from '../../../../core/utils/formio-fields';
 
 @Component({
   selector: 'app-integration-rules-editor',
@@ -63,6 +64,7 @@ import { IntegrationRuleCardComponent } from '../integration-rule-card/integrati
       }
 
       <!-- Rules list -->
+      <div class="space-y-3">
       @for (rule of rules(); track rule.id) {
         <app-integration-rule-card
           [rule]="rule"
@@ -70,6 +72,7 @@ import { IntegrationRuleCardComponent } from '../integration-rule-card/integrati
           (ruleChange)="saveRule(rule.id, $event)"
           (delete)="deleteRule(rule.id)" />
       }
+      </div>
 
     </div>
   `
@@ -155,28 +158,3 @@ export class IntegrationRulesEditorComponent implements OnInit, OnChanges {
   }
 }
 
-function extractFormioFields(schema: any): FormField[] {
-  if (!schema) return [];
-  const fields: FormField[] = [];
-
-  function walk(components: any[]) {
-    if (!Array.isArray(components)) return;
-    for (const comp of components) {
-      if (comp.key && comp.type && !['button', 'columns', 'panel', 'well'].includes(comp.type)) {
-        fields.push({ key: comp.key, label: comp.label || comp.key, type: mapType(comp.type) });
-      }
-      if (comp.components) walk(comp.components);
-      if (comp.columns) comp.columns.forEach((col: any) => walk(col.components ?? []));
-      if (comp.rows) comp.rows.forEach((row: any) => row.forEach((cell: any) => walk(cell.components ?? [])));
-    }
-  }
-
-  walk(schema.components ?? []);
-  return fields;
-}
-
-function mapType(type: string): string {
-  if (['number', 'currency'].includes(type)) return 'number';
-  if (['checkbox', 'radio'].includes(type)) return 'boolean';
-  return 'text';
-}

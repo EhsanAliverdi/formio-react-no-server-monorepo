@@ -203,12 +203,12 @@ internal static class DemoEquipmentMexFlowSeedData
                 requesterDetails = new
                 {
                     source = "template",
-                    template = "Operator: {{field:fullName}}\nEmployee / Contractor ID: {{field:employeeId}}\nSelected asset: {{field:machineId}}\nOutcome: {{outcome}}\nSubmission: #{{submission_id}}",
+                    template = "Operator: {{field:fullName}}\nEmployee / Contractor ID: {{field:employeeId}}\nAsset: {{asset_display}}\nOutcome: {{outcome}}\nSubmission: #{{submission_id}}",
                 },
                 jobDescription = new
                 {
                     source = "template",
-                    template = "Pre-start abnormal findings\n\nSelected asset: {{field:machineId}}\nOperator: {{field:fullName}} ({{field:employeeId}})\nOutcome: {{outcome}}\nSubmission: #{{submission_id}}\n\nWarning findings:\n{{warning_answers}}\n\nCritical stop findings:\n{{error_answers}}\n\nAll abnormal findings:\n{{abnormal_answers}}",
+                    template = "Pre-start abnormal findings\n\nAsset: {{asset_display}}\nOperator: {{field:fullName}} ({{field:employeeId}})\nOutcome: {{outcome}}\nSubmission: #{{submission_id}}\n\nWarning findings:\n{{warning_answers}}\n\nCritical stop findings:\n{{error_answers}}\n\nAll abnormal findings:\n{{abnormal_answers}}",
                 },
             },
         };

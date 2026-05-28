@@ -140,8 +140,6 @@ public class IntegrationRuleExecutorService(
             enabled = true,
             integration = "mex",
             action = mex.Action,
-            contactIdField = mex.ContactIdField,
-            jobTypeField = mex.JobTypeField,
             fieldMappings = JsonDocument.Parse(mex.FieldMappingsJson).RootElement,
         });
 

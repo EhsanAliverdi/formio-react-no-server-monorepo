@@ -7,6 +7,7 @@ export interface FormField {
   key: string;
   label: string;
   type: string; // 'text' | 'number' | 'boolean' | 'select' | etc.
+  options?: { label: string; value: string }[]; // for radio/select fields
 }
 
 const CONDITION_OPERATORS: { value: ConditionOperator; label: string; forTypes?: string[] }[] = [
@@ -86,14 +87,16 @@ const CONDITION_OPERATORS: { value: ConditionOperator; label: string; forTypes?:
 
               <!-- Value input (hidden for is_empty / is_not_empty) -->
               @if (!['is_empty','is_not_empty'].includes(asLeaf(child).conditionOperator)) {
-                @if (fieldType(asLeaf(child).fieldKey) === 'boolean') {
+                @if (fieldOptions(asLeaf(child).fieldKey); as opts) {
                   <select
                     [ngModel]="asLeaf(child).value"
                     (ngModelChange)="updateLeafValue($index, $event)"
                     class="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option [value]="true">Yes</option>
-                    <option [value]="false">No</option>
+                    <option value="">— select —</option>
+                    @for (opt of opts; track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
                   </select>
                 } @else {
                   <input
@@ -204,6 +207,12 @@ export class ConditionGroupEditorComponent implements OnChanges {
 
   fieldType(fieldKey: string): string {
     return this.fields.find(f => f.key === fieldKey)?.type ?? 'text';
+  }
+
+  /** Returns the options array for a field if it has predefined choices, otherwise null. */
+  fieldOptions(fieldKey: string): { label: string; value: string }[] | null {
+    const opts = this.fields.find(f => f.key === fieldKey)?.options;
+    return opts && opts.length > 0 ? opts : null;
   }
 
   private emit(group: ConditionGroup) {

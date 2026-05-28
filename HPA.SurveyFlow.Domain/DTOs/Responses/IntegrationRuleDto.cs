@@ -44,12 +44,6 @@ public class IntegrationRuleMexDto
     [JsonPropertyName("action")]
     public string Action { get; set; } = "create_request";
 
-    [JsonPropertyName("contact_id_field")]
-    public string? ContactIdField { get; set; }
-
-    [JsonPropertyName("job_type_field")]
-    public string? JobTypeField { get; set; }
-
     [JsonPropertyName("field_mappings")]
     public JsonElement FieldMappings { get; set; }
 }

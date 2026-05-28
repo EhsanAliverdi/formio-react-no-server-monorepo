@@ -351,8 +351,10 @@ function ensureWizardHasPage(schema: any): any {
                         </select>
                       </div>
                       <app-integration-payload-mapping
-                        [config]="secondarySubmitConfigs[outcome.value]"
-                        [formSchema]="currentSchema"
+                        [actionKey]="(secondarySubmitConfigs[outcome.value].integration || 'mex') + ':' + (secondarySubmitConfigs[outcome.value].action || 'create_request')"
+                        [fieldMappings]="secondarySubmitConfigs[outcome.value].fieldMappings || {}"
+                        [formFields]="collectFormFields(currentSchema)"
+                        (fieldMappingsChange)="secondarySubmitConfigs[outcome.value].fieldMappings = $event"
                       />
                     </div>
                   </div>
@@ -710,5 +712,19 @@ export class FormNewComponent implements OnInit {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  collectFormFields(schema: any): { key: string; label: string; type: string }[] {
+    const fields: { key: string; label: string; type: string }[] = [];
+    const visit = (node: any) => {
+      if (!node || typeof node !== 'object') return;
+      if (node.key && node.type && node.type !== 'button' && node.input !== false)
+        fields.push({ key: node.key, label: node.label || node.key, type: node.type });
+      for (const c of node.components ?? []) visit(c);
+      for (const col of node.columns ?? []) for (const c of col.components ?? []) visit(c);
+      for (const row of node.rows ?? []) for (const col of row ?? []) for (const c of col.components ?? []) visit(c);
+    };
+    visit(schema);
+    return fields;
   }
 }

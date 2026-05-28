@@ -20,11 +20,12 @@ export type RuleCardMode = 'view' | 'edit';
     NotificationRuleEmailConfigComponent,
   ],
   template: `
-    <div class="border rounded-xl overflow-hidden transition-shadow"
+    <div class="relative border rounded-xl overflow-hidden transition-all hover:z-10"
          [class.border-gray-200]="!expanded()"
          [class.border-blue-300]="expanded()"
          [class.shadow-sm]="!expanded()"
-         [class.shadow-md]="expanded()">
+         [class.shadow-md]="expanded()"
+         [class.z-10]="expanded()">
 
       <!-- Card header -->
       <div class="flex items-center gap-3 px-4 py-3 bg-white cursor-pointer hover:bg-gray-50 transition-colors"
