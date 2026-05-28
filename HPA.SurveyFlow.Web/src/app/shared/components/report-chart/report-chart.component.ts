@@ -136,13 +136,15 @@ export class ReportChartComponent implements AfterViewInit, OnChanges, OnDestroy
       },
     };
 
-    // Dynamic import so the module is resolved at runtime, not compile-time.
-    // This avoids TypeScript/esbuild having to resolve chart.js type declarations.
-    import('chart.js/auto').then(({ Chart }) => {
-      if (!this.canvasRef) return;
-      this.chart?.destroy();
-      this.chart = new Chart(this.canvasRef.nativeElement, config as never);
-    });
+    // Use Function constructor to hide the import string from the Angular/esbuild
+    // compiler plugin — it cannot statically analyse or type-check a runtime string.
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    (Function('m', 'return import(m)')('chart.js/auto') as Promise<{ Chart: new (...a: unknown[]) => unknown }>)
+      .then(({ Chart }) => {
+        if (!this.canvasRef) return;
+        this.chart?.destroy();
+        this.chart = new Chart(this.canvasRef.nativeElement, config);
+      });
   }
 
   private xAlias(): string {
