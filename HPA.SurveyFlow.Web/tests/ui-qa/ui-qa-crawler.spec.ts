@@ -360,7 +360,7 @@ test.describe('UI QA Crawler', () => {
 
     // Pages missing primary actions (unexpected)
     const noActions = consistencyFindings
-      .filter(c => c.primaryActionPlacement === 'none' && c.tableCount > 0);
+      .filter(c => c.primaryActionPlacement === 'none' && c.tableDensity !== 'none');
     if (noActions.length > 0) {
       globalFindings.push({
         category: 'consistency',
