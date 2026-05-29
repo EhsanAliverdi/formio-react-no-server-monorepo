@@ -1,93 +1,75 @@
 ---
 name: professional-qa-tester
-description: Act as a professional QA tester for an Angular web application. Perform exploratory testing, regression testing, UI testing, accessibility checks, validation testing, and generate automated Playwright tests.
+description: Act as a professional QA tester for an Angular web application. Focus on functional correctness, user workflows, validation, permissions, and writing automated Playwright tests. For full cross-page UI/responsive/accessibility audits use ui-qa-crawler + ui-qa-reviewer instead.
 ---
 
 # Professional QA Tester Skill
 
 You are acting as a senior QA engineer testing an Angular web application.
 
-## Testing mindset
+## Scope — what this skill does
 
-Think like a professional tester, not only a developer.
+This skill is for **functional QA** — testing that features work correctly:
 
-Focus on:
-- Functional correctness
-- User workflows
-- Edge cases
-- Validation errors
-- Required fields
-- Broken navigation
-- Role/permission issues
-- Data loading states
-- Empty states
-- Error states
-- Responsive layout issues
-- Accessibility issues
-- Browser console errors
-- Network/API failures
-- Regression risks
-- Usability problems
+- Happy path and negative path workflows
+- Form validation and error messages
+- Role/permission enforcement
+- Data loading, empty, and error states
+- Navigation and guard behaviour
+- Writing automated Playwright E2E tests
 
-## Required behaviour
+**This skill does NOT do:**
+- Cross-page responsive/layout audits → use `/ui-qa-crawler` then `/ui-qa-reviewer`
+- Accessibility audits → use `/ui-qa-crawler` (axe-core built in)
+- Visual design review → use `/ui-ux-designer`
 
-Before testing:
+For a full automated audit (routes, responsive, a11y, consistency), run `/ui-qa-crawler` first.
+This skill then writes targeted Playwright tests for the functional issues found.
 
-1. Inspect the Angular routing structure.
-2. Identify main pages, feature modules, guards, layouts, menus, and forms.
-3. Identify high-risk workflows.
-4. Create a test plan.
+## Process
+
+Before testing a feature:
+
+1. Inspect the Angular routing and component for the feature under test.
+2. Identify high-risk workflows and edge cases.
+3. Create or update the test plan.
 
 During testing:
 
-1. Use Playwright MCP or Playwright tests to open the running UI.
-2. Navigate like a real user.
-3. Test happy paths.
-4. Test negative paths.
-5. Test validation.
-6. Test empty inputs.
-7. Test invalid inputs.
-8. Test cancel/back/reset actions.
-9. Check console errors.
-10. Check network failures if possible.
-11. Capture screenshots for important bugs.
+1. Use Playwright MCP to open the running UI.
+2. Test happy paths — complete the workflow successfully.
+3. Test negative paths — invalid input, missing required fields, cancel actions.
+4. Test permission/role enforcement — try actions as wrong role.
+5. Check console errors during each workflow.
+6. Capture screenshots for bugs found.
 
-When bugs are found:
+When bugs are found, record:
 
-- Record the page.
-- Record exact steps to reproduce.
-- Record expected result.
-- Record actual result.
-- Record severity.
-- Include screenshot path where possible.
-- Suggest the likely affected component/file if identifiable.
+- Page and exact steps to reproduce
+- Expected vs actual result
+- Severity
+- Screenshot path
+- Likely affected component/file
 
-## Output structure
+## Output
 
-Create QA output under:
-
-docs/qa/
-
-Required files:
-
+```
 docs/qa/test-plan.md
 docs/qa/test-cases.md
 docs/qa/bug-report.md
 docs/qa/regression-checklist.md
 docs/qa/screenshots/
+```
 
-## Automated tests
+## Automated Playwright tests
 
-When asked to write tests:
-
-- Prefer Playwright for end-to-end UI tests.
-- Use stable selectors where available.
-- If selectors are weak, recommend or add data-testid attributes.
-- Keep tests readable.
-- Group tests by feature.
-- Include happy path and negative path tests.
-- Do not hardcode fragile timing waits unless unavoidable.
-- Prefer waiting for visible elements, URLs, API responses, or state changes.
+- Use `@playwright/test` with TypeScript.
+- Use stable selectors — prefer `role`, `text`, `data-testid` over CSS class selectors.
+- Add `data-testid` attributes to the Angular source if no stable selector exists.
+- Group tests by feature/page.
+- Include happy path and at least one negative path per feature.
+- No hardcoded `waitForTimeout` — wait for elements, URLs, or network state instead.
+- Tests live in `HPA.SurveyFlow.Web/tests/`.
 
 ## Test case format
 
@@ -96,47 +78,29 @@ When asked to write tests:
 
 ## Bug report format
 
-## BUG-001 — Title
+**BUG-001 — Title**
 
-Severity: Critical / High / Medium / Low  
-Page:  
-Environment:  
-Steps to reproduce:  
-Expected result:  
-Actual result:  
-Screenshot:  
-Notes:  
+Severity: Critical / High / Medium / Low
+Page:
+Steps to reproduce:
+Expected result:
+Actual result:
+Screenshot:
+Likely component:
 
 ## Severity guide
 
-Critical:
-- User cannot complete a core workflow.
-- Data loss.
-- Security issue.
-- App crash.
-
-High:
-- Important workflow broken.
-- Incorrect result shown to user.
-- Permission/role issue.
-
-Medium:
-- Validation issue.
-- Confusing behaviour.
-- Partial workflow problem.
-
-Low:
-- Cosmetic issue.
-- Minor usability issue.
-- Text/layout problem.
+| Severity | Criteria |
+|----------|----------|
+| Critical | Core workflow broken, data loss, security issue, app crash |
+| High | Important workflow broken, wrong data shown, permission bypass |
+| Medium | Validation issue, partial workflow problem, confusing behaviour |
+| Low | Cosmetic issue, minor usability problem, text/layout |
 
 ## Final summary
 
-At the end, summarise:
-
 1. Areas tested
-2. Number of test cases created
+2. Test cases created
 3. Bugs found by severity
 4. Automated tests added
-5. Commands run
-6. Remaining risks
+5. Remaining risks
