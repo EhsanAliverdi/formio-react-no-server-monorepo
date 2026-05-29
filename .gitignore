@@ -28,3 +28,5 @@ HPA.SurveyFlow.*/*.user
 HPA.SurveyFlow.*/**/bin/
 HPA.SurveyFlow.*/**/obj/
 HPA.SurveyFlow.*/**/.vs/
+.playwright-mcp/*
+docs/ui-ux/screenshots/*

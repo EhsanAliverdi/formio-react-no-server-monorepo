@@ -9,10 +9,13 @@
       "Glob",
       "Grep",
       "LS",
-
+      "Bash",
       "Bash(git status)",
       "Bash(git diff *)",
       "Bash(git log *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
       "Bash(npm *)",
       "Bash(npx *)",
       "Bash(node *)",
@@ -28,19 +31,6 @@
 
       "WebFetch(domain:localhost)",
       "mcp__playwright__*"
-    ],
-    "deny": [
-      "Bash(git push *)",
-      "Bash(git reset --hard *)",
-      "Bash(rm -rf *)",
-      "PowerShell(Remove-Item -Recurse -Force *)",
-      "Read(**/.env)",
-      "Read(**/.env.*)",
-      "Read(**/appsettings.Production.json)",
-      "Read(**/secrets*)",
-      "Read(**/*secret*)",
-      "Read(**/*password*)",
-      "Read(**/*token*)"
     ]
   }
 }
