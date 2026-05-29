@@ -1,9 +1,7 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
+    "defaultMode": "acceptEdits",
     "allow": [
-      "Bash",
-      "PowerShell",
       "Read",
       "Edit",
       "Write",
@@ -11,9 +9,38 @@
       "Glob",
       "Grep",
       "LS",
+
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(ng *)",
+      "Bash(python *)",
+
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Select-Object *)",
+      "PowerShell(Set-Content *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Copy-Item *)",
+
       "WebFetch(domain:localhost)",
-      "git",
-      "docker"
+      "mcp__playwright__*"
+    ],
+    "deny": [
+      "Bash(git push *)",
+      "Bash(git reset --hard *)",
+      "Bash(rm -rf *)",
+      "PowerShell(Remove-Item -Recurse -Force *)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/appsettings.Production.json)",
+      "Read(**/secrets*)",
+      "Read(**/*secret*)",
+      "Read(**/*password*)",
+      "Read(**/*token*)"
     ]
   }
 }
