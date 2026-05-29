@@ -491,6 +491,33 @@ export interface ReportExecutionResult {
   page_size: number;
 }
 
+export interface ScheduledReport {
+  id: number;
+  report_template_id: number;
+  report_name: string;
+  name: string;
+  cron_expression: string;
+  recipients: string;
+  subject: string;
+  is_enabled: boolean;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  last_run_at?: string | null;
+  next_run_at?: string | null;
+  last_run_status?: string | null;
+  last_run_error?: string | null;
+}
+
+export interface SaveScheduledReportRequest {
+  report_template_id: number;
+  name: string;
+  cron_expression: string;
+  recipients: string;
+  subject: string;
+  is_enabled: boolean;
+}
+
 export const MEX_FIELDS: { key: string; label: string; type: 'string' | 'number' | 'boolean' }[] = [
   { key: 'requestNumber',    label: 'Request Number',    type: 'number' },
   { key: 'jobTypeName',      label: 'Job Type Name',     type: 'string' },

@@ -131,6 +131,7 @@ builder.Services.AddScoped<ReportQueryEngineService>();
 builder.Services.AddScoped<AggregationPipelineService>();
 builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<UserContextService>();
+builder.Services.AddScoped<ScheduledReportDeliveryService>();
 
 // ── Event Bus (in-process, zero dependencies) ──────────────────────────────
 builder.Services.AddScoped<IEventBus, EventBus>();

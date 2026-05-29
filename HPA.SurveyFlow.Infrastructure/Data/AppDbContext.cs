@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserFavouriteReport> UserFavouriteReports { get; set; }
     public DbSet<ReportExecutionLog> ReportExecutionLogs { get; set; }
     public DbSet<Dataset> Datasets { get; set; }
+    public DbSet<ScheduledReport> ScheduledReports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -360,6 +361,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(d => d.Form).WithMany().HasForeignKey(d => d.FormId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(d => d.CreatedByUser).WithMany().HasForeignKey(d => d.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(d => d.FormId);
+        });
+
+        modelBuilder.Entity<ScheduledReport>(e =>
+        {
+            e.ToTable("scheduled_reports");
+            e.HasKey(s => s.Id);
+            e.Property(s => s.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(s => s.ReportTemplateId).HasColumnName("report_template_id");
+            e.Property(s => s.Name).HasColumnName("name").IsRequired();
+            e.Property(s => s.CronExpression).HasColumnName("cron_expression").IsRequired();
+            e.Property(s => s.Recipients).HasColumnName("recipients").IsRequired();
+            e.Property(s => s.Subject).HasColumnName("subject").HasDefaultValue("{{ReportName}} — {{RunDate}}");
+            e.Property(s => s.IsEnabled).HasColumnName("is_enabled").HasDefaultValue(true);
+            e.Property(s => s.CreatedBy).HasColumnName("created_by");
+            e.Property(s => s.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(s => s.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.Property(s => s.LastRunAt).HasColumnName("last_run_at");
+            e.Property(s => s.NextRunAt).HasColumnName("next_run_at");
+            e.Property(s => s.LastRunStatus).HasColumnName("last_run_status");
+            e.Property(s => s.LastRunError).HasColumnName("last_run_error");
+            e.HasOne(s => s.ReportTemplate).WithMany().HasForeignKey(s => s.ReportTemplateId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(s => s.CreatedByUser).WithMany().HasForeignKey(s => s.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(s => s.ReportTemplateId);
+            e.HasIndex(s => new { s.IsEnabled, s.NextRunAt });
         });
     }
 }

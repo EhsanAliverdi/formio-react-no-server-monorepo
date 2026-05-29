@@ -77,6 +77,11 @@ export const adminRoutes: Routes = [
       import('./pages/report-viewer.component').then(m => m.ReportViewerComponent),
   },
   {
+    path: 'datasets',
+    loadComponent: () =>
+      import('./pages/datasets.component').then(m => m.DatasetsComponent),
+  },
+  {
     path: 'integrations',
     loadComponent: () =>
       import('./pages/integrations.component').then(m => m.IntegrationsComponent),
