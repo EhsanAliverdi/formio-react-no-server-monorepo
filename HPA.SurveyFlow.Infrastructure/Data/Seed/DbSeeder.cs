@@ -7,88 +7,49 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Seed;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(
-        AppDbContext db,
-        bool seedAdminUser,
-        string? adminEmail,
-        string? adminPassword,
-        bool seedForms,
-        bool overrideExisting = false,
-        StorageService? storage = null)
+    /// <param name="opts">Controls which categories of seed data run and whether to reset/override existing rows.</param>
+    public static async Task SeedAsync(AppDbContext db, SeedOptions opts, StorageService? storage = null)
     {
         await db.Database.MigrateAsync();
 
-        // Seed default site settings
-        var defaultSettings = new Dictionary<string, string>
+        await SeedSiteSettingsAsync(db);
+
+        if (opts.AdminUser)
+            await SeedAdminUserAsync(db, opts.AdminEmail, opts.AdminPassword);
+
+        if (opts.DemoUsers)
+            await SeedDemoUsersAsync(db);
+
+        if (opts.Forms)
         {
-            ["siteName"] = "SurveyFlow",
-            ["faviconUrl"] = "/images/logo/favicon.svg",
-            ["logoExpandedLightUrl"] = "/images/logo/logo.svg",
-            ["logoExpandedDarkUrl"] = "/images/logo/logo-dark.svg",
-            ["logoCollapsedUrl"] = "/images/logo/logo-icon.svg",
-            ["logoExpandedWidth"] = "170",
-            ["logoExpandedHeight"] = "40",
-            ["logoCollapsedSize"] = "40",
-            ["copyrightText"] = "",
-            ["showCopyright"] = "false",
-            ["showPublicFormLogo"] = "false",
-        };
-
-        foreach (var (key, value) in defaultSettings)
-        {
-            var existingSetting = await db.SiteSettings.FindAsync(key);
-
-            if (existingSetting is null)
-            {
-                db.SiteSettings.Add(new SiteSetting { Key = key, Value = value });
-                continue;
-            }
-
-            if (string.IsNullOrWhiteSpace(existingSetting.Value))
-            {
-                existingSetting.Value = value;
-            }
-        }
-
-        // Seed superuser
-        if (seedAdminUser)
-        {
-            if (string.IsNullOrWhiteSpace(adminEmail))
-            {
-                throw new InvalidOperationException("Admin seeding is enabled, but no admin email was configured.");
-            }
-
-            if (string.IsNullOrWhiteSpace(adminPassword))
-            {
-                throw new InvalidOperationException("Admin seeding is enabled, but no admin password was configured.");
-            }
-
-            if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
-            {
-                var authService = new AuthService(db);
-                db.Users.Add(new User
-                {
-                    Email = adminEmail,
-                    PasswordHash = authService.HashPassword(adminPassword),
-                    Role = "admin",
-                    IsActive = true,
-                    DisplayName = "Administrator"
-                });
-            }
-        }
-
-        // Seed demo users for every role so that SharedWithRoles visibility works out-of-the-box.
-        // These are development/demo accounts only — all disabled by default in production via IsActive flag.
-        await SeedDemoUsersAsync(db);
-
-        if (seedForms)
-        {
-            await SeedFormsAsync(db, overrideExisting);
+            if (opts.Reset) await ResetFormsAsync(db);
+            await SeedFormsAsync(db, opts.OverrideExisting);
             if (storage != null)
-                await SeedFormImagesAsync(db, storage, overrideExisting);
-            await DemoRulesSeedData.SeedAsync(db, overrideExisting);
-            await DemoReportTemplatesSeedData.SeedAsync(db, overrideExisting);
-            await DemoDatasetsAndSchedulesSeedData.SeedAsync(db, overrideExisting);
+                await SeedFormImagesAsync(db, storage, opts.OverrideExisting);
+        }
+
+        if (opts.Rules)
+        {
+            if (opts.Reset) await ResetRulesAsync(db);
+            await DemoRulesSeedData.SeedAsync(db, opts.OverrideExisting);
+        }
+
+        if (opts.Reports)
+        {
+            if (opts.Reset) await ResetReportsAsync(db);
+            await DemoReportTemplatesSeedData.SeedAsync(db, opts.OverrideExisting);
+        }
+
+        if (opts.Datasets)
+        {
+            if (opts.Reset) await ResetDatasetsAsync(db);
+            await DemoDatasetsAndSchedulesSeedData.SeedDatasetsAsync(db, opts.OverrideExisting);
+        }
+
+        if (opts.Schedules)
+        {
+            if (opts.Reset) await ResetSchedulesAsync(db);
+            await DemoDatasetsAndSchedulesSeedData.SeedSchedulesAsync(db, opts.OverrideExisting);
         }
 
         await SeedJobDefinitionsAsync(db);
@@ -96,18 +57,69 @@ public static class DbSeeder
         await db.SaveChangesAsync();
     }
 
+    // ── Site settings (always runs — idempotent) ───────────────────────────────
+
+    private static async Task SeedSiteSettingsAsync(AppDbContext db)
+    {
+        var defaults = new Dictionary<string, string>
+        {
+            ["siteName"]               = "SurveyFlow",
+            ["faviconUrl"]             = "/images/logo/favicon.svg",
+            ["logoExpandedLightUrl"]   = "/images/logo/logo.svg",
+            ["logoExpandedDarkUrl"]    = "/images/logo/logo-dark.svg",
+            ["logoCollapsedUrl"]       = "/images/logo/logo-icon.svg",
+            ["logoExpandedWidth"]      = "170",
+            ["logoExpandedHeight"]     = "40",
+            ["logoCollapsedSize"]      = "40",
+            ["copyrightText"]          = "",
+            ["showCopyright"]          = "false",
+            ["showPublicFormLogo"]     = "false",
+        };
+
+        foreach (var (key, value) in defaults)
+        {
+            var existing = await db.SiteSettings.FindAsync(key);
+            if (existing is null)
+                db.SiteSettings.Add(new SiteSetting { Key = key, Value = value });
+            else if (string.IsNullOrWhiteSpace(existing.Value))
+                existing.Value = value;
+        }
+    }
+
+    // ── Admin user ────────────────────────────────────────────────────────────
+
+    private static async Task SeedAdminUserAsync(AppDbContext db, string? adminEmail, string? adminPassword)
+    {
+        if (string.IsNullOrWhiteSpace(adminEmail))
+            throw new InvalidOperationException("SEED_ADMIN_USER is enabled but ADMIN_EMAIL is not set.");
+        if (string.IsNullOrWhiteSpace(adminPassword))
+            throw new InvalidOperationException("SEED_ADMIN_USER is enabled but ADMIN_PASSWORD is not set.");
+
+        if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
+        {
+            var auth = new AuthService(db);
+            db.Users.Add(new User
+            {
+                Email        = adminEmail,
+                PasswordHash = auth.HashPassword(adminPassword),
+                Role         = "admin",
+                IsActive     = true,
+                DisplayName  = "Administrator",
+            });
+        }
+    }
+
+    // ── Demo users ────────────────────────────────────────────────────────────
+
     private static async Task SeedDemoUsersAsync(AppDbContext db)
     {
-        var authService = new AuthService(db);
-
-        // Demo accounts for each role — pre-created so SharedWithRoles report visibility works
-        // in a fresh demo environment without manual user creation.
+        var auth = new AuthService(db);
         var demoUsers = new[]
         {
-            new { Email = "editor@demo.local",     Role = "editor",     DisplayName = "Demo Editor",     JobTitle = "Form Editor" },
-            new { Email = "viewer@demo.local",      Role = "viewer",     DisplayName = "Demo Viewer",     JobTitle = "Report Viewer" },
-            new { Email = "supervisor@demo.local",  Role = "supervisor", DisplayName = "Demo Supervisor", JobTitle = "Site Supervisor" },
-            new { Email = "operator@demo.local",    Role = "operator",   DisplayName = "Demo Operator",   JobTitle = "Equipment Operator" },
+            new { Email = "editor@demo.local",    Role = "editor",     DisplayName = "Demo Editor",     JobTitle = "Form Editor" },
+            new { Email = "viewer@demo.local",     Role = "viewer",     DisplayName = "Demo Viewer",     JobTitle = "Report Viewer" },
+            new { Email = "supervisor@demo.local", Role = "supervisor", DisplayName = "Demo Supervisor", JobTitle = "Site Supervisor" },
+            new { Email = "operator@demo.local",   Role = "operator",   DisplayName = "Demo Operator",   JobTitle = "Equipment Operator" },
         };
 
         foreach (var u in demoUsers)
@@ -116,16 +128,76 @@ public static class DbSeeder
             {
                 db.Users.Add(new User
                 {
-                    Email = u.Email,
-                    PasswordHash = authService.HashPassword("Demo1234!"),
-                    Role = u.Role,
-                    IsActive = true,
-                    DisplayName = u.DisplayName,
-                    JobTitle = u.JobTitle,
+                    Email        = u.Email,
+                    PasswordHash = auth.HashPassword("Demo1234!"),
+                    Role         = u.Role,
+                    IsActive     = true,
+                    DisplayName  = u.DisplayName,
+                    JobTitle     = u.JobTitle,
                 });
             }
         }
     }
+
+    // ── Reset helpers ─────────────────────────────────────────────────────────
+
+    private static async Task ResetFormsAsync(AppDbContext db)
+    {
+        var seedNames = PreStartFormsSeedData.ActiveSeedFormNames
+            .Concat(PreStartFormsSeedData.RetiredSeedFormNames)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var forms = await db.Forms.Where(f => seedNames.Contains(f.Name)).ToListAsync();
+        if (forms.Count > 0) db.Forms.RemoveRange(forms);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task ResetRulesAsync(AppDbContext db)
+    {
+        // Remove all integration + notification rules tied to seed forms
+        var seedFormNames = PreStartFormsSeedData.ActiveSeedFormNames.ToList();
+        var formIds = await db.Forms.Where(f => seedFormNames.Contains(f.Name)).Select(f => f.Id).ToListAsync();
+        if (formIds.Count == 0) return;
+        var intRules = await db.FormIntegrationRules.Where(r => formIds.Contains(r.FormId)).ToListAsync();
+        var notifRules = await db.FormNotificationRules.Where(r => formIds.Contains(r.FormId)).ToListAsync();
+        if (intRules.Count > 0)   db.FormIntegrationRules.RemoveRange(intRules);
+        if (notifRules.Count > 0) db.FormNotificationRules.RemoveRange(notifRules);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task ResetReportsAsync(AppDbContext db)
+    {
+        var seedFormNames = PreStartFormsSeedData.ActiveSeedFormNames.ToList();
+        var formIds = await db.Forms.Where(f => seedFormNames.Contains(f.Name)).Select(f => f.Id).ToListAsync();
+        if (formIds.Count == 0) return;
+        var templates = await db.ReportTemplates.Where(t => formIds.Contains(t.FormId)).ToListAsync();
+        if (templates.Count > 0) db.ReportTemplates.RemoveRange(templates);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task ResetDatasetsAsync(AppDbContext db)
+    {
+        var seedFormNames = PreStartFormsSeedData.ActiveSeedFormNames.ToList();
+        var formIds = await db.Forms.Where(f => seedFormNames.Contains(f.Name)).Select(f => f.Id).ToListAsync();
+        if (formIds.Count == 0) return;
+        var datasets = await db.Datasets.Where(d => formIds.Contains(d.FormId)).ToListAsync();
+        if (datasets.Count > 0) db.Datasets.RemoveRange(datasets);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task ResetSchedulesAsync(AppDbContext db)
+    {
+        var seedFormNames = PreStartFormsSeedData.ActiveSeedFormNames.ToList();
+        var formIds = await db.Forms.Where(f => seedFormNames.Contains(f.Name)).Select(f => f.Id).ToListAsync();
+        if (formIds.Count == 0) return;
+        var templateIds = await db.ReportTemplates.Where(t => formIds.Contains(t.FormId)).Select(t => t.Id).ToListAsync();
+        if (templateIds.Count == 0) return;
+        var schedules = await db.ScheduledReports.Where(s => templateIds.Contains(s.ReportTemplateId)).ToListAsync();
+        if (schedules.Count > 0) db.ScheduledReports.RemoveRange(schedules);
+        await db.SaveChangesAsync();
+    }
+
+    // ── Forms ──────────────────────────────────────────────────────────────────
 
     private static async Task SeedFormImagesAsync(AppDbContext db, StorageService storage, bool overrideExisting)
     {
@@ -145,12 +217,10 @@ public static class DbSeeder
             var key = $"images/seed/{definition.SeedImageFileName}";
             var imageUrl = $"/api/uploads/{key}";
 
-            // Parse existing categoryImage to decide whether to upload/patch
-            var existingJson = form.Json;
             string? existingImage = null;
             try
             {
-                using var doc = System.Text.Json.JsonDocument.Parse(existingJson);
+                using var doc = System.Text.Json.JsonDocument.Parse(form.Json);
                 if (doc.RootElement.TryGetProperty("appSettings", out var appSettings))
                 {
                     if (appSettings.TryGetProperty("categoryImage", out var imgProp) &&
@@ -163,18 +233,14 @@ public static class DbSeeder
             }
             catch { }
 
-            // Skip upload and patch if the form already has a user-set image and we're not overriding
             if (!overrideExisting && !string.IsNullOrWhiteSpace(existingImage))
                 continue;
 
-            // Upload to MinIO (always — idempotent, same key each time)
             var bytes = await File.ReadAllBytesAsync(imagePath);
             var ext = Path.GetExtension(definition.SeedImageFileName).ToLowerInvariant();
-            var contentType = ext == ".png" ? "image/png" : ext == ".jpg" || ext == ".jpeg" ? "image/jpeg" : "image/png";
+            var contentType = ext == ".png" ? "image/png" : ext is ".jpg" or ".jpeg" ? "image/jpeg" : "image/png";
             await storage.UploadAsync(key, bytes, contentType, "public, max-age=31536000, immutable");
-
-            // Patch categoryImage into the form JSON
-            form.Json = PatchCategoryImage(existingJson, imageUrl);
+            form.Json = PatchCategoryImage(form.Json, imageUrl);
         }
 
         await db.SaveChangesAsync();
@@ -193,33 +259,28 @@ public static class DbSeeder
             }
             return System.Text.Json.JsonSerializer.Serialize(dict);
         }
-        catch
-        {
-            return existingJson;
-        }
+        catch { return existingJson; }
     }
+
+    // ── Job definitions (always runs — idempotent) ─────────────────────────────
 
     private static async Task SeedJobDefinitionsAsync(AppDbContext db)
     {
-        // Seed the MEX Asset Sync job definition if it doesn't already exist.
-        // Disabled by default — only activates once MEX integration is configured.
         if (!await db.ScheduledJobDefinitions.AnyAsync(j => j.JobKey == MexAssetSyncJob.JobKey))
         {
             db.ScheduledJobDefinitions.Add(new ScheduledJobDefinition
             {
-                JobKey         = MexAssetSyncJob.JobKey,
-                JobType        = typeof(MexAssetSyncJob).FullName!,
-                DisplayName    = "MEX Asset Sync",
-                Description    = "Fetches all assets from MEX Maintenance and caches them locally for use in form dropdowns.",
-                CronExpression = "0 0 * * * ?",   // every hour at :00
-                IsEnabled      = false,
-                // Declares which manual-trigger parameters this job supports
+                JobKey          = MexAssetSyncJob.JobKey,
+                JobType         = typeof(MexAssetSyncJob).FullName!,
+                DisplayName     = "MEX Asset Sync",
+                Description     = "Fetches all assets from MEX Maintenance and caches them locally for use in form dropdowns.",
+                CronExpression  = "0 0 * * * ?",
+                IsEnabled       = false,
                 ParameterSchema = """["dateFrom","dateTo","fullHistorical"]""",
             });
         }
         else
         {
-            // Ensure existing seeded record has the parameter schema
             var existing = await db.ScheduledJobDefinitions.FirstAsync(j => j.JobKey == MexAssetSyncJob.JobKey);
             if (existing.ParameterSchema is null)
                 existing.ParameterSchema = """["dateFrom","dateTo","fullHistorical"]""";
@@ -233,13 +294,12 @@ public static class DbSeeder
                 JobType        = typeof(MexGapFillJob).FullName!,
                 DisplayName    = "MEX Gap Fill",
                 Description    = "Finds all numeric ID gaps in the synced MEX assets range and fetches missing assets one by one from /Asset/{id}.",
-                CronExpression = "0 30 2 * * ?",  // daily at 02:30 — runs after the hourly sync
-                IsEnabled      = false,            // enable once MEX is configured
+                CronExpression = "0 30 2 * * ?",
+                IsEnabled      = false,
                 SyncMode       = "full",
             });
         }
     }
-
 
     private static async Task SeedFormsAsync(AppDbContext db, bool overrideExisting)
     {
@@ -252,20 +312,18 @@ public static class DbSeeder
             {
                 db.Forms.Add(new Form
                 {
-                    Name = seedForm.Name,
-                    Json = json,
+                    Name                 = seedForm.Name,
+                    Json                 = json,
                     AllowAnonymousSubmit = true,
-                    Visibility = "public",
+                    Visibility           = "public",
                 });
-
                 continue;
             }
 
             if (!overrideExisting) continue;
-
-            existingForm.Json = json;
+            existingForm.Json                 = json;
             existingForm.AllowAnonymousSubmit = true;
-            existingForm.Visibility = "public";
+            existingForm.Visibility           = "public";
         }
 
         await db.SaveChangesAsync();
@@ -278,7 +336,7 @@ public static class DbSeeder
     {
         foreach (var definition in DemoEquipmentMexFlowSeedData.Definitions)
         {
-            var parent = await db.Forms.FirstOrDefaultAsync(f => f.Name == definition.ParentFormName);
+            var parent          = await db.Forms.FirstOrDefaultAsync(f => f.Name == definition.ParentFormName);
             var acknowledgement = await db.Forms.FirstOrDefaultAsync(f => f.Name == definition.AcknowledgementFormName);
             if (parent is null || acknowledgement is null) continue;
 
@@ -286,13 +344,10 @@ public static class DbSeeder
 
             if (overrideExisting)
             {
-                // Full replace — safe because we are intentionally overriding
                 parent.Json = DemoEquipmentMexFlowSeedData.CreateParent(definition, acknowledgement.Id).Schema.GetRawText();
             }
             else
             {
-                // Patch only nextForms.warning inside the existing JSON so user edits
-                // (e.g. categoryImage) are preserved
                 parent.Json = PatchNextFormsWarning(parent.Json, acknowledgement.Id);
                 parent.Json = PatchCategorySettings(parent.Json, "pre-start", "Pre-Start", definition.IconKey);
                 acknowledgement.Json = PatchCategorySettings(acknowledgement.Json, "pre-start", "Pre-Start", null);
@@ -304,44 +359,37 @@ public static class DbSeeder
     {
         try
         {
-            var dict = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(existingJson)!;
+            var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(existingJson)!;
             var appSettings = dict.TryGetValue("appSettings", out var appSettingsEl)
-                ? System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(appSettingsEl.GetRawText())!
-                : new System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>();
+                ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(appSettingsEl.GetRawText())!
+                : new Dictionary<string, System.Text.Json.JsonElement>();
 
             appSettings["categorySlug"] = System.Text.Json.JsonSerializer.SerializeToElement(categorySlug);
             appSettings["categoryName"] = System.Text.Json.JsonSerializer.SerializeToElement(categoryName);
             if (iconKey is not null)
             {
-                appSettings["categoryIcon"] = System.Text.Json.JsonSerializer.SerializeToElement(iconKey);
-                appSettings["formsListIconKey"] = System.Text.Json.JsonSerializer.SerializeToElement(iconKey);
-                appSettings["showIconInFormsList"] = System.Text.Json.JsonSerializer.SerializeToElement(true);
+                appSettings["categoryIcon"]         = System.Text.Json.JsonSerializer.SerializeToElement(iconKey);
+                appSettings["formsListIconKey"]      = System.Text.Json.JsonSerializer.SerializeToElement(iconKey);
+                appSettings["showIconInFormsList"]   = System.Text.Json.JsonSerializer.SerializeToElement(true);
             }
 
             dict["appSettings"] = System.Text.Json.JsonSerializer.SerializeToElement(appSettings);
             return System.Text.Json.JsonSerializer.Serialize(dict);
         }
-        catch
-        {
-            return existingJson;
-        }
+        catch { return existingJson; }
     }
 
     private static string PatchNextFormsWarning(string existingJson, int warningFormId)
     {
         try
         {
-            using var doc = System.Text.Json.JsonDocument.Parse(existingJson);
-            var root = doc.RootElement.Clone();
-            var dict = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(existingJson)!;
-
-            // Navigate appSettings.nextForms.warning and patch it
+            var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(existingJson)!;
             if (dict.TryGetValue("appSettings", out var appSettingsEl))
             {
-                var appSettings = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(appSettingsEl.GetRawText())!;
+                var appSettings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(appSettingsEl.GetRawText())!;
                 if (appSettings.TryGetValue("nextForms", out var nextFormsEl))
                 {
-                    var nextForms = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>>(nextFormsEl.GetRawText())!;
+                    var nextForms = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(nextFormsEl.GetRawText())!;
                     nextForms["warning"] = System.Text.Json.JsonSerializer.SerializeToElement(warningFormId);
                     appSettings["nextForms"] = System.Text.Json.JsonSerializer.SerializeToElement(nextForms);
                 }
@@ -352,14 +400,9 @@ public static class DbSeeder
                 }
                 dict["appSettings"] = System.Text.Json.JsonSerializer.SerializeToElement(appSettings);
             }
-
             return System.Text.Json.JsonSerializer.Serialize(dict);
         }
-        catch
-        {
-            // If parsing fails fall back to leaving the JSON untouched
-            return existingJson;
-        }
+        catch { return existingJson; }
     }
 
     private static async Task RetireOldSeedFormsAsync(AppDbContext db)
@@ -370,10 +413,7 @@ public static class DbSeeder
 
         if (retiredNames.Count == 0) return;
 
-        var retiredForms = await db.Forms
-            .Where(f => retiredNames.Contains(f.Name))
-            .ToListAsync();
-
+        var retiredForms = await db.Forms.Where(f => retiredNames.Contains(f.Name)).ToListAsync();
         if (retiredForms.Count == 0) return;
 
         var formIdsWithSubmissions = await db.FormSubmissions
@@ -386,11 +426,10 @@ public static class DbSeeder
         {
             if (formIdsWithSubmissions.Contains(form.Id))
             {
-                form.Visibility = "restricted";
+                form.Visibility           = "restricted";
                 form.AllowAnonymousSubmit = false;
                 continue;
             }
-
             db.Forms.Remove(form);
         }
     }
