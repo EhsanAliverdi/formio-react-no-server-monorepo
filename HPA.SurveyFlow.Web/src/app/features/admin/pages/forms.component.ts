@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormService } from '../../../core/services/form.service';
 import { IconService } from '../../../core/services/icon.service';
 import { ToastrService } from 'ngx-toastr';
+import { ConfirmDialogService } from '../../../shared/components/confirm-dialog/confirm-dialog.service';
 import { Form } from '../../../core/models';
 
 @Component({
@@ -193,6 +194,7 @@ export class AdminFormsComponent implements OnInit {
   private formService = inject(FormService);
   private iconService = inject(IconService);
   private toastr = inject(ToastrService);
+  private confirm = inject(ConfirmDialogService);
   private router = inject(Router);
 
   forms = signal<Form[]>([]);
@@ -264,8 +266,14 @@ export class AdminFormsComponent implements OnInit {
     });
   }
 
-  deleteForm(form: Form): void {
-    if (!window.confirm(`Delete form "${form.name}"? This action cannot be undone.`)) return;
+  async deleteForm(form: Form): Promise<void> {
+    const ok = await this.confirm.open({
+      title: 'Delete Form',
+      message: `Delete form "${form.name}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.formService.delete(form.id).subscribe({
       next: () => {
         this.toastr.success(`Form "${form.name}" deleted.`, 'Deleted');
@@ -277,8 +285,14 @@ export class AdminFormsComponent implements OnInit {
     });
   }
 
-  deleteSubForm(form: Form): void {
-    if (!window.confirm(`Delete sub-form "${form.name}"? It will no longer be linked to its parent. This action cannot be undone.`)) return;
+  async deleteSubForm(form: Form): Promise<void> {
+    const ok = await this.confirm.open({
+      title: 'Delete Sub-Form',
+      message: `Delete sub-form "${form.name}"? It will no longer be linked to its parent. This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     this.formService.delete(form.id).subscribe({
       next: () => {
         this.toastr.success(`Sub-form "${form.name}" deleted.`, 'Deleted');

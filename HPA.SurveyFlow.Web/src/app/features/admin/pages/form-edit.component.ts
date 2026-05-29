@@ -2,20 +2,21 @@ import { Component, OnInit, ViewChild, signal, computed, inject } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { FormService } from '../../../core/services/form.service';
 import { UserService } from '../../../core/services/user.service';
 import { ApiService } from '../../../core/services/api.service';
+import { IconService } from '../../../core/services/icon.service';
 import { ToastrService } from 'ngx-toastr';
 import { FormEditorComponent } from '../../../shared/components/formio/form-editor.component';
 import { IntegrationPayloadMappingComponent } from '../../../shared/components/integration-payload-mapping/integration-payload-mapping.component';
 import { IconPickerComponent } from '../../../shared/components/icon-picker/icon-picker.component';
-import { IconService } from '../../../core/services/icon.service';
+import { FormCardComponent } from '../../../shared/components/form-card/form-card.component';
 import { Form, User, FormVersion } from '../../../core/models';
 import { FormVersionService } from '../../../core/services/form-version.service';
+import { CategoryService } from '../../../core/services/category.service';
 import { NotificationRulesEditorComponent } from '../components/notification-rules-editor/notification-rules-editor.component';
 import { IntegrationRulesEditorComponent } from '../components/integration-rules-editor/integration-rules-editor.component';
-import { FormCardComponent } from '../../../shared/components/form-card/form-card.component';
 
 type WizardPanel = { key: string; title: string };
 type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
@@ -147,7 +148,7 @@ function ensureWizardHasPage(schema: any): any {
 @Component({
   selector: 'app-admin-form-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent, NotificationRulesEditorComponent, IntegrationRulesEditorComponent, FormCardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent, FormCardComponent, NotificationRulesEditorComponent, IntegrationRulesEditorComponent],
   template: `
     <div class="p-6">
 
@@ -232,7 +233,7 @@ function ensureWizardHasPage(schema: any): any {
                 <div>
                   <p class="text-sm font-medium text-gray-700 mb-2">Allowed Roles</p>
                   <div class="flex flex-wrap gap-4">
-                    @for (role of availableRoles; track role.value) {
+                    @for (role of availableRoles(); track role.value) {
                       <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                         <input type="checkbox" [checked]="allowedRoles.includes(role.value)"
                           (change)="toggleRole(role.value)"
@@ -315,41 +316,35 @@ function ensureWizardHasPage(schema: any): any {
                 class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
 
-            <!-- Category options -->
+            <!-- Category picker -->
             <div class="border-t pt-4">
-              <p class="text-sm font-semibold text-gray-700 mb-3">Category Options</p>
-              <label class="flex items-center gap-3 cursor-pointer mb-3">
-                <input type="checkbox" [(ngModel)]="categoryEnabled"
-                  class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                <span class="text-sm text-gray-700 font-medium">Show on a category page</span>
-              </label>
-              @if (categoryEnabled) {
-                <div class="space-y-3 pl-7">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Category slug <span class="text-red-500">*</span></label>
-                      <input type="text" [(ngModel)]="categorySlug" placeholder="pre-start"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                      <p class="mt-1 text-xs text-gray-500">Used in the public URL, e.g. <code>/category/pre-start</code>.</p>
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Category name</label>
-                      <input type="text" [(ngModel)]="categoryName" placeholder="Pre-Start"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                    </div>
-                  </div>
-                </div>
+              <p class="text-sm font-semibold text-gray-700 mb-1">Category</p>
+              <p class="text-xs text-gray-400 mb-3">
+                Assign this form to a category so it appears on the category page.
+                Manage categories in <a routerLink="/admin/categories" class="text-indigo-600 hover:underline">Admin → Categories</a>.
+              </p>
+              <select [(ngModel)]="categorySlug"
+                class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">— None —</option>
+                @for (cat of availableCategories(); track cat.slug) {
+                  <option [value]="cat.slug">{{ cat.name }} ({{ cat.slug }})</option>
+                }
+              </select>
+              @if (categorySlug) {
+                <p class="mt-1.5 text-xs text-gray-400">
+                  Public URL: <a [href]="'/category/' + categorySlug" target="_blank" class="text-indigo-600 hover:underline font-mono">/category/{{ categorySlug }}</a>
+                </p>
               }
             </div>
 
           </div>
         </div>
 
-        <!-- ── 2. Styles (collapsible) ─────────────────────────────────────── -->
+        <!-- ── 2. Card Styles (collapsible) ──────────────────────────────────── -->
         <div class="mb-4 bg-white rounded-xl border border-gray-200">
           <button type="button" (click)="sectionOpen['styles'] = !sectionOpen['styles']"
             class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-            <span class="text-base font-semibold text-gray-900">Styles</span>
+            <span class="text-base font-semibold text-gray-900">Card Styles</span>
             <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['styles']"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -357,15 +352,18 @@ function ensureWizardHasPage(schema: any): any {
           </button>
 
           @if (sectionOpen['styles']) {
-            <div class="border-t border-gray-100 px-6 py-5 space-y-4">
-
-              <!-- Card settings: image + icon + display options -->
+            <div class="border-t border-gray-100 px-6 py-5">
+              <p class="text-xs text-gray-400 mb-4">
+                Card image and icon shown for this form on the category page.
+                Shared display options (button text, show/hide title) are set on the
+                <a routerLink="/admin/categories" class="text-indigo-600 hover:underline">Category</a>.
+              </p>
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Left: controls -->
                 <div class="space-y-4">
+
                   <!-- Image -->
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Card Image (optional)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Card Image</label>
                     @if (categoryImage) {
                       <div class="mb-3 flex items-start gap-3">
                         <img [src]="categoryImage" alt="Card image" class="h-24 w-40 rounded-lg object-cover border border-gray-200"/>
@@ -401,9 +399,9 @@ function ensureWizardHasPage(schema: any): any {
                     }
                   </div>
 
-                  <!-- Icon -->
+                  <!-- Icon (used when no image) -->
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Card Icon (used when no image)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Card Icon <span class="text-gray-400 font-normal">(used when no image)</span></label>
                     <div class="flex items-center gap-3">
                       @if (categoryIcon) {
                         <img [src]="categoryIconSvgUrl()" alt="Selected icon" class="w-10 h-10 object-contain border border-gray-200 rounded-lg p-1"/>
@@ -421,28 +419,9 @@ function ensureWizardHasPage(schema: any): any {
                     </div>
                   </div>
 
-                  <!-- Card display options -->
-                  <div class="space-y-2.5">
-                    <p class="text-sm font-medium text-gray-700">Card display options</p>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                      <input type="checkbox" [(ngModel)]="categoryShowTitle"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                      <span class="text-sm text-gray-700">Show form title on card</span>
-                    </label>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                      <input type="checkbox" [(ngModel)]="categoryShowDescription"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                      <span class="text-sm text-gray-700">Show description on card</span>
-                    </label>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Button text</label>
-                      <input type="text" [(ngModel)]="categoryButtonText" placeholder="Start"
-                        class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                    </div>
-                  </div>
                 </div>
 
-                <!-- Right: live card preview -->
+                <!-- Live card preview -->
                 <div>
                   <p class="text-sm font-medium text-gray-700 mb-3">Live Preview</p>
                   <div class="w-72 pointer-events-none">
@@ -451,14 +430,13 @@ function ensureWizardHasPage(schema: any): any {
                       [description]="appSettings.publicDescription || null"
                       [imageUrl]="categoryImage || null"
                       [iconSvgUrl]="categoryIcon ? categoryIconSvgUrl() : null"
-                      [showTitle]="categoryShowTitle"
-                      [showDescription]="categoryShowDescription"
-                      [buttonText]="categoryButtonText || 'Start'"
+                      [showTitle]="true"
+                      [showDescription]="true"
+                      [buttonText]="'Start'"
                     />
                   </div>
                 </div>
               </div>
-
             </div>
           }
         </div>
@@ -803,6 +781,7 @@ export class FormEditComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private formService = inject(FormService);
   private userService = inject(UserService);
+  private categoryService = inject(CategoryService);
   private toastr = inject(ToastrService);
   private http = inject(HttpClient);
   private apiService = inject(ApiService);
@@ -844,15 +823,10 @@ export class FormEditComponent implements OnInit {
   allowedUserIds: number[] = [];
   parentFormId: number | null = null;
   appSettings: any = {};
-  categoryEnabled = false;
   categorySlug = '';
-  categoryName = '';
   categoryImage = '';
   categoryImageFullWidth = false;
   categoryIcon = '';
-  categoryShowTitle = true;
-  categoryShowDescription = true;
-  categoryButtonText = '';
   placeholderHelp = 'Available placeholders: {{outcome}}, {{submission_id}}, {{form_name}}, {{user_email}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
   secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
   secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = normalizeSecondarySubmitConfig(null);
@@ -860,11 +834,13 @@ export class FormEditComponent implements OnInit {
   emailNotifications: Record<SecondarySubmitOutcome, EmailNotificationConfig> = normalizeEmailNotificationConfig(null);
   currentSchema: any = {};
 
-  availableRoles = [
+  availableCategories = signal<{ slug: string; name: string }[]>([]);
+
+  availableRoles = signal<{ value: string; label: string }[]>([
     { value: 'admin', label: 'Admin' },
     { value: 'editor', label: 'Editor' },
     { value: 'viewer', label: 'Viewer' },
-  ];
+  ]);
 
   formId!: number;
 
@@ -891,15 +867,10 @@ export class FormEditComponent implements OnInit {
         if (typeof schema === 'string') { try { schema = JSON.parse(schema); } catch { schema = {}; } }
         this.appSettings = { nextForms: {}, ...(schema.appSettings ?? {}) };
         this.appSettings.nextForms = { success: null, warning: null, error: null, ...(this.appSettings.nextForms ?? {}) };
-        this.categoryEnabled = !!(schema.appSettings?.categorySlug || schema.appSettings?.preStart);
         this.categorySlug = schema.appSettings?.categorySlug || (schema.appSettings?.preStart ? 'pre-start' : '');
-        this.categoryName = schema.appSettings?.categoryName || (schema.appSettings?.preStart ? 'Pre-Start' : '');
         this.categoryImage = schema.appSettings?.categoryImage || schema.appSettings?.preStartImage || '';
         this.categoryImageFullWidth = !!(schema.appSettings?.categoryImageFullWidth ?? schema.appSettings?.preStartImageFullWidth);
         this.categoryIcon = schema.appSettings?.categoryIcon || schema.appSettings?.preStartIcon || schema.appSettings?.formsListIconKey || '';
-        this.categoryShowTitle = schema.appSettings?.categoryShowTitle !== false;
-        this.categoryShowDescription = schema.appSettings?.categoryShowDescription !== false;
-        this.categoryButtonText = schema.appSettings?.categoryButtonText || schema.appSettings?.preStartButtonText || '';
         this.secondarySubmitConfigs = normalizeSecondarySubmitConfig(schema.appSettings?.secondarySubmit);
         this.resultActions = normalizeResultActions(schema.appSettings?.resultActions);
         this.emailNotifications = normalizeEmailNotificationConfig(schema.appSettings?.emailNotifications);
@@ -912,6 +883,24 @@ export class FormEditComponent implements OnInit {
     });
     this.loadUsers();
     this.loadForms();
+    this.loadRoles();
+    this.loadCategories();
+  }
+
+  private loadCategories(): void {
+    this.categoryService.list().subscribe({
+      next: (cats) => this.availableCategories.set(cats.map(c => ({ slug: c.slug, name: c.name }))),
+      error: () => {},
+    });
+  }
+
+  private loadRoles(): void {
+    this.userService.getRoles().subscribe({
+      next: (roles) => this.availableRoles.set(
+        roles.map(r => ({ value: r, label: r.charAt(0).toUpperCase() + r.slice(1) }))
+      ),
+      error: () => {},
+    });
   }
 
   private loadUsers(): void {
@@ -1043,7 +1032,6 @@ export class FormEditComponent implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
     input.value = '';
-
     const formData = new FormData();
     formData.append('file', file);
     this.imageUploading.set(true);
@@ -1098,11 +1086,6 @@ export class FormEditComponent implements OnInit {
 
   save(): void {
     if (!this.name.trim()) { this.saveError.set('Form name is required.'); return; }
-    const categorySlug = this.normalizeCategorySlug(this.categorySlug);
-    if (this.categoryEnabled && !categorySlug) {
-      this.saveError.set('Category slug is required when category page is enabled.');
-      return;
-    }
     this.saveError.set(null);
     const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
     const secondarySubmit = {
@@ -1128,18 +1111,15 @@ export class FormEditComponent implements OnInit {
         resultActions,
         secondarySubmit,
         emailNotifications,
-        categorySlug: this.categoryEnabled ? categorySlug : null,
-        categoryName: this.categoryEnabled ? this.categoryName.trim() || null : null,
+        categorySlug: this.categorySlug.trim() || null,
         categoryImage: this.categoryImage || null,
         categoryImageFullWidth: this.categoryImageFullWidth,
         categoryIcon: this.categoryIcon || null,
-        categoryShowTitle: this.categoryShowTitle,
-        categoryShowDescription: this.categoryShowDescription,
-        categoryButtonText: this.categoryButtonText.trim() || null,
         formsListIconKey: this.categoryIcon || this.appSettings.formsListIconKey || null,
-        showIconInFormsList: this.categoryEnabled,
+        showIconInFormsList: !!this.categorySlug.trim(),
       },
     };
+    // Clean up legacy pre-start keys
     delete finalSchema.appSettings.preStart;
     delete finalSchema.appSettings.preStartImage;
     delete finalSchema.appSettings.preStartImageFullWidth;
@@ -1147,8 +1127,12 @@ export class FormEditComponent implements OnInit {
     delete finalSchema.appSettings.preStartShowTitle;
     delete finalSchema.appSettings.preStartShowDescription;
     delete finalSchema.appSettings.preStartButtonText;
-    delete finalSchema.appSettings.showStartOver;
-    delete finalSchema.appSettings.startOverUrl;
+    // Remove legacy per-category display fields now managed by the Category entity
+    delete finalSchema.appSettings.categoryName;
+    delete finalSchema.appSettings.categoryVisibility;
+    delete finalSchema.appSettings.categoryShowTitle;
+    delete finalSchema.appSettings.categoryShowDescription;
+    delete finalSchema.appSettings.categoryButtonText;
     this.saving.set(true);
     this.formService.update(this.formId, {
       name: this.name.trim(),

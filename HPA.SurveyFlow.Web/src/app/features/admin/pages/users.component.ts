@@ -1,5 +1,5 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -206,9 +206,9 @@ interface UserFormModel {
                   [(ngModel)]="form.role"
                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="admin">Admin</option>
-                  <option value="editor">Editor</option>
-                  <option value="viewer">Viewer</option>
+                  @for (role of availableRoles(); track role) {
+                    <option [value]="role">{{ role | titlecase }}</option>
+                  }
                 </select>
               </div>
 
@@ -276,6 +276,7 @@ export class UsersComponent implements OnInit {
   private toastr = inject(ToastrService);
 
   users = signal<User[]>([]);
+  availableRoles = signal<string[]>(['admin', 'editor', 'viewer']);
   loading = signal(true);
   error = signal<string | null>(null);
   saving = signal(false);
@@ -296,6 +297,14 @@ export class UsersComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUsers();
+    this.loadRoles();
+  }
+
+  loadRoles(): void {
+    this.userService.getRoles().subscribe({
+      next: (roles) => this.availableRoles.set(roles),
+      error: () => {},
+    });
   }
 
   loadUsers(): void {

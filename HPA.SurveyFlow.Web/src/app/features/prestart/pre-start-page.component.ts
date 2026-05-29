@@ -6,11 +6,14 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormService } from '../../core/services/form.service';
 import { SettingsService } from '../../core/services/settings.service';
+import { CategoryService } from '../../core/services/category.service';
+import { AuthService } from '../../core/services/auth.service';
 import { IconService } from '../../core/services/icon.service';
-import { Form, SiteSettings } from '../../core/models';
+import { Category, Form, SiteSettings } from '../../core/models';
 import { FormCardComponent } from '../../shared/components/form-card/form-card.component';
 
 interface CategoryCard {
@@ -82,6 +85,27 @@ interface CategoryCard {
             <div class="flex justify-center items-center py-24">
               <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
+          } @else if (restricted()) {
+            <div class="flex items-center justify-center py-24">
+              <div class="text-center max-w-sm">
+                <div class="mb-4 flex justify-center">
+                  <div class="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                    <svg class="h-8 w-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                  </div>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Restricted Access</h2>
+                <p class="text-sm text-gray-500 mb-6">
+                  This category requires you to be logged in to view its contents.
+                </p>
+                <a [routerLink]="['/login']"
+                  class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition">
+                  Sign in to continue
+                </a>
+              </div>
+            </div>
           } @else if (cards().length === 0) {
             <div class="text-center py-24 text-gray-400 text-lg">No forms available in this category.</div>
           } @else {
@@ -109,11 +133,16 @@ interface CategoryCard {
 export class PreStartPageComponent implements OnInit {
   private formService = inject(FormService);
   private settingsService = inject(SettingsService);
+  private categoryService = inject(CategoryService);
+  private authService = inject(AuthService);
   private iconService = inject(IconService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   forms = signal<Form[]>([]);
+  categoryEntity = signal<Category | null>(null);
   loading = signal(true);
+  restricted = signal(false);
   siteSettings = signal<SiteSettings | null>(null);
   categorySlug = signal('');
 
@@ -125,26 +154,31 @@ export class PreStartPageComponent implements OnInit {
   siteName = computed(() => this.siteSettings()?.siteName?.trim() || 'SurveyFlow');
 
   categoryTitle = computed(() => {
-    const first = this.forms()[0];
-    const appSettings = first ? this.parseJson(first.json)?.appSettings ?? {} : {};
-    return appSettings.categoryName?.trim() || this.categorySlug().replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const cat = this.categoryEntity();
+    if (cat?.name) return cat.name;
+    return this.categorySlug().replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   });
 
-  cards = computed<CategoryCard[]>(() =>
-    this.forms().map(f => {
+  cards = computed<CategoryCard[]>(() => {
+    const cat = this.categoryEntity();
+
+    // Category-level display settings (shared across all cards in this category)
+    const catShowTitle: boolean = cat?.show_title ?? true;
+    const catShowDescription: boolean = cat?.show_description ?? true;
+    const catButtonText: string = cat?.button_text?.trim() || 'Start';
+
+    return this.forms().map(f => {
       const schema = this.parseJson(f.json);
       const appSettings = schema?.appSettings ?? {};
 
+      // Card image and icon are per-form — each form in a category can have its own
       const imageUrl: string | null = appSettings.categoryImage || appSettings.preStartImage || null;
-
-      let iconPack: string | null = null;
-      let iconName: string | null = null;
-      let iconSvgUrl: string | null = null;
-
       const iconKey: string | null = appSettings.categoryIcon || appSettings.preStartIcon || appSettings.formsListIconKey || null;
+
+      let iconSvgUrl: string | null = null;
       if (!imageUrl && iconKey && iconKey.includes(':')) {
-        [iconPack, iconName] = iconKey.split(':', 2);
-        iconSvgUrl = this.iconService.getSvgUrl(iconPack, iconName);
+        const [pack, name] = iconKey.split(':', 2);
+        iconSvgUrl = this.iconService.getSvgUrl(pack, name);
       }
 
       return {
@@ -153,16 +187,16 @@ export class PreStartPageComponent implements OnInit {
         description: appSettings.publicDescription || null,
         imageUrl,
         imageFullWidth: !!(appSettings.categoryImageFullWidth ?? appSettings.preStartImageFullWidth),
-        iconPack,
-        iconName,
+        iconPack: null,
+        iconName: null,
         iconSvgUrl,
         questions: this.countQuestions(schema),
-        showTitle: appSettings.categoryShowTitle !== false,
-        showDescription: appSettings.categoryShowDescription !== false,
-        buttonText: appSettings.categoryButtonText?.trim() || appSettings.preStartButtonText?.trim() || 'Start',
+        showTitle: catShowTitle,
+        showDescription: catShowDescription,
+        buttonText: catButtonText,
       };
-    })
-  );
+    });
+  });
 
   ngOnInit(): void {
     this.settingsService.getSiteSettings().subscribe({ next: s => this.siteSettings.set(s), error: () => {} });
@@ -170,12 +204,24 @@ export class PreStartPageComponent implements OnInit {
       const slug = params.get('categorySlug')?.trim() || '';
       this.categorySlug.set(slug);
       this.loading.set(true);
-      this.formService.list(undefined, slug).subscribe({
+      this.restricted.set(false);
+      this.categoryEntity.set(null);
+      // Load category metadata (non-blocking — pre-start page still renders without it)
+      this.categoryService.get(slug).subscribe({
+        next: (cat) => this.categoryEntity.set(cat),
+        error: () => {},
+      });
+      this.formService.list(undefined, slug, true).subscribe({
         next: forms => {
           this.forms.set(forms);
           this.loading.set(false);
         },
-        error: () => this.loading.set(false),
+        error: (err: HttpErrorResponse) => {
+          this.loading.set(false);
+          if (err.status === 401) {
+            this.restricted.set(true);
+          }
+        },
       });
     });
   }

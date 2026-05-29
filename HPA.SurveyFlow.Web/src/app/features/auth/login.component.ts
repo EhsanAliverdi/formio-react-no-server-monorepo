@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { SettingsService } from '../../core/services/settings.service';
 
 @Component({
   selector: 'app-login',
@@ -14,13 +15,17 @@ import { AuthService } from '../../core/services/auth.service';
 
         <!-- Logo -->
         <div class="mb-8 flex flex-col items-center">
-          <div class="flex items-center gap-2 mb-2">
-            <svg class="w-9 h-9 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span class="text-2xl font-bold text-gray-900 dark:text-white">SurveyFlow</span>
-          </div>
+          @if (logoUrl()) {
+            <img [src]="logoUrl()" alt="Site logo" class="h-14 max-w-[200px] object-contain mb-2" />
+          } @else {
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-9 h-9 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span class="text-2xl font-bold text-gray-900 dark:text-white">SurveyFlow</span>
+            </div>
+          }
         </div>
 
         <!-- Card -->
@@ -145,6 +150,7 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
+  private settingsService = inject(SettingsService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
@@ -158,16 +164,24 @@ export class LoginComponent implements OnInit {
   loading = signal(false);
   errorMessage = signal('');
   isAdminMode = signal(false);
+  logoUrl = signal<string | null>(null);
 
   ngOnInit(): void {
     const mode = this.route.snapshot.data?.['mode'];
     this.isAdminMode.set(mode === 'admin');
 
-    // If already logged in, redirect
     if (this.authService.isLoggedIn()) {
       const dest = this.isAdminMode() ? '/admin' : '/';
       this.router.navigate([dest]);
     }
+
+    this.settingsService.getSiteSettings().subscribe({
+      next: (s) => {
+        const url = s.logoExpandedLightUrl?.trim() || s.logoExpandedDarkUrl?.trim();
+        if (url) this.logoUrl.set(url);
+      },
+      error: () => {},
+    });
   }
 
   onSubmit(): void {

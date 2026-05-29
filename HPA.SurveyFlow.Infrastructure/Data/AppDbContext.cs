@@ -30,6 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ApiKey> ApiKeys { get; set; }
     public DbSet<FormVersion> FormVersions { get; set; }
     public DbSet<ReportAlert> ReportAlerts { get; set; }
+    public DbSet<Category> Categories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -443,6 +444,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(v => v.Form).WithMany().HasForeignKey(v => v.FormId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(v => v.CreatedByUser).WithMany().HasForeignKey(v => v.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(v => new { v.FormId, v.VersionNumber }).IsUnique();
+        });
+
+        modelBuilder.Entity<Category>(e =>
+        {
+            e.ToTable("categories");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(c => c.Slug).HasColumnName("slug").IsRequired();
+            e.Property(c => c.Name).HasColumnName("name").IsRequired();
+            e.Property(c => c.Description).HasColumnName("description");
+            e.Property(c => c.Visibility).HasColumnName("visibility").HasDefaultValue("public");
+            e.Property(c => c.ImageUrl).HasColumnName("image_url");
+            e.Property(c => c.IconKey).HasColumnName("icon_key");
+            e.Property(c => c.ShowTitle).HasColumnName("show_title").HasDefaultValue(true);
+            e.Property(c => c.ShowDescription).HasColumnName("show_description").HasDefaultValue(true);
+            e.Property(c => c.ButtonText).HasColumnName("button_text");
+            e.Property(c => c.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(c => c.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.HasIndex(c => c.Slug).IsUnique();
         });
 
         modelBuilder.Entity<ReportAlert>(e =>

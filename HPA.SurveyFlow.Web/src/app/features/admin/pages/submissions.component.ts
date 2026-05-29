@@ -13,6 +13,7 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import { SubmissionService } from '../../../core/services/submission.service';
 import { FormService } from '../../../core/services/form.service';
+import { ConfirmDialogService } from '../../../shared/components/confirm-dialog/confirm-dialog.service';
 import { AdminSubmission, Form } from '../../../core/models';
 
 const PAGE_SIZE = 25;
@@ -223,6 +224,7 @@ const PAGE_SIZE = 25;
 export class SubmissionsComponent implements OnInit, OnDestroy {
   private submissionService = inject(SubmissionService);
   private formService = inject(FormService);
+  private confirm = inject(ConfirmDialogService);
   private router = inject(Router);
 
   rows = signal<AdminSubmission[]>([]);
@@ -311,10 +313,16 @@ export class SubmissionsComponent implements OnInit, OnDestroy {
     this.childrenExpanded.set(next);
   }
 
-  deleteSubmission(row: AdminSubmission): void {
+  async deleteSubmission(row: AdminSubmission): Promise<void> {
     const childCount = row.child_submissions?.length ?? 0;
-    const suffix = childCount > 0 ? ` and ${childCount} sub form submission(s)` : '';
-    if (!window.confirm(`Delete submission #${row.id}${suffix}? This is a soft delete and keeps the audit log.`)) return;
+    const suffix = childCount > 0 ? ` and ${childCount} sub-form submission(s)` : '';
+    const ok = await this.confirm.open({
+      title: 'Delete Submission',
+      message: `Delete submission #${row.id}${suffix}? This is a soft delete and keeps the audit log.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     this.submissionService.deleteAdmin(row.id).subscribe({
       next: () => this.loadSubmissions(),

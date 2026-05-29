@@ -12,6 +12,7 @@ public static class DbSeeder
     {
         await db.Database.MigrateAsync();
 
+        await SeedDefaultCategoriesAsync(db);
         await SeedSiteSettingsAsync(db);
 
         if (opts.AdminUser)
@@ -55,6 +56,27 @@ public static class DbSeeder
         await SeedJobDefinitionsAsync(db);
 
         await db.SaveChangesAsync();
+    }
+
+    // ── Default categories (always runs — idempotent) ─────────────────────────
+
+    private static async Task SeedDefaultCategoriesAsync(AppDbContext db)
+    {
+        if (!await db.Categories.AnyAsync(c => c.Slug == "pre-start"))
+        {
+            db.Categories.Add(new Category
+            {
+                Slug = "pre-start",
+                Name = "Pre-Start",
+                Description = "Pre-start inspection checklists for equipment and vehicles.",
+                Visibility = "public",
+                IconKey = "fa:FaTruckLoading",
+                ShowTitle = true,
+                ShowDescription = true,
+                ButtonText = "Start",
+            });
+            await db.SaveChangesAsync();
+        }
     }
 
     // ── Site settings (always runs — idempotent) ───────────────────────────────

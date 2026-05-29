@@ -77,6 +77,84 @@
       "command": "docker",
       "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "exec", "api", "dotnet", "ef", "database", "update", "--project", "HPA.SurveyFlow.Infrastructure", "--startup-project", "HPA.SurveyFlow.Api"],
       "problemMatcher": []
+    },
+
+    // ── Docs ──────────────────────────────────────────────────────────────────
+    {
+      "label": "Claude: Generate User Docs",
+      "detail": "Skill: angular-user-docs — capture screenshots and write full user guide under docs/user-guide/",
+      "type": "shell",
+      "command": "claude",
+      "args": ["/generate-user-docs"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+    {
+      "label": "Claude: Update User Docs",
+      "detail": "Skill: angular-user-docs — refresh outdated docs/user-guide/ entries and screenshots",
+      "type": "shell",
+      "command": "claude",
+      "args": ["/update-user-docs"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+
+    // ── QA ────────────────────────────────────────────────────────────────────
+    {
+      "label": "Claude: QA — Test App",
+      "detail": "Skill: professional-qa-tester — full exploratory QA pass, produce docs/qa/ output",
+      "type": "shell",
+      "command": "claude",
+      "args": ["/qa-test-app"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+    {
+      "label": "Claude: QA — Write Playwright Tests",
+      "detail": "Skill: professional-qa-tester — generate E2E Playwright tests under tests/e2e/",
+      "type": "shell",
+      "command": "claude",
+      "args": ["/qa-write-tests"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+    {
+      "label": "Claude: QA — Regression Checklist",
+      "detail": "Skill: professional-qa-tester — build/update docs/qa/regression-checklist.md for pre-release",
+      "type": "shell",
+      "command": "claude",
+      "args": ["/qa-regression"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+
+    // ── UI/UX ─────────────────────────────────────────────────────────────────
+    {
+      "label": "Claude: UI — Review App",
+      "detail": "Skill: ui-ux-designer — visual review of all pages, produce docs/ui-ux/ui-review.md",
+      "type": "shell",
+      "command": "claude",
+      "args": ["/ui-review"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+    {
+      "label": "Claude: UI — Redesign Page",
+      "detail": "Skill: ui-ux-designer — redesign a specific page (enter component name when prompted)",
+      "type": "shell",
+      "command": "claude",
+      "args": ["/ui-redesign-page", "${input:targetPage}"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+    {
+      "label": "Claude: UI — Create Design System",
+      "detail": "Skill: ui-ux-designer — audit styles and produce docs/ui-ux/design-system.md",
+      "type": "shell",
+      "command": "claude",
+      "args": ["/ui-create-design-system"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
     }
   ],
   "inputs": [
@@ -84,6 +162,11 @@
       "id": "migrationName",
       "type": "promptString",
       "description": "Migration name, for example AddUserTable"
+    },
+    {
+      "id": "targetPage",
+      "type": "promptString",
+      "description": "Page or component to redesign, e.g. report-designer.component.ts"
     }
   ]
 }

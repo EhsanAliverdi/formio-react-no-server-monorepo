@@ -87,6 +87,22 @@ export interface AdminSubmission extends FormSubmission {
   child_submissions?: AdminSubmission[];
 }
 
+export interface Category {
+  id: number;
+  slug: string;
+  name: string;
+  description?: string | null;
+  visibility: 'public' | 'restricted';
+  image_url?: string | null;
+  icon_key?: string | null;
+  show_title: boolean;
+  show_description: boolean;
+  button_text?: string | null;
+  form_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SiteSettings {
   siteName: string;
   faviconUrl?: string;

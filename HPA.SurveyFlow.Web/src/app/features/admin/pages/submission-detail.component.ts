@@ -13,8 +13,9 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { SubmissionService } from '../../../core/services/submission.service';
+import { PdfTemplateService } from '../../../core/services/pdf-template.service';
 import { AdminSubmission, AbnormalityItem } from '../../../core/models';
-import { buildSubmissionPdfBody, wrapPdfDocument } from '../../../core/utils/submission-pdf';
+import { buildSubmissionPdfBody } from '../../../core/utils/submission-pdf';
 import { patchSchemaUrls } from '../../../core/utils/schema-patch';
 import { Formio } from 'formiojs';
 import { take } from 'rxjs/operators';
@@ -343,6 +344,7 @@ export class SubmissionDetailComponent implements OnInit, OnDestroy {
   router = inject(Router);
   private route = inject(ActivatedRoute);
   private submissionService = inject(SubmissionService);
+  private pdfTemplate = inject(PdfTemplateService);
   private toastr = inject(ToastrService);
   private zone = inject(NgZone);
 
@@ -479,21 +481,23 @@ export class SubmissionDetailComponent implements OnInit, OnDestroy {
     const d = this.detail();
     if (!d || this.pdfExporting()) return;
     this.pdfExporting.set(true);
-    const html = wrapPdfDocument(buildSubmissionPdfBody(d as unknown as Record<string, unknown>));
-    this.submissionService.exportAdminPdf(html, `submission-${d.id}.pdf`).subscribe({
-      next: (blob) => {
-        this.pdfExporting.set(false);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `submission-${d.id}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-      },
-      error: (err) => {
-        this.pdfExporting.set(false);
-        this.toastr.error(err?.error?.error || 'PDF export failed.');
-      },
+    const body = buildSubmissionPdfBody(d as unknown as Record<string, unknown>);
+    this.pdfTemplate.wrap(body, { title: d.form_name, subtitle: `Submission #${d.id}` }).subscribe((html) => {
+      this.submissionService.exportAdminPdf(html, `submission-${d.id}.pdf`).subscribe({
+        next: (blob) => {
+          this.pdfExporting.set(false);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `submission-${d.id}.pdf`;
+          a.click();
+          URL.revokeObjectURL(url);
+        },
+        error: (err) => {
+          this.pdfExporting.set(false);
+          this.toastr.error(err?.error?.error || 'PDF export failed.');
+        },
+      });
     });
   }
 

@@ -51,6 +51,26 @@ public class UsersController(AppDbContext db, AuthService authService, StorageSe
         return Ok(users.Select(ToDto).ToList());
     }
 
+    [HttpGet("roles")]
+    public async Task<IActionResult> ListRoles()
+    {
+        try { HttpContext.RequireRole(UserRole.Admin, UserRole.Editor); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        // Return all distinct roles in use, merged with the base set, sorted alphabetically
+        var dbRoles = await db.Users
+            .Select(u => u.Role)
+            .Distinct()
+            .ToListAsync();
+
+        var all = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { UserRole.Admin, UserRole.Editor, UserRole.Viewer };
+        foreach (var r in dbRoles.Where(r => !string.IsNullOrWhiteSpace(r)))
+            all.Add(r!);
+
+        var sorted = all.Order(StringComparer.OrdinalIgnoreCase).ToList();
+        return Ok(sorted);
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest body)
     {

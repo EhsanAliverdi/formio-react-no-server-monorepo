@@ -27,6 +27,11 @@ export const adminRoutes: Routes = [
       import('./pages/form-view.component').then(m => m.FormViewComponent),
   },
   {
+    path: 'categories',
+    loadComponent: () =>
+      import('./pages/categories.component').then(m => m.CategoriesComponent),
+  },
+  {
     path: 'submissions',
     loadComponent: () =>
       import('./pages/submissions.component').then(m => m.SubmissionsComponent),

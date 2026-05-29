@@ -8,6 +8,29 @@ export const routes: Routes = [
       import('./features/auth/login.component').then(m => m.LoginComponent),
   },
   {
+    path: 'maintenance',
+    loadComponent: () =>
+      import('./features/errors/maintenance.component').then(m => m.MaintenanceComponent),
+  },
+  {
+    path: 'error/403',
+    loadComponent: () =>
+      import('./features/errors/server-error.component').then(m => m.ServerErrorComponent),
+    data: { code: '403', title: 'Access Denied', message: "You don't have permission to access this page." },
+  },
+  {
+    path: 'error/500',
+    loadComponent: () =>
+      import('./features/errors/server-error.component').then(m => m.ServerErrorComponent),
+    data: { code: '500', title: 'Server Error', message: 'An unexpected error occurred on our end. Please try again in a moment.' },
+  },
+  {
+    path: 'error/offline',
+    loadComponent: () =>
+      import('./features/errors/server-error.component').then(m => m.ServerErrorComponent),
+    data: { code: '⚡', title: 'Cannot Reach Server', message: 'The server is not reachable. Please check your connection and try again.' },
+  },
+  {
     path: 'category/:categorySlug',
     loadComponent: () =>
       import('./features/prestart/pre-start-page.component').then(m => m.PreStartPageComponent),
@@ -38,5 +61,9 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/admin/admin.routes').then(m => m.adminRoutes),
   },
-  { path: '**', redirectTo: '' },
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./features/errors/not-found.component').then(m => m.NotFoundComponent),
+  },
 ];

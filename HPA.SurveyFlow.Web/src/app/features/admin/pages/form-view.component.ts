@@ -19,7 +19,7 @@ import { SubmissionService } from '../../../core/services/submission.service';
 import { Form } from '../../../core/models';
 import { patchSchemaUrls } from '../../../core/utils/schema-patch';
 import { buildFormDefinitionPdfBody, FormPdfOptions } from '../../../core/utils/form-definition-pdf';
-import { wrapPdfDocument } from '../../../core/utils/submission-pdf';
+import { PdfTemplateService } from '../../../core/services/pdf-template.service';
 
 type Panel = { key: string; title: string; label: string; breadcrumb: string; components: any[] };
 
@@ -205,6 +205,7 @@ export class FormViewComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private formService = inject(FormService);
   private submissionService = inject(SubmissionService);
+  private pdfTemplate = inject(PdfTemplateService);
   private zone = inject(NgZone);
 
   form = signal<Form | null>(null);
@@ -287,24 +288,25 @@ export class FormViewComponent implements OnInit, OnDestroy {
     this.pdfExporting.set(true);
 
     const body = buildFormDefinitionPdfBody(schema, this.pdfOptions);
-    const html = wrapPdfDocument(body);
     const fileName = `${f.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'form'}-definition.pdf`;
 
-    this.submissionService.exportAdminPdf(html, fileName).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-        this.pdfExporting.set(false);
-        this.showPdfDialog.set(false);
-      },
-      error: (err) => {
-        this.pdfExporting.set(false);
-        this.pdfError.set(err?.error?.error || 'Failed to export PDF.');
-      },
+    this.pdfTemplate.wrap(body, { title: f.name, subtitle: 'Form Definition' }).subscribe((html) => {
+      this.submissionService.exportAdminPdf(html, fileName).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.pdfExporting.set(false);
+          this.showPdfDialog.set(false);
+        },
+        error: (err) => {
+          this.pdfExporting.set(false);
+          this.pdfError.set(err?.error?.error || 'Failed to export PDF.');
+        },
+      });
     });
   }
 

@@ -8,6 +8,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SubmissionService } from '../../../core/services/submission.service';
+import { PdfTemplateService } from '../../../core/services/pdf-template.service';
+import { buildSubmissionPdfBody } from '../../../core/utils/submission-pdf';
 import { FormSubmission } from '../../../core/models';
 import { FormRendererComponent } from '../../../shared/components/formio/form-renderer.component';
 
@@ -108,6 +110,7 @@ import { FormRendererComponent } from '../../../shared/components/formio/form-re
 })
 export class MySubmissionsComponent implements OnInit {
   private submissionService = inject(SubmissionService);
+  private pdfTemplate = inject(PdfTemplateService);
 
   items = signal<FormSubmission[]>([]);
   loading = signal(true);
@@ -177,23 +180,22 @@ export class MySubmissionsComponent implements OnInit {
     const d = this.detail();
     if (!d) return;
     this.exporting.set(true);
-    // Build a minimal HTML representation of the submission for the PDF endpoint
-    const html = `<h1>${d.form_name}</h1><p>Submitted: ${this.formatDate(d.submitted_at)}</p>`;
-    this.submissionService.exportPdf(d.id, html, `submission-${d.id}.pdf`).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `submission-${d.id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        this.exporting.set(false);
-      },
-      error: () => {
-        this.exporting.set(false);
-      },
+    const body = buildSubmissionPdfBody(d as unknown as Record<string, unknown>);
+    this.pdfTemplate.wrap(body, { title: d.form_name, subtitle: `Submission #${d.id}` }).subscribe((html) => {
+      this.submissionService.exportPdf(d.id, html, `submission-${d.id}.pdf`).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `submission-${d.id}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          this.exporting.set(false);
+        },
+        error: () => { this.exporting.set(false); },
+      });
     });
   }
 

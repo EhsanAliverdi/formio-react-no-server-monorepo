@@ -9,6 +9,10 @@ export class UserService {
   private http = inject(HttpClient);
   private api = inject(ApiService);
 
+  getRoles(): Observable<string[]> {
+    return this.http.get<string[]>(this.api.apiUrl('/api/users/roles'));
+  }
+
   list(params?: any): Observable<User[]> {
     let httpParams = new HttpParams();
     if (params) {

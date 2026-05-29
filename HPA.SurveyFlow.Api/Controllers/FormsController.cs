@@ -27,12 +27,54 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         if (!string.IsNullOrWhiteSpace(category))
         {
             var categorySlug = category.Trim();
-            var allForms = await db.Forms.ToListAsync();
-            var categoryForms = allForms
-                .Where(f => f.ParentFormId == null && f.Visibility == FormVisibility.Public && f.AllowAnonymousSubmit)
+            var allForms = await db.Forms
+                .Include(f => f.AllowedRoles)
+                .Include(f => f.AllowedUsers)
+                .ToListAsync();
+
+            // Find all forms belonging to this category slug
+            var matched = allForms
+                .Where(f => f.ParentFormId == null)
                 .Where(f => FormCategoryMatches(f.Json, categorySlug))
                 .ToList();
-            return Ok(categoryForms.Select(f => MapFormDto(f, false)).ToList());
+
+            if (matched.Count == 0)
+                return Ok(new List<object>());
+
+            // Determine category visibility from the categories table (authoritative source)
+            var categoryEntity = await db.Categories.FirstOrDefaultAsync(c => c.Slug == categorySlug);
+            var categoryIsRestricted = categoryEntity?.Visibility == "restricted"
+                || matched.Any(f => GetCategoryVisibility(f.Json) == "restricted");
+
+            if (categoryIsRestricted)
+            {
+                // Restricted category — require authentication
+                var catUser = HttpContext.GetCurrentUser();
+                if (catUser == null)
+                    return Unauthorized(new { error = "Authentication required to access this category." });
+
+                var catUserId = catUser.Id;
+                var catRole = catUser.Role;
+
+                // Admins and editors always have access
+                if (catRole != UserRole.Admin && catRole != UserRole.Editor)
+                {
+                    // Filter to forms the user can access (by role or explicit user assignment)
+                    matched = matched.Where(f =>
+                        f.Visibility == FormVisibility.Public ||
+                        f.AllowedRoles.Any(ar => ar.Role == catRole) ||
+                        f.AllowedUsers.Any(au => au.UserId == catUserId)
+                    ).ToList();
+                }
+
+                return Ok(matched.Select(f => MapFormDto(f, false)).ToList());
+            }
+
+            // Public category — original behaviour: only public + anonymous forms
+            var publicForms = matched
+                .Where(f => f.Visibility == FormVisibility.Public && f.AllowAnonymousSubmit)
+                .ToList();
+            return Ok(publicForms.Select(f => MapFormDto(f, false)).ToList());
         }
 
         var currentUser = HttpContext.GetCurrentUser();
@@ -324,6 +366,20 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             AllowedRoles = includeRestricted ? f.AllowedRoles.Select(r => r.Role).ToList() : null,
             AllowedUserIds = includeRestricted ? f.AllowedUsers.Select(u => u.UserId).ToList() : null
         };
+    }
+
+    private static string GetCategoryVisibility(string formJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(formJson);
+            if (doc.RootElement.TryGetProperty("appSettings", out var appSettings)
+                && appSettings.TryGetProperty("categoryVisibility", out var visEl)
+                && visEl.ValueKind == JsonValueKind.String)
+                return visEl.GetString() ?? "public";
+        }
+        catch { }
+        return "public";
     }
 
     private static bool FormCategoryMatches(string formJson, string categorySlug)
