@@ -88,6 +88,7 @@ public static class DbSeeder
                 await SeedFormImagesAsync(db, storage, overrideExisting);
             await DemoRulesSeedData.SeedAsync(db, overrideExisting);
             await DemoReportTemplatesSeedData.SeedAsync(db, overrideExisting);
+            await DemoDatasetsAndSchedulesSeedData.SeedAsync(db, overrideExisting);
         }
 
         await SeedJobDefinitionsAsync(db);
