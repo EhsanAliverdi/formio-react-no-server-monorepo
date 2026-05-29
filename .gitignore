@@ -30,3 +30,12 @@ HPA.SurveyFlow.*/**/obj/
 HPA.SurveyFlow.*/**/.vs/
 .playwright-mcp/*
 docs/ui-ux/screenshots/*
+
+# UI QA crawler output (screenshots and reports — keep .gitkeep)
+ui-qa-output/ui-qa-summary.json
+ui-qa-output/playwright-results.json
+ui-qa-output/screenshots/
+
+# Playwright
+HPA.SurveyFlow.Web/playwright-report/
+HPA.SurveyFlow.Web/test-results/
