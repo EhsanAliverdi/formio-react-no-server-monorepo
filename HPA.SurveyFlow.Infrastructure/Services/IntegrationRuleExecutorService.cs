@@ -6,6 +6,7 @@ using HPA.SurveyFlow.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace HPA.SurveyFlow.Infrastructure.Services;
 
@@ -66,7 +67,7 @@ public class IntegrationRuleExecutorService(
                 {
                     try
                     {
-                        await ExecuteRuleAsync(rule, secondarySubmit, settings, submissionId, submissionDataJson, formJson, formName, userEmail, outcome, abnormalities);
+                        await ExecuteRuleAsync(rule, secondarySubmit, db, settings, submissionId, submissionDataJson, formJson, formName, userEmail, outcome, abnormalities);
                     }
                     catch (Exception ex)
                     {
@@ -85,6 +86,7 @@ public class IntegrationRuleExecutorService(
     private async Task ExecuteRuleAsync(
         FormIntegrationRule rule,
         SecondarySubmitService secondarySubmit,
+        AppDbContext db,
         Dictionary<string, string> settings,
         int submissionId,
         string submissionDataJson,
@@ -97,11 +99,11 @@ public class IntegrationRuleExecutorService(
         switch (rule.Channel.ToLowerInvariant())
         {
             case "mex":
-                await ExecuteMexRuleAsync(rule, secondarySubmit, settings, submissionId, submissionDataJson, formJson, formName, userEmail, outcome);
+                await ExecuteMexRuleAsync(rule, secondarySubmit, db, settings, submissionId, submissionDataJson, formJson, formName, userEmail, outcome);
                 break;
 
             case "webhook":
-                await ExecuteWebhookRuleAsync(rule, settings, submissionId, submissionDataJson, formName, userEmail, outcome, abnormalities);
+                await ExecuteWebhookRuleAsync(rule, db, submissionId, submissionDataJson, formName, userEmail, outcome, abnormalities);
                 break;
 
             default:
@@ -113,6 +115,7 @@ public class IntegrationRuleExecutorService(
     private async Task ExecuteMexRuleAsync(
         FormIntegrationRule rule,
         SecondarySubmitService secondarySubmit,
+        AppDbContext db,
         Dictionary<string, string> settings,
         int submissionId,
         string submissionDataJson,
@@ -134,7 +137,20 @@ public class IntegrationRuleExecutorService(
             return;
         }
 
-        // Inject the rule's field mappings into a submit config JSON that SecondarySubmitService already understands
+        var log = new SubmissionRuleLog
+        {
+            SubmissionId = submissionId,
+            RuleId = rule.Id,
+            RuleName = rule.Name,
+            RuleType = "integration",
+            Channel = "mex",
+            Action = mex.Action,
+            Status = "pending",
+            TriggeredAt = DateTime.UtcNow,
+        };
+        db.SubmissionRuleLogs.Add(log);
+        await db.SaveChangesAsync();
+
         var submitConfig = JsonSerializer.Serialize(new
         {
             enabled = true,
@@ -143,19 +159,17 @@ public class IntegrationRuleExecutorService(
             fieldMappings = JsonDocument.Parse(mex.FieldMappingsJson).RootElement,
         });
 
-        // SecondarySubmitService.DispatchAsync is fire-and-forget — we call it synchronously
-        // to reuse all existing MEX plumbing (asset resolution, normalization, response tracking).
-        secondarySubmit.DispatchAsync("mex", mex.Action, submissionDataJson, submissionId, outcome, submitConfig);
+        // Delegate to SecondarySubmitService which handles MEX execution and updates submission columns.
+        // We pass our log ID so it can update our row when done.
+        secondarySubmit.DispatchAsync("mex", mex.Action, submissionDataJson, submissionId, outcome, submitConfig, ruleLogId: log.Id);
 
         logger.LogInformation("Integration rule {RuleId} ({RuleName}) dispatched MEX {Action} for submission {SubmissionId}",
             rule.Id, rule.Name, mex.Action, submissionId);
-
-        await Task.CompletedTask;
     }
 
     private async Task ExecuteWebhookRuleAsync(
         FormIntegrationRule rule,
-        Dictionary<string, string> settings,
+        AppDbContext db,
         int submissionId,
         string submissionDataJson,
         string formName,
@@ -178,54 +192,82 @@ public class IntegrationRuleExecutorService(
 
         var placeholders = BuildPlaceholders(submissionId, submissionDataJson, formName, userEmail, outcome, abnormalities);
         var body = ReplacePlaceholders(wh.BodyTemplate, placeholders);
+        var actionLabel = $"{wh.Method.ToUpperInvariant()} {wh.Url}";
 
-        using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var log = new SubmissionRuleLog
+        {
+            SubmissionId = submissionId,
+            RuleId = rule.Id,
+            RuleName = rule.Name,
+            RuleType = "integration",
+            Channel = "webhook",
+            Action = actionLabel,
+            Status = "pending",
+            RequestJson = body,
+            TriggeredAt = DateTime.UtcNow,
+        };
+        db.SubmissionRuleLogs.Add(log);
+        await db.SaveChangesAsync();
 
-        // Apply custom headers
-        List<(string Name, string Value)> headers = [];
         try
         {
-            var headersEl = JsonDocument.Parse(wh.HeadersJson).RootElement;
-            if (headersEl.ValueKind == JsonValueKind.Array)
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+
+            List<(string Name, string Value)> headers = [];
+            try
             {
-                foreach (var h in headersEl.EnumerateArray())
+                var headersEl = JsonDocument.Parse(wh.HeadersJson).RootElement;
+                if (headersEl.ValueKind == JsonValueKind.Array)
                 {
-                    if (h.TryGetProperty("name", out var n) && h.TryGetProperty("value", out var v))
-                        headers.Add((n.GetString() ?? "", ReplacePlaceholders(v.GetString() ?? "", placeholders)));
+                    foreach (var h in headersEl.EnumerateArray())
+                    {
+                        if (h.TryGetProperty("name", out var n) && h.TryGetProperty("value", out var v))
+                            headers.Add((n.GetString() ?? "", ReplacePlaceholders(v.GetString() ?? "", placeholders)));
+                    }
                 }
             }
-        }
-        catch { }
+            catch { }
 
-        foreach (var (name, value) in headers)
-        {
-            if (!string.IsNullOrWhiteSpace(name))
-                http.DefaultRequestHeaders.TryAddWithoutValidation(name, value);
-        }
+            foreach (var (name, value) in headers)
+                if (!string.IsNullOrWhiteSpace(name))
+                    http.DefaultRequestHeaders.TryAddWithoutValidation(name, value);
 
-        var method = wh.Method.ToUpperInvariant() switch
-        {
-            "GET"   => System.Net.Http.HttpMethod.Get,
-            "PUT"   => System.Net.Http.HttpMethod.Put,
-            "PATCH" => System.Net.Http.HttpMethod.Patch,
-            _       => System.Net.Http.HttpMethod.Post,
-        };
+            var method = wh.Method.ToUpperInvariant() switch
+            {
+                "GET"   => System.Net.Http.HttpMethod.Get,
+                "PUT"   => System.Net.Http.HttpMethod.Put,
+                "PATCH" => System.Net.Http.HttpMethod.Patch,
+                _       => System.Net.Http.HttpMethod.Post,
+            };
 
-        var request = new System.Net.Http.HttpRequestMessage(method, wh.Url);
-        if (method != System.Net.Http.HttpMethod.Get && !string.IsNullOrWhiteSpace(body))
-            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+            var request = new System.Net.Http.HttpRequestMessage(method, wh.Url);
+            if (method != System.Net.Http.HttpMethod.Get && !string.IsNullOrWhiteSpace(body))
+                request.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
-        var response = await http.SendAsync(request);
-
-        logger.LogInformation(
-            "Integration rule {RuleId} ({RuleName}) webhook {Method} {Url} → {StatusCode} for submission {SubmissionId}",
-            rule.Id, rule.Name, wh.Method, wh.Url, (int)response.StatusCode, submissionId);
-
-        if (!response.IsSuccessStatusCode)
-        {
+            var sw = Stopwatch.StartNew();
+            var response = await http.SendAsync(request);
+            sw.Stop();
             var responseBody = await response.Content.ReadAsStringAsync();
-            logger.LogWarning("Webhook rule {RuleId} got non-success status {StatusCode}: {Body}",
-                rule.Id, (int)response.StatusCode, responseBody);
+
+            log.Status = response.IsSuccessStatusCode ? "success" : "failed";
+            log.StatusCode = (int)response.StatusCode;
+            log.ResponseJson = responseBody.Length > 4000 ? responseBody[..4000] : responseBody;
+            log.CompletedAt = DateTime.UtcNow;
+
+            logger.LogInformation(
+                "Integration rule {RuleId} ({RuleName}) webhook {Method} {Url} → {StatusCode} for submission {SubmissionId}",
+                rule.Id, rule.Name, wh.Method, wh.Url, (int)response.StatusCode, submissionId);
+        }
+        catch (Exception ex)
+        {
+            log.Status = "failed";
+            log.ErrorMessage = ex.Message;
+            log.CompletedAt = DateTime.UtcNow;
+            logger.LogWarning(ex, "Webhook rule {RuleId} threw an exception for submission {SubmissionId}", rule.Id, submissionId);
+        }
+        finally
+        {
+            await db.SaveChangesAsync();
         }
     }
 

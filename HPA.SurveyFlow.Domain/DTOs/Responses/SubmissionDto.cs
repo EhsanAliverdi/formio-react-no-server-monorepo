@@ -51,6 +51,23 @@ public class AdminSubmissionListItemDto
     [JsonPropertyName("child_submissions")] public List<AdminSubmissionListItemDto> ChildSubmissions { get; set; } = [];
 }
 
+public class SubmissionRuleLogDto
+{
+    [JsonPropertyName("id")] public int Id { get; set; }
+    [JsonPropertyName("rule_id")] public int? RuleId { get; set; }
+    [JsonPropertyName("rule_name")] public string RuleName { get; set; } = null!;
+    [JsonPropertyName("rule_type")] public string RuleType { get; set; } = null!;
+    [JsonPropertyName("channel")] public string Channel { get; set; } = null!;
+    [JsonPropertyName("action")] public string? Action { get; set; }
+    [JsonPropertyName("status")] public string Status { get; set; } = null!;
+    [JsonPropertyName("request_json")] public string? RequestJson { get; set; }
+    [JsonPropertyName("response_json")] public string? ResponseJson { get; set; }
+    [JsonPropertyName("status_code")] public int? StatusCode { get; set; }
+    [JsonPropertyName("error_message")] public string? ErrorMessage { get; set; }
+    [JsonPropertyName("triggered_at")] public DateTime TriggeredAt { get; set; }
+    [JsonPropertyName("completed_at")] public DateTime? CompletedAt { get; set; }
+}
+
 public class AdminSubmissionDetailDto
 {
     [JsonPropertyName("id")] public int Id { get; set; }
@@ -74,4 +91,5 @@ public class AdminSubmissionDetailDto
     [JsonPropertyName("secondary_submit_response")] public object? SecondarySubmitResponse { get; set; }
     [JsonPropertyName("secondary_submit_at")] public DateTime? SecondarySubmitAt { get; set; }
     [JsonPropertyName("child_submissions")] public List<AdminSubmissionListItemDto> ChildSubmissions { get; set; } = [];
+    [JsonPropertyName("rule_logs")] public List<SubmissionRuleLogDto> RuleLogs { get; set; } = [];
 }

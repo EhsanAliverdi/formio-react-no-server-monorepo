@@ -72,6 +72,22 @@ export interface AbnormalityItem {
   level: 'error' | 'warning';
 }
 
+export interface SubmissionRuleLog {
+  id: number;
+  rule_id?: number | null;
+  rule_name: string;
+  rule_type: 'integration' | 'notification';
+  channel: string;
+  action?: string | null;
+  status: 'pending' | 'success' | 'failed';
+  request_json?: string | null;
+  response_json?: string | null;
+  status_code?: number | null;
+  error_message?: string | null;
+  triggered_at: string;
+  completed_at?: string | null;
+}
+
 export interface AdminSubmission extends FormSubmission {
   updated_by?: number;
   updated_by_email?: string;
@@ -85,6 +101,7 @@ export interface AdminSubmission extends FormSubmission {
   secondary_submit_response?: any;
   secondary_submit_at?: string | null;
   child_submissions?: AdminSubmission[];
+  rule_logs?: SubmissionRuleLog[];
 }
 
 export interface Category {

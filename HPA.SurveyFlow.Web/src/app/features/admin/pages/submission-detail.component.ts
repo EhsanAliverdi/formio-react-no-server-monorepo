@@ -226,6 +226,94 @@ function panelTitle(p: Panel, i: number): string {
             }
           </div>
 
+          <!-- Rule Activity card -->
+          @if ((detail()!.rule_logs?.length ?? 0) > 0) {
+            <div class="bg-white rounded-xl border border-gray-200 p-5">
+              <h2 class="text-sm font-semibold text-gray-700 mb-4">Rule Activity</h2>
+              <div class="space-y-3">
+                @for (log of detail()!.rule_logs!; track log.id) {
+                  <div class="rounded-lg border p-3 text-sm"
+                    [class]="log.status === 'success' ? 'border-green-200 bg-green-50'
+                      : log.status === 'pending' ? 'border-blue-200 bg-blue-50'
+                      : 'border-red-200 bg-red-50'">
+
+                    <!-- Header row -->
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                      <!-- Type icon -->
+                      @if (log.rule_type === 'notification') {
+                        <svg class="w-4 h-4 text-purple-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                      } @else {
+                        <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                      }
+
+                      <!-- Rule name -->
+                      <span class="font-semibold text-gray-900">{{ log.rule_name }}</span>
+
+                      <!-- Channel badge -->
+                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                        [class]="log.channel === 'mex' ? 'bg-orange-100 text-orange-800'
+                          : log.channel === 'webhook' ? 'bg-blue-100 text-blue-800'
+                          : 'bg-purple-100 text-purple-800'">
+                        {{ log.channel | uppercase }}
+                      </span>
+
+                      <!-- Status badge -->
+                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                        [class]="log.status === 'success' ? 'bg-green-100 text-green-800'
+                          : log.status === 'pending' ? 'bg-blue-100 text-blue-700'
+                          : 'bg-red-100 text-red-800'">
+                        {{ log.status === 'success' ? '✓ Success' : log.status === 'pending' ? '⏳ Pending' : '✗ Failed' }}
+                      </span>
+
+                      @if (log.status_code) {
+                        <span class="text-xs text-gray-500">HTTP {{ log.status_code }}</span>
+                      }
+
+                      <span class="ml-auto text-xs text-gray-400">{{ formatDate(log.triggered_at) }}</span>
+                    </div>
+
+                    <!-- Action label -->
+                    @if (log.action) {
+                      <div class="text-xs text-gray-500 mb-1 font-mono">{{ log.action }}</div>
+                    }
+
+                    <!-- Error message -->
+                    @if (log.error_message) {
+                      <div class="mt-1 text-xs text-red-700 bg-red-100 rounded px-2 py-1">{{ log.error_message }}</div>
+                    }
+
+                    <!-- Expandable request/response -->
+                    @if (log.request_json || log.response_json) {
+                      <details class="mt-2">
+                        <summary class="cursor-pointer text-xs text-gray-500 hover:text-gray-800 select-none">Show details</summary>
+                        <div class="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-2">
+                          @if (log.request_json) {
+                            <div>
+                              <div class="text-xs font-semibold text-gray-600 mb-1">Request</div>
+                              <pre class="overflow-x-auto rounded bg-white border border-gray-200 p-2 text-xs text-gray-700 whitespace-pre-wrap">{{ tryFormatJson(log.request_json) }}</pre>
+                            </div>
+                          }
+                          @if (log.response_json) {
+                            <div>
+                              <div class="text-xs font-semibold text-gray-600 mb-1">Response</div>
+                              <pre class="overflow-x-auto rounded bg-white border border-gray-200 p-2 text-xs text-gray-700 whitespace-pre-wrap">{{ tryFormatJson(log.response_json) }}</pre>
+                            </div>
+                          }
+                        </div>
+                      </details>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
           <!-- Form answers card -->
           @if (detail()!.form) {
             <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -545,6 +633,11 @@ export class SubmissionDetailComponent implements OnInit, OnDestroy {
     if (value == null) return '';
     if (typeof value === 'string') return value;
     try { return JSON.stringify(value, null, 2); } catch { return String(value); }
+  }
+
+  tryFormatJson(value: string | null | undefined): string {
+    if (!value) return '';
+    try { return JSON.stringify(JSON.parse(value), null, 2); } catch { return value; }
   }
 
   enterEditMode(): void {

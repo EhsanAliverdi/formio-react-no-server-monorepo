@@ -31,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FormVersion> FormVersions { get; set; }
     public DbSet<ReportAlert> ReportAlerts { get; set; }
     public DbSet<Category> Categories { get; set; }
+    public DbSet<SubmissionRuleLog> SubmissionRuleLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -444,6 +445,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(v => v.Form).WithMany().HasForeignKey(v => v.FormId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(v => v.CreatedByUser).WithMany().HasForeignKey(v => v.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(v => new { v.FormId, v.VersionNumber }).IsUnique();
+        });
+
+        modelBuilder.Entity<SubmissionRuleLog>(e =>
+        {
+            e.ToTable("submission_rule_logs");
+            e.HasKey(l => l.Id);
+            e.Property(l => l.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(l => l.SubmissionId).HasColumnName("submission_id");
+            e.Property(l => l.RuleId).HasColumnName("rule_id");
+            e.Property(l => l.RuleName).HasColumnName("rule_name").IsRequired();
+            e.Property(l => l.RuleType).HasColumnName("rule_type").IsRequired();
+            e.Property(l => l.Channel).HasColumnName("channel").IsRequired();
+            e.Property(l => l.Action).HasColumnName("action");
+            e.Property(l => l.Status).HasColumnName("status").IsRequired();
+            e.Property(l => l.RequestJson).HasColumnName("request_json");
+            e.Property(l => l.ResponseJson).HasColumnName("response_json");
+            e.Property(l => l.StatusCode).HasColumnName("status_code");
+            e.Property(l => l.ErrorMessage).HasColumnName("error_message");
+            e.Property(l => l.TriggeredAt).HasColumnName("triggered_at").HasDefaultValueSql("now()");
+            e.Property(l => l.CompletedAt).HasColumnName("completed_at");
+            e.HasOne(l => l.Submission).WithMany().HasForeignKey(l => l.SubmissionId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(l => l.SubmissionId);
         });
 
         modelBuilder.Entity<Category>(e =>

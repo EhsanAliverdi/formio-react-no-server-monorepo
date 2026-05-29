@@ -341,6 +341,11 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             .Select(a => new AbnormalityDto { Key = a.Key, Type = a.Type, Label = a.Label, NormalValue = a.NormalValue, Level = a.Level })
             .ToList();
 
+        var ruleLogs = await db.SubmissionRuleLogs
+            .Where(l => l.SubmissionId == submission.Id)
+            .OrderBy(l => l.TriggeredAt)
+            .ToListAsync();
+
         return new AdminSubmissionDetailDto
         {
             Id = submission.Id,
@@ -368,6 +373,22 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
                 .OrderBy(c => c.SubmittedAt)
                 .Select(MapAdminSubmissionListItem)
                 .ToList(),
+            RuleLogs = ruleLogs.Select(l => new SubmissionRuleLogDto
+            {
+                Id = l.Id,
+                RuleId = l.RuleId,
+                RuleName = l.RuleName,
+                RuleType = l.RuleType,
+                Channel = l.Channel,
+                Action = l.Action,
+                Status = l.Status,
+                RequestJson = l.RequestJson,
+                ResponseJson = l.ResponseJson,
+                StatusCode = l.StatusCode,
+                ErrorMessage = l.ErrorMessage,
+                TriggeredAt = l.TriggeredAt,
+                CompletedAt = l.CompletedAt,
+            }).ToList(),
         };
     }
 

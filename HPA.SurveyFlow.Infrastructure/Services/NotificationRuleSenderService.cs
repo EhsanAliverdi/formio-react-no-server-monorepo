@@ -6,6 +6,7 @@ using HPA.SurveyFlow.Infrastructure.Data;
 using HPA.SurveyFlow.Infrastructure.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HPA.SurveyFlow.Infrastructure.Services;
 
@@ -65,6 +66,21 @@ public class NotificationRuleSenderService(
                 catch (Exception ex) { logger.LogWarning(ex, "PDF generation failed for rule {RuleId}", rule.Id); }
             }
 
+            var triggeredAt = DateTime.UtcNow;
+            var log = new SubmissionRuleLog
+            {
+                SubmissionId = submission.Id,
+                RuleId = rule.Id,
+                RuleName = rule.Name,
+                RuleType = "notification",
+                Channel = "email",
+                Action = null,
+                Status = "pending",
+                RequestJson = JsonSerializer.Serialize(new { to = recipients, subject }),
+                TriggeredAt = triggeredAt,
+            };
+            db.SubmissionRuleLogs.Add(log);
+
             try
             {
                 await sender.SendAsync(new EmailMessage
@@ -74,15 +90,24 @@ public class NotificationRuleSenderService(
                     BodyHtml = bodyHtml,
                     Attachment = pdfBytes == null ? null : new EmailAttachment { Bytes = pdfBytes, FileName = $"submission-{submission.Id}.pdf" }
                 });
+                log.Status = "success";
+                log.CompletedAt = DateTime.UtcNow;
+                log.ResponseJson = JsonSerializer.Serialize(new { sent_to = recipients.Count, with_pdf = cfg.AttachPdf });
                 logger.LogInformation("Notification rule {RuleId} ({RuleName}) sent to {Count} recipient(s) for submission {SubmissionId}",
                     rule.Id, rule.Name, recipients.Count, submission.Id);
             }
             catch (Exception ex)
             {
+                log.Status = "failed";
+                log.CompletedAt = DateTime.UtcNow;
+                log.ErrorMessage = ex.Message;
                 logger.LogError(ex, "Failed to send notification rule {RuleId} ({RuleName}) for submission {SubmissionId}",
                     rule.Id, rule.Name, submission.Id);
             }
         }
+
+        // Persist all log rows in one shot
+        await db.SaveChangesAsync();
     }
 
     private void DetectAndLogOverlaps(IReadOnlyList<FormNotificationRule> matchedRules, int submissionId)

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using HPA.SurveyFlow.Domain.Entities;
 using HPA.SurveyFlow.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,29 +16,49 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
     /// in a background Task. The caller does not await this — it returns right away.
     /// The submission row is updated with the result once the background task completes.
     /// </summary>
-    public void DispatchAsync(string integration, string action, string submissionDataJson, int submissionId, string outcome = "success", string? submitConfigJson = null)
+    /// <param name="ruleLogId">
+    /// When called from IntegrationRuleExecutorService, the ID of an already-inserted
+    /// SubmissionRuleLog row to update with the result. When null (legacy form-workflow path),
+    /// a new log row is created with rule_name = "Form workflow".
+    /// </param>
+    public void DispatchAsync(string integration, string action, string submissionDataJson, int submissionId, string outcome = "success", string? submitConfigJson = null, int? ruleLogId = null)
     {
-        // Mark pending synchronously on the caller's scope before we fire off.
-        // We deliberately do NOT await so the HTTP response is not delayed.
         _ = Task.Run(async () =>
         {
             await using var scope = scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            // Mark as pending
             var submission = await db.FormSubmissions
                 .Include(s => s.Form)
                 .Include(s => s.User)
                 .FirstOrDefaultAsync(s => s.Id == submissionId);
             if (submission == null) return;
             submission.SecondarySubmitStatus = "pending";
+
+            // For the legacy (non-rule) path, create a log row now
+            SubmissionRuleLog? log = null;
+            if (ruleLogId == null)
+            {
+                log = new SubmissionRuleLog
+                {
+                    SubmissionId = submissionId,
+                    RuleId = null,
+                    RuleName = "Form workflow",
+                    RuleType = "integration",
+                    Channel = integration,
+                    Action = action,
+                    Status = "pending",
+                    TriggeredAt = DateTime.UtcNow,
+                };
+                db.SubmissionRuleLogs.Add(log);
+            }
+
             await db.SaveChangesAsync();
 
             var formJson = submission.Form.Json;
             var formName = submission.Form.Name;
             var userEmail = submission.User?.Email ?? string.Empty;
 
-            // Execute the integration
             SecondarySubmitOutcome outcomeResult;
             try
             {
@@ -54,23 +75,38 @@ public class SecondarySubmitService(IServiceScopeFactory scopeFactory, ILogger<S
                 outcomeResult = new SecondarySubmitOutcome(false, null, ex.Message);
             }
 
-            // Persist result
+            var completedAt = DateTime.UtcNow;
+            var finalStatus = outcomeResult.Success ? "success" : "failed";
+
+            // Update the submission's legacy columns
             submission = await db.FormSubmissions.FindAsync(submissionId);
-            if (submission == null) return;
-            submission.SecondarySubmitStatus = outcomeResult.Success ? "success" : "failed";
-            submission.SecondarySubmitAt = DateTime.UtcNow;
-            submission.SecondarySubmitResponse = BuildSubmitLogJson(
-                outcome,
-                integration,
-                action,
-                submission.SecondarySubmitStatus,
-                outcomeResult.ResponseJson,
-                outcomeResult.LegacyError,
-                submission.SecondarySubmitAt.Value);
+            if (submission != null)
+            {
+                submission.SecondarySubmitStatus = finalStatus;
+                submission.SecondarySubmitAt = completedAt;
+                submission.SecondarySubmitResponse = BuildSubmitLogJson(
+                    outcome, integration, action, finalStatus,
+                    outcomeResult.ResponseJson, outcomeResult.LegacyError, completedAt);
+            }
+
+            // Update the rule log row (either the one we created above, or the one passed in)
+            SubmissionRuleLog? logToUpdate = log;
+            if (logToUpdate == null && ruleLogId.HasValue)
+                logToUpdate = await db.SubmissionRuleLogs.FindAsync(ruleLogId.Value);
+
+            if (logToUpdate != null)
+            {
+                logToUpdate.Status = finalStatus;
+                logToUpdate.CompletedAt = completedAt;
+                logToUpdate.ResponseJson = outcomeResult.ResponseJson;
+                if (!outcomeResult.Success)
+                    logToUpdate.ErrorMessage = outcomeResult.LegacyError;
+            }
+
             await db.SaveChangesAsync();
 
             logger.LogInformation("Secondary submit completed: submissionId={Id} integration={Integration} status={Status}",
-                submissionId, integration, submission.SecondarySubmitStatus);
+                submissionId, integration, finalStatus);
         });
     }
 
