@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ReportTemplateService } from '../../../core/services/report-template.service';
 import { ScheduledReportService } from '../../../core/services/scheduled-report.service';
+import { ReportAlertService } from '../../../core/services/report-alert.service';
 import {
   ChartConfig,
   ChartTypeName,
@@ -17,6 +18,8 @@ import {
   SaveReportTemplateRequest,
   ScheduledReport,
   SaveScheduledReportRequest,
+  ReportAlert,
+  SaveReportAlertRequest,
 } from '../../../core/models';
 import { ReportColumnPickerComponent } from '../../../shared/components/report-column-picker/report-column-picker.component';
 import { ReportFilterPanelComponent } from '../../../shared/components/report-filter-panel/report-filter-panel.component';
@@ -465,6 +468,77 @@ import { ReportDriftWizardComponent } from '../../../shared/components/report-dr
                     }
                   </div>
                 }
+
+                <!-- Alerts section (only visible when editing an existing template) -->
+                @if (templateId()) {
+                  <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" (click)="toggleAlertsPanel()"
+                      class="w-full flex items-center justify-between mb-3 group">
+                      <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        Alerts
+                        <span class="text-xs font-normal text-gray-400 normal-case tracking-normal">(threshold notifications)</span>
+                      </h2>
+                      <svg class="w-4 h-4 text-gray-400 transition-transform" [class.rotate-180]="alertsPanelOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </button>
+
+                    @if (alertsPanelOpen) {
+                      <div class="flex flex-col gap-3">
+                        @if (alertsLoading()) {
+                          <div class="text-xs text-gray-400 italic">Loading alerts…</div>
+                        }
+                        @for (a of alerts(); track a.id) {
+                          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 flex flex-col gap-1.5 text-xs">
+                            <div class="flex items-center justify-between gap-2">
+                              <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ a.name }}</span>
+                              <span [class]="a.is_enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-400'">
+                                {{ a.is_enabled ? 'Enabled' : 'Disabled' }}
+                              </span>
+                            </div>
+                            <div class="text-gray-500 dark:text-gray-400">
+                              {{ a.condition_field }} {{ a.condition_operator }} {{ a.threshold }}
+                            </div>
+                            <div class="font-mono text-gray-400">{{ a.evaluation_cron }}</div>
+                            @if (a.last_status) {
+                              <div [class]="'text-xs ' + (a.last_status === 'triggered' ? 'text-red-500' : a.last_status === 'ok' ? 'text-green-500' : 'text-gray-400')">
+                                Last: {{ a.last_status }} {{ a.last_evaluated_at | date:'short' }}
+                              </div>
+                            }
+                            <div class="flex gap-1.5 mt-1">
+                              <button type="button" (click)="editAlert(a)"
+                                class="ta-btn ta-btn-secondary text-xs h-7 px-2 flex-1">Edit</button>
+                              <button type="button" (click)="triggerAlertNow(a)"
+                                class="ta-btn ta-btn-secondary text-xs h-7 px-2"
+                                title="Evaluate now">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                </svg>
+                              </button>
+                              <button type="button" (click)="deleteAlert(a)"
+                                class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        }
+
+                        <button type="button" (click)="openNewAlert()"
+                          class="ta-btn ta-btn-secondary text-xs h-8 w-full">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                          </svg>
+                          Add Alert
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             </div>
 
@@ -518,11 +592,79 @@ import { ReportDriftWizardComponent } from '../../../shared/components/report-dr
         </div>
       </div>
     }
+
+    <!-- Alert edit modal -->
+    @if (editingAlert()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div class="ta-card w-full max-w-md shadow-xl flex flex-col gap-4">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+            {{ editingAlertId() ? 'Edit Alert' : 'New Alert' }}
+          </h3>
+          @if (alertError()) {
+            <div class="ta-alert-error">{{ alertError() }}</div>
+          }
+          <div class="flex flex-col gap-3">
+            <label class="ta-label">
+              Name <span class="text-red-500">*</span>
+              <input type="text" [(ngModel)]="alertForm.name" class="ta-field mt-1" placeholder="e.g. High submission count"/>
+            </label>
+            <label class="ta-label">
+              Condition Field <span class="text-red-500">*</span>
+              <input type="text" [(ngModel)]="alertForm.condition_field" class="ta-field mt-1 font-mono text-sm" placeholder="e.g. count"/>
+            </label>
+            <div class="flex gap-2">
+              <label class="ta-label flex-1">
+                Operator <span class="text-red-500">*</span>
+                <select [(ngModel)]="alertForm.condition_operator" class="ta-field mt-1">
+                  <option value="gt">&gt; greater than</option>
+                  <option value="gte">&gt;= greater or equal</option>
+                  <option value="lt">&lt; less than</option>
+                  <option value="lte">&lt;= less or equal</option>
+                  <option value="eq">= equal</option>
+                  <option value="neq">≠ not equal</option>
+                </select>
+              </label>
+              <label class="ta-label flex-1">
+                Threshold <span class="text-red-500">*</span>
+                <input type="number" [(ngModel)]="alertForm.threshold" class="ta-field mt-1"/>
+              </label>
+            </div>
+            <label class="ta-label">
+              Evaluation Cron <span class="text-red-500">*</span>
+              <input type="text" [(ngModel)]="alertForm.evaluation_cron" class="ta-field mt-1 font-mono text-sm" placeholder="0 * * * *"/>
+              <span class="text-xs text-gray-400 mt-0.5 block">5-part cron. Example: every hour → <code>0 * * * *</code></span>
+            </label>
+            <label class="ta-label">
+              Recipients
+              <input type="text" [(ngModel)]="alertForm.recipients" class="ta-field mt-1" placeholder="a@b.com, c@d.com"/>
+              <span class="text-xs text-gray-400 mt-0.5 block">Comma-separated email addresses (optional)</span>
+            </label>
+            <label class="ta-label">
+              Webhook URL
+              <input type="url" [(ngModel)]="alertForm.webhook_url" class="ta-field mt-1" placeholder="https://…"/>
+            </label>
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="alertForm.is_enabled" class="rounded border-gray-300 text-brand-600 focus:ring-brand-500"/>
+              Enabled
+            </label>
+          </div>
+          <div class="flex gap-3 justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
+            <button type="button" (click)="editingAlert.set(false)" class="ta-btn ta-btn-secondary text-sm">Cancel</button>
+            <button type="button" (click)="saveAlert()"
+              [disabled]="savingAlert() || !alertForm.name.trim() || !alertForm.condition_field.trim() || !alertForm.evaluation_cron.trim()"
+              class="ta-btn ta-btn-primary text-sm disabled:opacity-50">
+              {{ savingAlert() ? 'Saving…' : (editingAlertId() ? 'Update' : 'Create') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class ReportDesignerComponent implements OnInit {
   private reportService = inject(ReportTemplateService);
   private scheduleService = inject(ScheduledReportService);
+  private alertService = inject(ReportAlertService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
@@ -550,6 +692,7 @@ export class ReportDesignerComponent implements OnInit {
   measureDefs: MeasureDef[] = [];
   aggPanelOpen = false;
   schedulesPanelOpen = false;
+  alertsPanelOpen = false;
   chartType: ChartTypeName = 'table';
   chartXAxis = '';
   chartYAxes: string[] = [];
@@ -566,6 +709,24 @@ export class ReportDesignerComponent implements OnInit {
     cron_expression: '',
     recipients: '',
     subject: '{{ReportName}} — {{RunDate}}',
+    is_enabled: true,
+  };
+
+  alerts = signal<ReportAlert[]>([]);
+  alertsLoading = signal(false);
+  editingAlert = signal(false);
+  editingAlertId = signal<number | null>(null);
+  savingAlert = signal(false);
+  alertError = signal('');
+  alertForm: SaveReportAlertRequest = {
+    report_template_id: 0,
+    name: '',
+    condition_field: 'count',
+    condition_operator: 'gt',
+    threshold: 0,
+    evaluation_cron: '0 * * * *',
+    recipients: '',
+    webhook_url: null,
     is_enabled: true,
   };
 
@@ -616,6 +777,7 @@ export class ReportDesignerComponent implements OnInit {
         this.chartXAxis = t.chart_config?.x_axis ?? '';
         this.chartYAxes = t.chart_config?.y_axes ? [...t.chart_config.y_axes] : [];
         this.loadSchedules();
+        this.loadAlerts();
       },
     });
   }
@@ -796,6 +958,90 @@ export class ReportDesignerComponent implements OnInit {
   deleteSchedule(s: ScheduledReport): void {
     this.scheduleService.delete(s.id).subscribe({
       next: () => this.schedules.update(list => list.filter(x => x.id !== s.id)),
+      error: () => {},
+    });
+  }
+
+  toggleAlertsPanel(): void {
+    this.alertsPanelOpen = !this.alertsPanelOpen;
+    if (this.alertsPanelOpen && this.alerts().length === 0 && !this.alertsLoading()) {
+      this.loadAlerts();
+    }
+  }
+
+  loadAlerts(): void {
+    const tid = this.templateId();
+    if (!tid) return;
+    this.alertsLoading.set(true);
+    this.alertService.list(tid).subscribe({
+      next: a => { this.alerts.set(a); this.alertsLoading.set(false); },
+      error: () => this.alertsLoading.set(false),
+    });
+  }
+
+  openNewAlert(): void {
+    this.alertForm = {
+      report_template_id: this.templateId()!,
+      name: '',
+      condition_field: 'count',
+      condition_operator: 'gt',
+      threshold: 0,
+      evaluation_cron: '0 * * * *',
+      recipients: '',
+      webhook_url: null,
+      is_enabled: true,
+    };
+    this.editingAlertId.set(null);
+    this.alertError.set('');
+    this.editingAlert.set(true);
+  }
+
+  editAlert(a: ReportAlert): void {
+    this.alertForm = {
+      report_template_id: a.report_template_id,
+      name: a.name,
+      condition_field: a.condition_field,
+      condition_operator: a.condition_operator,
+      threshold: a.threshold,
+      evaluation_cron: a.evaluation_cron,
+      recipients: a.recipients ?? '',
+      webhook_url: a.webhook_url ?? null,
+      is_enabled: a.is_enabled,
+    };
+    this.editingAlertId.set(a.id);
+    this.alertError.set('');
+    this.editingAlert.set(true);
+  }
+
+  saveAlert(): void {
+    if (this.savingAlert()) return;
+    this.savingAlert.set(true);
+    this.alertError.set('');
+    const id = this.editingAlertId();
+    const obs = id
+      ? this.alertService.update(id, this.alertForm)
+      : this.alertService.create(this.alertForm);
+    obs.subscribe({
+      next: a => {
+        if (id) {
+          this.alerts.update(list => list.map(x => x.id === id ? a : x));
+        } else {
+          this.alerts.update(list => [...list, a]);
+        }
+        this.savingAlert.set(false);
+        this.editingAlert.set(false);
+      },
+      error: () => { this.alertError.set('Failed to save alert.'); this.savingAlert.set(false); },
+    });
+  }
+
+  triggerAlertNow(a: ReportAlert): void {
+    this.alertService.trigger(a.id).subscribe({ error: () => {} });
+  }
+
+  deleteAlert(a: ReportAlert): void {
+    this.alertService.delete(a.id).subscribe({
+      next: () => this.alerts.update(list => list.filter(x => x.id !== a.id)),
       error: () => {},
     });
   }

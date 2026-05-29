@@ -26,6 +26,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ReportExecutionLog> ReportExecutionLogs { get; set; }
     public DbSet<Dataset> Datasets { get; set; }
     public DbSet<ScheduledReport> ScheduledReports { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<ApiKey> ApiKeys { get; set; }
+    public DbSet<FormVersion> FormVersions { get; set; }
+    public DbSet<ReportAlert> ReportAlerts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -385,6 +389,88 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(s => s.CreatedByUser).WithMany().HasForeignKey(s => s.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(s => s.ReportTemplateId);
             e.HasIndex(s => new { s.IsEnabled, s.NextRunAt });
+        });
+
+        modelBuilder.Entity<AuditLog>(e =>
+        {
+            e.ToTable("audit_logs");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(a => a.ActorId).HasColumnName("actor_id");
+            e.Property(a => a.ActorEmail).HasColumnName("actor_email").HasDefaultValue("system");
+            e.Property(a => a.Action).HasColumnName("action").IsRequired();
+            e.Property(a => a.EntityType).HasColumnName("entity_type").IsRequired();
+            e.Property(a => a.EntityId).HasColumnName("entity_id").IsRequired();
+            e.Property(a => a.EntityName).HasColumnName("entity_name");
+            e.Property(a => a.ChangesJson).HasColumnName("changes_json");
+            e.Property(a => a.IpAddress).HasColumnName("ip_address");
+            e.Property(a => a.OccurredAt).HasColumnName("occurred_at").HasDefaultValueSql("now()");
+            e.HasOne(a => a.Actor).WithMany().HasForeignKey(a => a.ActorId).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(a => new { a.EntityType, a.EntityId });
+            e.HasIndex(a => a.OccurredAt);
+            e.HasIndex(a => a.ActorId);
+        });
+
+        modelBuilder.Entity<ApiKey>(e =>
+        {
+            e.ToTable("api_keys");
+            e.HasKey(k => k.Id);
+            e.Property(k => k.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(k => k.Name).HasColumnName("name").IsRequired();
+            e.Property(k => k.Prefix).HasColumnName("prefix").IsRequired().HasMaxLength(8);
+            e.Property(k => k.KeyHash).HasColumnName("key_hash").IsRequired();
+            e.Property(k => k.Scopes).HasColumnName("scopes").HasDefaultValue(string.Empty);
+            e.Property(k => k.CreatedBy).HasColumnName("created_by");
+            e.Property(k => k.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(k => k.LastUsedAt).HasColumnName("last_used_at");
+            e.Property(k => k.ExpiresAt).HasColumnName("expires_at");
+            e.Property(k => k.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.HasOne(k => k.CreatedByUser).WithMany().HasForeignKey(k => k.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(k => k.Prefix).IsUnique();
+        });
+
+        modelBuilder.Entity<FormVersion>(e =>
+        {
+            e.ToTable("form_versions");
+            e.HasKey(v => v.Id);
+            e.Property(v => v.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(v => v.FormId).HasColumnName("form_id");
+            e.Property(v => v.VersionNumber).HasColumnName("version_number");
+            e.Property(v => v.JsonSnapshot).HasColumnName("json_snapshot").IsRequired();
+            e.Property(v => v.ChangeSummary).HasColumnName("change_summary");
+            e.Property(v => v.CreatedBy).HasColumnName("created_by");
+            e.Property(v => v.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.HasOne(v => v.Form).WithMany().HasForeignKey(v => v.FormId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(v => v.CreatedByUser).WithMany().HasForeignKey(v => v.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(v => new { v.FormId, v.VersionNumber }).IsUnique();
+        });
+
+        modelBuilder.Entity<ReportAlert>(e =>
+        {
+            e.ToTable("report_alerts");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(a => a.ReportTemplateId).HasColumnName("report_template_id");
+            e.Property(a => a.Name).HasColumnName("name").IsRequired();
+            e.Property(a => a.ConditionField).HasColumnName("condition_field").IsRequired();
+            e.Property(a => a.ConditionOperator).HasColumnName("condition_operator").HasDefaultValue("gt");
+            e.Property(a => a.Threshold).HasColumnName("threshold").HasColumnType("numeric(18,4)");
+            e.Property(a => a.EvaluationCron).HasColumnName("evaluation_cron").IsRequired();
+            e.Property(a => a.Recipients).HasColumnName("recipients").HasDefaultValue(string.Empty);
+            e.Property(a => a.WebhookUrl).HasColumnName("webhook_url");
+            e.Property(a => a.IsEnabled).HasColumnName("is_enabled").HasDefaultValue(true);
+            e.Property(a => a.CreatedBy).HasColumnName("created_by");
+            e.Property(a => a.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(a => a.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.Property(a => a.LastEvaluatedAt).HasColumnName("last_evaluated_at");
+            e.Property(a => a.LastTriggeredAt).HasColumnName("last_triggered_at");
+            e.Property(a => a.LastValue).HasColumnName("last_value").HasColumnType("numeric(18,4)");
+            e.Property(a => a.LastStatus).HasColumnName("last_status");
+            e.Property(a => a.LastError).HasColumnName("last_error");
+            e.HasOne(a => a.ReportTemplate).WithMany().HasForeignKey(a => a.ReportTemplateId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(a => a.CreatedByUser).WithMany().HasForeignKey(a => a.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(a => a.ReportTemplateId);
+            e.HasIndex(a => new { a.IsEnabled, a.LastEvaluatedAt });
         });
     }
 }

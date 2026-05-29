@@ -26,6 +26,9 @@ public static class RolePermissionMap
             Permissions.Jobs.Manage,
             Permissions.Reports.Read,
             Permissions.Reports.Manage,
+            Permissions.Reports.ManageAlerts,
+            Permissions.AuditLogs.Read,
+            Permissions.ApiKeys.Manage,
         ],
         [UserRole.Editor] =
         [
@@ -39,6 +42,7 @@ public static class RolePermissionMap
             Permissions.Jobs.Read,
             Permissions.Reports.Read,
             Permissions.Reports.Manage,
+            Permissions.Reports.ManageAlerts,
         ],
         [UserRole.Viewer] =
         [

@@ -11,7 +11,8 @@ import { FormEditorComponent } from '../../../shared/components/formio/form-edit
 import { IntegrationPayloadMappingComponent } from '../../../shared/components/integration-payload-mapping/integration-payload-mapping.component';
 import { IconPickerComponent } from '../../../shared/components/icon-picker/icon-picker.component';
 import { IconService } from '../../../core/services/icon.service';
-import { Form, User } from '../../../core/models';
+import { Form, User, FormVersion } from '../../../core/models';
+import { FormVersionService } from '../../../core/services/form-version.service';
 import { NotificationRulesEditorComponent } from '../components/notification-rules-editor/notification-rules-editor.component';
 import { IntegrationRulesEditorComponent } from '../components/integration-rules-editor/integration-rules-editor.component';
 import { FormCardComponent } from '../../../shared/components/form-card/form-card.component';
@@ -718,6 +719,45 @@ function ensureWizardHasPage(schema: any): any {
           }
         </div>
 
+        <!-- ── Version History (collapsible) ──────────────────────────────── -->
+        <div class="mb-4 bg-white rounded-xl border border-gray-200">
+          <button type="button" (click)="loadVersions(); sectionOpen['versions'] = !sectionOpen['versions']"
+            class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
+            <span class="text-base font-semibold text-gray-900">Version History</span>
+            <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['versions']"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          @if (sectionOpen['versions']) {
+            <div class="border-t border-gray-100 px-6 py-5">
+              @if (versionsLoading()) {
+                <p class="text-sm text-gray-400">Loading versions…</p>
+              } @else if (versions().length === 0) {
+                <p class="text-sm text-gray-400">No saved versions yet. Versions are created automatically when you save form changes.</p>
+              } @else {
+                <div class="space-y-2">
+                  @for (v of versions(); track v.id) {
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                      <div>
+                        <span class="text-sm font-medium text-gray-800">v{{ v.version_number }}</span>
+                        <span class="text-xs text-gray-400 ml-3">{{ v.created_at | date:'dd/MM/yy HH:mm' }}</span>
+                        @if (v.change_summary) {
+                          <span class="text-xs text-gray-500 ml-2">— {{ v.change_summary }}</span>
+                        }
+                      </div>
+                      <div class="flex gap-2">
+                        <button type="button" class="text-xs text-indigo-600 hover:underline" (click)="previewVersion(v)">Preview</button>
+                        <button type="button" class="text-xs text-amber-600 hover:underline" (click)="restoreVersion(v)">Restore</button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+
         <!-- Actions -->
         <div class="flex items-center gap-3 pt-2 pb-8">
           <button type="button" (click)="save()" [disabled]="saving()"
@@ -737,6 +777,23 @@ function ensureWizardHasPage(schema: any): any {
         </div>
       }
     </div>
+
+    <!-- Version preview modal -->
+    @if (previewingVersion()) {
+      <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" (click)="previewingVersion.set(null)">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold">Version {{ previewingVersion()!.version_number }} Preview</h2>
+            <button class="text-gray-400 hover:text-gray-600" (click)="previewingVersion.set(null)">✕</button>
+          </div>
+          <pre class="flex-1 overflow-auto p-4 text-xs font-mono bg-gray-50">{{ formatVersionJson(previewingVersion()!.json_snapshot) }}</pre>
+          <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200">
+            <button class="btn btn-ghost" (click)="previewingVersion.set(null)">Close</button>
+            <button class="btn btn-warning" (click)="restoreVersion(previewingVersion()!)">Restore this version</button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class FormEditComponent implements OnInit {
@@ -750,6 +807,7 @@ export class FormEditComponent implements OnInit {
   private http = inject(HttpClient);
   private apiService = inject(ApiService);
   private iconService = inject(IconService);
+  private formVersionService = inject(FormVersionService);
 
   form = signal<Form | null>(null);
   loading = signal(true);
@@ -764,12 +822,18 @@ export class FormEditComponent implements OnInit {
   activePageIndex = signal(0);
   showIconPicker = signal(false);
 
+  versions = signal<FormVersion[]>([]);
+  versionsLoading = signal(false);
+  versionsLoaded = false;
+  previewingVersion = signal<FormVersion | null>(null);
+
   sectionOpen: Record<string, boolean> = {
     styles: false,
     notif: false,
     integration: false,
     flow: false,
     builder: true,
+    versions: false,
   };
 
   name = '';
@@ -863,6 +927,36 @@ export class FormEditComponent implements OnInit {
       next: (forms) => this.allForms.set(forms),
       error: () => {},
     });
+  }
+
+  loadVersions(): void {
+    if (this.versionsLoaded) return;
+    this.versionsLoaded = true;
+    this.versionsLoading.set(true);
+    this.formVersionService.list(this.formId).subscribe({
+      next: v => { this.versions.set(v); this.versionsLoading.set(false); },
+      error: () => this.versionsLoading.set(false),
+    });
+  }
+
+  previewVersion(v: FormVersion): void { this.previewingVersion.set(v); }
+
+  restoreVersion(v: FormVersion): void {
+    if (!confirm(`Restore form to version ${v.version_number}? Current form will be snapshotted first.`)) return;
+    this.formVersionService.restore(this.formId, v.version_number).subscribe({
+      next: () => {
+        this.previewingVersion.set(null);
+        this.versionsLoaded = false;
+        this.toastr.success(`Restored to version ${v.version_number}`);
+        this.ngOnInit();
+      },
+      error: () => this.toastr.error('Failed to restore version.'),
+    });
+  }
+
+  formatVersionJson(raw: string | undefined): string {
+    if (!raw) return '';
+    try { return JSON.stringify(JSON.parse(raw), null, 2); } catch { return raw; }
   }
 
   onSchemaChange(schema: any): void {

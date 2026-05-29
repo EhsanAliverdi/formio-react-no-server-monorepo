@@ -91,4 +91,14 @@ export const adminRoutes: Routes = [
     loadComponent: () =>
       import('./pages/profile.component').then(m => m.ProfileComponent),
   },
+  {
+    path: 'audit-log',
+    loadComponent: () =>
+      import('./pages/audit-log.component').then(m => m.AuditLogComponent),
+  },
+  {
+    path: 'api-keys',
+    loadComponent: () =>
+      import('./pages/api-keys.component').then(m => m.ApiKeysComponent),
+  },
 ];

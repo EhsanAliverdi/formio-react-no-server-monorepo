@@ -19,7 +19,7 @@ namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/forms")]
-public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService, NotificationRuleEvaluatorService notificationEvaluator, NotificationRuleSenderService notificationSender, IntegrationRuleExecutorService integrationExecutor, ILogger<FormsController> logger) : ControllerBase
+public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService, NotificationRuleEvaluatorService notificationEvaluator, NotificationRuleSenderService notificationSender, IntegrationRuleExecutorService integrationExecutor, FormVersionService formVersionService, ILogger<FormsController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> ListForms([FromQuery] string? mode, [FromQuery] string? category)
@@ -147,6 +147,10 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
 
         if (currentUser.Role != UserRole.Admin && body.AllowedUserIds?.Count > 0)
             return StatusCode(403, new { error = "Only admins can set allowed_user_ids." });
+
+        // Snapshot before applying JSON changes
+        if (body.Json != null && body.Json.Value.ValueKind != JsonValueKind.Undefined)
+            await formVersionService.SnapshotAsync(form.Id, form.Json, currentUser.Id, null);
 
         if (body.Name != null) form.Name = body.Name;
         if (body.Json != null && body.Json.Value.ValueKind != JsonValueKind.Undefined)
@@ -592,6 +596,50 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             JsonValueKind.Null => string.Empty,
             _ => element.ToString(),
         };
+    }
+
+    // ── Version history ───────────────────────────────────────────────────────
+
+    [HttpGet("{id:int}/versions")]
+    public async Task<IActionResult> ListVersions(int id)
+    {
+        try { HttpContext.RequireRole(UserRole.Admin, UserRole.Editor); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var versions = await db.FormVersions
+            .AsNoTracking()
+            .Where(v => v.FormId == id)
+            .OrderByDescending(v => v.VersionNumber)
+            .Select(v => new { v.Id, v.FormId, v.VersionNumber, v.ChangeSummary, v.CreatedBy, v.CreatedAt })
+            .ToListAsync();
+
+        return Ok(versions);
+    }
+
+    [HttpGet("{id:int}/versions/{versionNumber:int}")]
+    public async Task<IActionResult> GetVersion(int id, int versionNumber)
+    {
+        try { HttpContext.RequireRole(UserRole.Admin, UserRole.Editor); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var version = await db.FormVersions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.FormId == id && v.VersionNumber == versionNumber);
+
+        if (version == null) return NotFound(new { error = "Version not found." });
+        return Ok(new { version.Id, version.FormId, version.VersionNumber, version.JsonSnapshot, version.ChangeSummary, version.CreatedBy, version.CreatedAt });
+    }
+
+    [HttpPost("{id:int}/versions/{versionNumber:int}/restore")]
+    public async Task<IActionResult> RestoreVersion(int id, int versionNumber)
+    {
+        User currentUser;
+        try { currentUser = HttpContext.RequireRole(UserRole.Admin, UserRole.Editor); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var form = await formVersionService.RestoreAsync(id, versionNumber, currentUser.Id);
+        if (form == null) return NotFound(new { error = "Form or version not found." });
+        return Ok(new { success = true, message = $"Restored to version {versionNumber}." });
     }
 
     private readonly record struct EmailNotificationConfig(bool Enabled, string To, string Subject, string BodyHtml, bool AttachPdf);

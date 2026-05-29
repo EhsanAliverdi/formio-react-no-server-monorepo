@@ -44,5 +44,16 @@ public static class Permissions
     {
         public const string Read = "reports.read";
         public const string Manage = "reports.manage";
+        public const string ManageAlerts = "reports.manage_alerts";
+    }
+
+    public static class AuditLogs
+    {
+        public const string Read = "audit_logs.read";
+    }
+
+    public static class ApiKeys
+    {
+        public const string Manage = "api_keys.manage";
     }
 }

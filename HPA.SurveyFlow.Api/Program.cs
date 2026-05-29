@@ -77,6 +77,9 @@ builder.Services
     .AddAuthentication(SessionBearerAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, SessionBearerAuthenticationHandler>(
         SessionBearerAuthenticationHandler.SchemeName,
+        _ => { })
+    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
+        ApiKeyAuthenticationHandler.SchemeName,
         _ => { });
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
@@ -132,6 +135,9 @@ builder.Services.AddScoped<AggregationPipelineService>();
 builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<ScheduledReportDeliveryService>();
+builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<FormVersionService>();
+builder.Services.AddScoped<AlertEvaluatorService>();
 
 // ── Event Bus (in-process, zero dependencies) ──────────────────────────────
 builder.Services.AddScoped<IEventBus, EventBus>();

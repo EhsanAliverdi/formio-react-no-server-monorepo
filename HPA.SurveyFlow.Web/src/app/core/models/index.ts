@@ -518,6 +518,97 @@ export interface SaveScheduledReportRequest {
   is_enabled: boolean;
 }
 
+// ── Phase 5: Audit, API Keys, Form Versions, Report Alerts ──────────────────
+
+export interface AuditLog {
+  id: number;
+  actor_id?: number | null;
+  actor_email: string;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  entity_name?: string | null;
+  changes_json?: string | null;
+  ip_address?: string | null;
+  occurred_at: string;
+}
+
+export interface AuditLogListResponse {
+  total: number;
+  items: AuditLog[];
+}
+
+export interface ApiKey {
+  id: number;
+  name: string;
+  prefix: string;
+  scopes: string;
+  is_active: boolean;
+  created_by: number;
+  created_at: string;
+  last_used_at?: string | null;
+  expires_at?: string | null;
+}
+
+export interface CreateApiKeyRequest {
+  name: string;
+  scopes?: string | null;
+  expires_at?: string | null;
+}
+
+export interface CreateApiKeyResponse {
+  id: number;
+  name: string;
+  key: string;
+  prefix: string;
+  scopes: string;
+  expires_at?: string | null;
+  created_at: string;
+}
+
+export interface FormVersion {
+  id: number;
+  form_id: number;
+  version_number: number;
+  json_snapshot?: string;
+  change_summary?: string | null;
+  created_by: number;
+  created_at: string;
+}
+
+export interface ReportAlert {
+  id: number;
+  report_template_id: number;
+  name: string;
+  condition_field: string;
+  condition_operator: string;
+  threshold: number;
+  evaluation_cron: string;
+  recipients: string;
+  webhook_url?: string | null;
+  is_enabled: boolean;
+  created_by: number;
+  created_at: string;
+  updated_at?: string | null;
+  last_evaluated_at?: string | null;
+  last_triggered_at?: string | null;
+  last_value?: number | null;
+  last_status?: string | null;
+  last_error?: string | null;
+}
+
+export interface SaveReportAlertRequest {
+  report_template_id: number;
+  name: string;
+  condition_field: string;
+  condition_operator: string;
+  threshold: number;
+  evaluation_cron: string;
+  recipients?: string | null;
+  webhook_url?: string | null;
+  is_enabled: boolean;
+}
+
 export const MEX_FIELDS: { key: string; label: string; type: 'string' | 'number' | 'boolean' }[] = [
   { key: 'requestNumber',    label: 'Request Number',    type: 'number' },
   { key: 'jobTypeName',      label: 'Job Type Name',     type: 'string' },
