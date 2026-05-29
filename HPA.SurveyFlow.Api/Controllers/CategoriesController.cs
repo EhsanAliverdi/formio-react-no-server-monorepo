@@ -74,7 +74,11 @@ public class CategoriesController(AppDbContext db) : ControllerBase
             IconKey = body.IconKey?.Trim(),
             ShowTitle = body.ShowTitle,
             ShowDescription = body.ShowDescription,
+            ShowButton = body.ShowButton,
             ButtonText = body.ButtonText?.Trim(),
+            LayoutMode = body.LayoutMode is "list" ? "list" : "card",
+            Columns = Math.Clamp(body.Columns, 1, 4),
+            CardStyle = body.CardStyle is "compact" ? "compact" : "overlay",
         };
 
         db.Categories.Add(category);
@@ -98,7 +102,11 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         if (body.IconKey != null) category.IconKey = body.IconKey.Trim() == "" ? null : body.IconKey.Trim();
         if (body.ShowTitle.HasValue) category.ShowTitle = body.ShowTitle.Value;
         if (body.ShowDescription.HasValue) category.ShowDescription = body.ShowDescription.Value;
+        if (body.ShowButton.HasValue) category.ShowButton = body.ShowButton.Value;
         if (body.ButtonText != null) category.ButtonText = body.ButtonText.Trim() == "" ? null : body.ButtonText.Trim();
+        if (body.LayoutMode != null) category.LayoutMode = body.LayoutMode is "list" ? "list" : "card";
+        if (body.Columns.HasValue) category.Columns = Math.Clamp(body.Columns.Value, 1, 4);
+        if (body.CardStyle != null) category.CardStyle = body.CardStyle is "compact" ? "compact" : "overlay";
         category.UpdatedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
@@ -149,7 +157,11 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         icon_key = c.IconKey,
         show_title = c.ShowTitle,
         show_description = c.ShowDescription,
+        show_button = c.ShowButton,
         button_text = c.ButtonText,
+        layout_mode = c.LayoutMode,
+        columns = c.Columns,
+        card_style = c.CardStyle,
         form_count = formCount ?? 0,
         created_at = c.CreatedAt,
         updated_at = c.UpdatedAt,

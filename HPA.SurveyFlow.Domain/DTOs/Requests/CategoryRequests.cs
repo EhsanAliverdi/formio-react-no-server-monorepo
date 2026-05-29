@@ -10,7 +10,11 @@ public class CreateCategoryRequest
     public string? IconKey { get; set; }
     public bool ShowTitle { get; set; } = true;
     public bool ShowDescription { get; set; } = true;
+    public bool ShowButton { get; set; } = true;
     public string? ButtonText { get; set; }
+    public string LayoutMode { get; set; } = "card";
+    public int Columns { get; set; } = 3;
+    public string CardStyle { get; set; } = "overlay";
 }
 
 public class UpdateCategoryRequest
@@ -22,5 +26,9 @@ public class UpdateCategoryRequest
     public string? IconKey { get; set; }
     public bool? ShowTitle { get; set; }
     public bool? ShowDescription { get; set; }
+    public bool? ShowButton { get; set; }
     public string? ButtonText { get; set; }
+    public string? LayoutMode { get; set; }
+    public int? Columns { get; set; }
+    public string? CardStyle { get; set; }
 }

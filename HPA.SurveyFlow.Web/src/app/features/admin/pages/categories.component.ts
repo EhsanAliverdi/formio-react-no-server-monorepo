@@ -17,7 +17,11 @@ interface CategoryFormModel {
   icon_key: string;
   show_title: boolean;
   show_description: boolean;
+  show_button: boolean;
   button_text: string;
+  layout_mode: 'card' | 'list';
+  columns: number;
+  card_style: 'overlay' | 'compact';
 }
 
 const emptyForm = (): CategoryFormModel => ({
@@ -29,7 +33,11 @@ const emptyForm = (): CategoryFormModel => ({
   icon_key: '',
   show_title: true,
   show_description: true,
+  show_button: true,
   button_text: '',
+  layout_mode: 'card',
+  columns: 3,
+  card_style: 'overlay',
 });
 
 @Component({
@@ -230,6 +238,54 @@ const emptyForm = (): CategoryFormModel => ({
                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
               </div>
 
+              <!-- Layout -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Layout</label>
+                <div class="flex gap-4">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" [(ngModel)]="form.layout_mode" value="card"
+                      class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                    <span class="text-sm text-gray-700"><strong>Card view</strong></span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" [(ngModel)]="form.layout_mode" value="list"
+                      class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                    <span class="text-sm text-gray-700"><strong>List view</strong></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Columns (card view only) -->
+              @if (form.layout_mode === 'card') {
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Columns <span class="text-gray-400 font-normal">({{ form.columns }})</span>
+                  </label>
+                  <input type="range" [(ngModel)]="form.columns" min="1" max="4" step="1"
+                    class="w-full max-w-xs accent-indigo-600"/>
+                  <div class="flex justify-between text-xs text-gray-400 max-w-xs mt-0.5">
+                    <span>1</span><span>2</span><span>3</span><span>4</span>
+                  </div>
+                </div>
+
+                <!-- Card style -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Card style</label>
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" [(ngModel)]="form.card_style" value="overlay"
+                        class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                      <span class="text-sm text-gray-700"><strong>Overlay</strong> <span class="text-gray-400 font-normal">— hover to reveal</span></span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" [(ngModel)]="form.card_style" value="compact"
+                        class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                      <span class="text-sm text-gray-700"><strong>Compact</strong> <span class="text-gray-400 font-normal">— always visible</span></span>
+                    </label>
+                  </div>
+                </div>
+              }
+
               <!-- Display options -->
               <div class="space-y-2">
                 <p class="text-sm font-medium text-gray-700">Card display</p>
@@ -243,11 +299,18 @@ const emptyForm = (): CategoryFormModel => ({
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
                   <span class="text-sm text-gray-700">Show description on card</span>
                 </label>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Button text</label>
-                  <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
-                    class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="form.show_button"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                  <span class="text-sm text-gray-700">Show button</span>
+                </label>
+                @if (form.show_button) {
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Button text</label>
+                    <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
+                      class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                  </div>
+                }
               </div>
             </div>
 
@@ -325,7 +388,11 @@ export class CategoriesComponent implements OnInit {
       icon_key: cat.icon_key ?? '',
       show_title: cat.show_title,
       show_description: cat.show_description,
+      show_button: cat.show_button,
       button_text: cat.button_text ?? '',
+      layout_mode: cat.layout_mode ?? 'card',
+      columns: cat.columns ?? 3,
+      card_style: cat.card_style ?? 'overlay',
     };
     this.saveError.set(null);
     this.showModal.set(true);
@@ -353,7 +420,11 @@ export class CategoriesComponent implements OnInit {
       icon_key: this.form.icon_key.trim() || null,
       show_title: this.form.show_title,
       show_description: this.form.show_description,
+      show_button: this.form.show_button,
       button_text: this.form.button_text.trim() || null,
+      layout_mode: this.form.layout_mode,
+      columns: Number(this.form.columns),
+      card_style: this.form.card_style,
     };
 
     const editing = this.editCategory();

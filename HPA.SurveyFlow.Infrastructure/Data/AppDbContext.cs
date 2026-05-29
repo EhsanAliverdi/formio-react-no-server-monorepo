@@ -482,7 +482,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(c => c.IconKey).HasColumnName("icon_key");
             e.Property(c => c.ShowTitle).HasColumnName("show_title").HasDefaultValue(true);
             e.Property(c => c.ShowDescription).HasColumnName("show_description").HasDefaultValue(true);
+            e.Property(c => c.ShowButton).HasColumnName("show_button").HasDefaultValue(true);
             e.Property(c => c.ButtonText).HasColumnName("button_text");
+            e.Property(c => c.LayoutMode).HasColumnName("layout_mode").HasDefaultValue("card");
+            e.Property(c => c.Columns).HasColumnName("columns").HasDefaultValue(3);
+            e.Property(c => c.CardStyle).HasColumnName("card_style").HasDefaultValue("overlay");
             e.Property(c => c.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             e.Property(c => c.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             e.HasIndex(c => c.Slug).IsUnique();

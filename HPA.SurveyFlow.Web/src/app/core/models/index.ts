@@ -114,7 +114,11 @@ export interface Category {
   icon_key?: string | null;
   show_title: boolean;
   show_description: boolean;
+  show_button: boolean;
   button_text?: string | null;
+  layout_mode: 'card' | 'list';
+  columns: number;
+  card_style: 'overlay' | 'compact';
   form_count: number;
   created_at: string;
   updated_at: string;

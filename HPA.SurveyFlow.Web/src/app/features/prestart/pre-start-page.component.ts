@@ -28,7 +28,9 @@ interface CategoryCard {
   questions: number;
   showTitle: boolean;
   showDescription: boolean;
+  showButton: boolean;
   buttonText: string;
+  cardStyle: 'overlay' | 'compact';
 }
 
 @Component({
@@ -108,10 +110,61 @@ interface CategoryCard {
             </div>
           } @else if (cards().length === 0) {
             <div class="text-center py-24 text-gray-400 text-lg">No forms available in this category.</div>
-          } @else {
-            <div class="flex flex-wrap justify-center gap-6">
+
+          } @else if (layoutMode() === 'list') {
+            <!-- ── List view ── -->
+            <div class="flex flex-col gap-3 max-w-3xl mx-auto">
               @for (card of cards(); track card.id) {
-                <a [routerLink]="['/form-public', card.id]" class="block w-96">
+                <a [routerLink]="['/form-public', card.id]"
+                  class="flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-4 group">
+                  <!-- Thumbnail -->
+                  <div class="shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center">
+                    @if (card.imageUrl) {
+                      <img [src]="card.imageUrl" [alt]="card.name" class="w-full h-full object-cover" />
+                    } @else if (card.iconSvgUrl) {
+                      <img [src]="card.iconSvgUrl" [alt]="card.name" class="w-10 h-10 object-contain" />
+                    } @else {
+                      <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    }
+                  </div>
+
+                  <!-- Text -->
+                  <div class="flex-1 min-w-0">
+                    @if (card.showTitle) {
+                      <div class="font-semibold text-gray-900 text-base truncate group-hover:text-blue-700 transition">{{ card.name }}</div>
+                    }
+                    @if (card.showDescription && card.description) {
+                      <div class="text-sm text-gray-500 mt-0.5 line-clamp-2">{{ card.description }}</div>
+                    }
+                  </div>
+
+                  <!-- Button / arrow -->
+                  @if (card.showButton) {
+                    <div class="shrink-0">
+                      <span class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 text-white text-sm font-semibold px-4 py-2 group-hover:bg-blue-500 transition">
+                        {{ card.buttonText }}
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                        </svg>
+                      </span>
+                    </div>
+                  } @else {
+                    <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-600 shrink-0 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                  }
+                </a>
+              }
+            </div>
+
+          } @else {
+            <!-- ── Card view ── -->
+            <div class="grid gap-6" [class]="gridColsClass()">
+              @for (card of cards(); track card.id) {
+                <a [routerLink]="['/form-public', card.id]" class="block">
                   <app-form-card
                     [name]="card.name"
                     [description]="card.description"
@@ -119,7 +172,9 @@ interface CategoryCard {
                     [iconSvgUrl]="card.iconSvgUrl"
                     [showTitle]="card.showTitle"
                     [showDescription]="card.showDescription"
+                    [showButton]="card.showButton"
                     [buttonText]="card.buttonText"
+                    [cardStyle]="card.cardStyle"
                   />
                 </a>
               }
@@ -153,6 +208,13 @@ export class PreStartPageComponent implements OnInit {
 
   siteName = computed(() => this.siteSettings()?.siteName?.trim() || 'SurveyFlow');
 
+  layoutMode = computed(() => this.categoryEntity()?.layout_mode ?? 'card');
+
+  gridColsClass = computed(() => {
+    const cols = this.categoryEntity()?.columns ?? 3;
+    return { 1: 'grid-cols-1', 2: 'grid-cols-1 sm:grid-cols-2', 3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3', 4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' }[cols] ?? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+  });
+
   categoryTitle = computed(() => {
     const cat = this.categoryEntity();
     if (cat?.name) return cat.name;
@@ -165,7 +227,9 @@ export class PreStartPageComponent implements OnInit {
     // Category-level display settings (shared across all cards in this category)
     const catShowTitle: boolean = cat?.show_title ?? true;
     const catShowDescription: boolean = cat?.show_description ?? true;
+    const catShowButton: boolean = cat?.show_button ?? true;
     const catButtonText: string = cat?.button_text?.trim() || 'Start';
+    const catCardStyle: 'overlay' | 'compact' = cat?.card_style === 'compact' ? 'compact' : 'overlay';
 
     return this.forms().map(f => {
       const schema = this.parseJson(f.json);
@@ -193,7 +257,9 @@ export class PreStartPageComponent implements OnInit {
         questions: this.countQuestions(schema),
         showTitle: catShowTitle,
         showDescription: catShowDescription,
+        showButton: catShowButton,
         buttonText: catButtonText,
+        cardStyle: catCardStyle,
       };
     });
   });

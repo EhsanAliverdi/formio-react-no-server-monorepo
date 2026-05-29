@@ -340,11 +340,11 @@ function ensureWizardHasPage(schema: any): any {
           </div>
         </div>
 
-        <!-- ── 2. Card Styles (collapsible) ──────────────────────────────────── -->
+        <!-- ── 2. Card (collapsible) ──────────────────────────────────────────── -->
         <div class="mb-4 bg-white rounded-xl border border-gray-200">
           <button type="button" (click)="sectionOpen['styles'] = !sectionOpen['styles']"
             class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-            <span class="text-base font-semibold text-gray-900">Card Styles</span>
+            <span class="text-base font-semibold text-gray-900">Card</span>
             <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['styles']"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -352,89 +352,60 @@ function ensureWizardHasPage(schema: any): any {
           </button>
 
           @if (sectionOpen['styles']) {
-            <div class="border-t border-gray-100 px-6 py-5">
-              <p class="text-xs text-gray-400 mb-4">
-                Card image and icon shown for this form on the category page.
-                Shared display options (button text, show/hide title) are set on the
+            <div class="border-t border-gray-100 px-6 py-5 space-y-5">
+              <p class="text-xs text-gray-400">
+                Per-form card image and icon. Layout, columns, card style, and display toggles are configured on the
                 <a routerLink="/admin/categories" class="text-indigo-600 hover:underline">Category</a>.
               </p>
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="space-y-4">
 
-                  <!-- Image -->
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Card Image</label>
-                    @if (categoryImage) {
-                      <div class="mb-3 flex items-start gap-3">
-                        <img [src]="categoryImage" alt="Card image" class="h-24 w-40 rounded-lg object-cover border border-gray-200"/>
-                        <button type="button" (click)="clearCategoryImage()"
-                          class="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition">Remove</button>
-                      </div>
-                    }
-                    <div class="flex items-center gap-3">
-                      <input #imageFileInput type="file" accept="image/*" class="hidden" (change)="uploadCategoryImage($event)"/>
-                      <button type="button" (click)="imageFileInput.click()" [disabled]="imageUploading()"
-                        class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium rounded-lg transition disabled:opacity-50">
-                        @if (imageUploading()) {
-                          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                          </svg>
-                          Uploading…
-                        } @else {
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                          </svg>
-                          Upload Image
-                        }
-                      </button>
-                      <span class="text-xs text-gray-400">Recommended: <strong>400 × 300 px</strong>. Max 10 MB.</span>
-                    </div>
-                    @if (categoryImage) {
-                      <label class="mt-2 flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" [(ngModel)]="categoryImageFullWidth"
-                          class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                        <span class="text-sm text-gray-700">Full-width image <span class="text-gray-400 font-normal">(edge-to-edge)</span></span>
-                      </label>
-                    }
+              <!-- Image -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Card Image</label>
+                @if (categoryImage) {
+                  <div class="mb-3 flex items-start gap-3">
+                    <img [src]="categoryImage" alt="Card image" class="h-24 w-40 rounded-lg object-cover border border-gray-200"/>
+                    <button type="button" (click)="clearCategoryImage()"
+                      class="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition">Remove</button>
                   </div>
-
-                  <!-- Icon (used when no image) -->
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Card Icon <span class="text-gray-400 font-normal">(used when no image)</span></label>
-                    <div class="flex items-center gap-3">
-                      @if (categoryIcon) {
-                        <img [src]="categoryIconSvgUrl()" alt="Selected icon" class="w-10 h-10 object-contain border border-gray-200 rounded-lg p-1"/>
-                        <span class="text-xs text-gray-500">{{ categoryIcon }}</span>
-                        <button type="button" (click)="categoryIcon = ''"
-                          class="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition">Clear</button>
-                      }
-                      <button type="button" (click)="showIconPicker.set(true)"
-                        class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium rounded-lg transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        {{ categoryIcon ? 'Change Icon' : 'Pick Icon' }}
-                      </button>
-                    </div>
-                  </div>
-
+                }
+                <div class="flex items-center gap-3">
+                  <input #imageFileInput type="file" accept="image/*" class="hidden" (change)="uploadCategoryImage($event)"/>
+                  <button type="button" (click)="imageFileInput.click()" [disabled]="imageUploading()"
+                    class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium rounded-lg transition disabled:opacity-50">
+                    @if (imageUploading()) {
+                      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      Uploading…
+                    } @else {
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                      </svg>
+                      Upload Image
+                    }
+                  </button>
+                  <span class="text-xs text-gray-400">Recommended: <strong>400 × 300 px</strong>. Max 10 MB.</span>
                 </div>
+              </div>
 
-                <!-- Live card preview -->
-                <div>
-                  <p class="text-sm font-medium text-gray-700 mb-3">Live Preview</p>
-                  <div class="w-72 pointer-events-none">
-                    <app-form-card
-                      [name]="name || 'Form Name'"
-                      [description]="appSettings.publicDescription || null"
-                      [imageUrl]="categoryImage || null"
-                      [iconSvgUrl]="categoryIcon ? categoryIconSvgUrl() : null"
-                      [showTitle]="true"
-                      [showDescription]="true"
-                      [buttonText]="'Start'"
-                    />
-                  </div>
+              <!-- Icon (used when no image) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Card Icon <span class="text-gray-400 font-normal">(used when no image)</span></label>
+                <div class="flex items-center gap-3">
+                  @if (categoryIcon) {
+                    <img [src]="categoryIconSvgUrl()" alt="Selected icon" class="w-10 h-10 object-contain border border-gray-200 rounded-lg p-1"/>
+                    <span class="text-xs text-gray-500">{{ categoryIcon }}</span>
+                    <button type="button" (click)="categoryIcon = ''"
+                      class="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition">Clear</button>
+                  }
+                  <button type="button" (click)="showIconPicker.set(true)"
+                    class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-sm font-medium rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ categoryIcon ? 'Change Icon' : 'Pick Icon' }}
+                  </button>
                 </div>
               </div>
             </div>
