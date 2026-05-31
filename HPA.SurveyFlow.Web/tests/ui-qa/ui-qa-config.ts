@@ -32,8 +32,8 @@ export interface UiQaConfig {
 
 export const config: UiQaConfig = {
   baseUrl: process.env['UI_QA_BASE_URL'] || 'http://localhost:4200',
-  username: process.env['UI_QA_USERNAME'] || 'admin@demo.local',
-  password: process.env['UI_QA_PASSWORD'] || 'Admin1234!',
+  username: process.env['UI_QA_USERNAME'] || 'admin@example.com',
+  password: process.env['UI_QA_PASSWORD'] || 'admin12345',
   adminLoginRoute: '/admin/login',
   outputDir: path.resolve(__dirname, '../../..', 'ui-qa-output'),
   screenshotDir: path.resolve(__dirname, '../../..', 'ui-qa-output', 'screenshots'),
@@ -71,6 +71,7 @@ export const config: UiQaConfig = {
     // Public app routes
     { url: '/', label: 'Public Home', requiresAuth: false },
     { url: '/category/pre-start', label: 'Category Pre-Start', requiresAuth: false },
+    { url: '/form-public/15', label: 'Form Public (seed)', requiresAuth: false },
   ],
   axeEnabled: process.env['UI_QA_AXE_ENABLED'] !== 'false',
   screenshotsEnabled: process.env['UI_QA_SCREENSHOTS_ENABLED'] !== 'false',

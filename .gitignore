@@ -29,12 +29,11 @@ HPA.SurveyFlow.*/**/bin/
 HPA.SurveyFlow.*/**/obj/
 HPA.SurveyFlow.*/**/.vs/
 .playwright-mcp/*
-docs/ui-ux/screenshots/*
+# docs screenshots committed intentionally — only ui-qa-output is raw/gitignored
+# docs/ui-ux/screenshots/ui-qa/ is NOT ignored (report screenshots go there)
 
-# UI QA crawler output (screenshots and reports — keep .gitkeep)
-ui-qa-output/ui-qa-summary.json
-ui-qa-output/playwright-results.json
-ui-qa-output/screenshots/
+# UI QA crawler output — raw generated evidence, never committed
+ui-qa-output/
 
 # Playwright
 HPA.SurveyFlow.Web/playwright-report/
