@@ -25,18 +25,145 @@ The application is visually polished and structurally complete — all 23 routes
 
 ---
 
+## Cross-page Visual Consistency Findings
+
+### Layout comparison — desktop 1440px
+
+The three screenshots below illustrate the most significant cross-page consistency gap in the admin shell.
+
+![Admin Datasets — desktop 1440px](screenshots/ui-qa/Admin-Datasets-desktop-1440.png)
+
+_Datasets — 2-column card grid, content aligns with the sidebar boundary, filled `+ New Dataset` primary button top-right, subtitle present below the page title._
+
+![Admin Categories — desktop 1440px](screenshots/ui-qa/Admin-Categories-desktop-1440.png)
+
+_Categories — table layout, content left-aligned similarly to Datasets, filled `+ New Category` primary button top-right, subtitle present._
+
+![Admin API Keys — desktop 1440px](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
+
+_API Keys — content appears with a visibly narrower container (lighter background, tighter width), primary action is a plain `+ New Key` text link (not a filled button), and the only content is a plain bordered box reading "No API keys yet." with no icon, description, or CTA._
+
+---
+
+**C-001 — API Keys primary action is a text link while all peer pages use filled buttons**
+
+- Severity: **High**
+- Pattern affected: Primary action button style
+- Pages compared: Datasets, Categories, Forms, Users vs API Keys
+- Evidence: Every other admin list page uses a filled brand-coloured button for the primary create action (`+ New Dataset`, `+ New Category`, `+ New Form`, `+ Add User`). The API Keys page uses a plain `+ New Key` text link at the same position. Text links are significantly less discoverable than filled buttons — a user scanning the page for an action will likely miss it.
+- Recommendation: Replace the `+ New Key` text link with the standard primary button: `<button class="bg-brand-600 text-white rounded-md px-4 py-2 hover:bg-brand-700">+ New Key</button>`. Use the same shared `PrimaryButton` or `ta-btn-primary` component already used elsewhere.
+
+**Screenshot evidence**
+
+![API Keys — text link primary action vs filled button on Datasets](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
+
+_The `+ New Key` text link (top right, plain text) compared to the filled `+ New Dataset` button on the Datasets page. The text link is far less visible._
+
+---
+
+**C-002 — API Keys empty state is structurally weak and inconsistent**
+
+- Severity: **Medium**
+- Pattern affected: Empty state component
+- Pages compared: API Keys vs any future empty state across admin pages
+- Evidence: The API Keys empty state is a plain bordered rectangle containing only the text `"No API keys yet."` — no icon, no descriptive sentence explaining what API keys are for, and no CTA button to create one. An effective empty state should orient the user and offer the next action directly.
+- Recommendation: Replace with a structured empty state:
+
+  ```
+  [Key icon]
+  No API keys yet
+  API keys let external tools access SurveyFlow data programmatically.
+  [+ Create API Key  ← filled primary button]
+  ```
+
+  Build a reusable `<app-empty-state [icon]="..." [title]="..." [description]="..." [ctaLabel]="..." (ctaClick)="...">` component and use it here and on any future empty admin pages.
+
+**Screenshot evidence**
+
+![API Keys empty state — plain bordered box with no icon or CTA](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
+
+_The entire content area shows a single bordered rectangle with "No API keys yet." — no icon, no description, no button._
+
+---
+
+**C-003 — Admin content container alignment is inconsistent across page types**
+
+- Severity: **Medium**
+- Pattern affected: Admin page shell / content container
+- Pages compared: Datasets, Categories, API Keys, Forms, Users, Reports
+- Evidence: Comparing desktop-1440 screenshots side-by-side reveals that page content starts at noticeably different horizontal positions and fills different widths depending on the page. Table pages (Forms, Categories, Users) use a full-width table wrapper that reaches close to the right edge. Card-grid pages (Datasets, Reports) use a narrower grid with visible right margin. The API Keys page has a visibly different content container — the background shade, left margin, and max-width all differ from both groups. There is no shared `AdminContentShell` or `PageContainer` component enforcing consistent outer padding.
+- Recommendation: Introduce a single `AdminPageShell` or `PageContainer` wrapper component that all admin pages use, providing:
+  - Consistent `px-6 py-6` (or equivalent) outer padding
+  - A consistent `max-w-screen-xl` or equivalent max-width
+  - The standard page header layout (title left / subtitle below / action right) as a slot
+
+  Individual pages control their inner content (table vs card grid) but the outer frame is always the same.
+
+**Screenshot evidence**
+
+![Admin Forms — full-width table layout](screenshots/ui-qa/Admin-Forms-desktop-1440.png)
+
+_Forms — table reaches edge-to-edge within the content frame._
+
+![Admin Datasets — card-grid with right margin](screenshots/ui-qa/Admin-Datasets-desktop-1440.png)
+
+_Datasets — two-column card grid with visible right margin; content width narrower than the Forms table._
+
+![Admin API Keys — different container and background](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
+
+_API Keys — the content container has a visibly different background shade and narrower width, suggesting a different wrapper component or CSS class._
+
+---
+
+**C-004 — Card action button styles differ between Reports and Datasets**
+
+- Severity: **Medium**
+- Pattern affected: Card action buttons in card-grid pages
+- Pages compared: Datasets vs Reports
+- Evidence: Both pages use a card-grid layout, but their in-card action buttons differ:
+  - **Datasets**: full-width outline `Edit` button + a small trash icon button beside it
+  - **Reports**: large filled blue `Run` button + separate outline `Edit` button + trash icon
+
+  The primary action hierarchy is inverted: on Datasets the primary action (Edit dataset config) uses an outline button; on Reports the primary action (Run report) uses a filled button. This is contextually appropriate — running a report is a more prominent action than editing a dataset definition — but the visual inconsistency between the two card-grid pages should be documented and a decision recorded on whether this is intentional.
+- Recommendation: If the distinction is intentional (run = primary, edit = secondary), document it in the design system. If not, align both to the same hierarchy. Either way, ensure the trash icon delete action uses a consistent style (icon button with `text-red-600` or the outlined red style) across both.
+
+**Screenshot evidence**
+
+![Admin Reports — filled Run button in cards](screenshots/ui-qa/Admin-Reports-desktop-1440.png)
+
+_Reports cards use a large filled `Run` button as the primary action._
+
+![Admin Datasets — outline Edit button in cards](screenshots/ui-qa/Admin-Datasets-desktop-1440.png)
+
+_Datasets cards use a full-width outline `Edit` button with a trash icon beside it — no filled primary action._
+
+---
+
+**C-005 — Page header subtitle is missing on some pages, present on others**
+
+- Severity: **Low**
+- Pattern affected: Page header subtitle
+- Pages compared: Datasets, Categories, API Keys, Forms, Users
+- Evidence:
+  - **Has subtitle**: Datasets ("Reusable filtered subsets of form submissions for reports"), Categories ("Manage shared form categories and their access settings."), API Keys ("Manage programmatic access to the API"), Reports ("Create and run dynamic reports on your form submissions")
+  - **No subtitle**: Forms, Users, Jobs, Submissions, Logs, Audit Log
+  - The presence of a subtitle is inconsistent — it appears on some pages but not others with no obvious rule. Pages that have subtitles benefit from a quick orientation sentence; pages without them leave users to infer the purpose.
+- Recommendation: Either add a short subtitle to every admin page (preferred — it costs little and aids first-time users), or remove subtitles from pages that have them and rely on the page title alone. Pick one approach and apply it consistently.
+
+---
+
 ## Top 10 Fixes in Recommended Order
 
 1. **Add `<main>` landmark to shell layout** — fixes `landmark-one-main` and `region` violations across all 23 pages in one change.
-2. **Add `aria-label` / `<label>` to unlabelled `<select>` and `<input type="date">` controls** — fixes 8 critical violations on Submissions, Reports, Synced Data, Logs, Audit Log.
-3. **Add `aria-label` to unlabelled file input on Profile** — fixes 8 critical violations on the profile page.
-4. **Increase contrast of `.text-gray-400` spans** — replace with `text-gray-500` minimum; fixes serious violations site-wide.
-5. **Wrap all `<table>` elements in `overflow-x-auto` containers** — fixes mobile overflow on Forms, Categories, Submissions, Users, Synced Data, Logs.
-6. **Standardise destructive action button style** — use `border-red-200 bg-red-50 text-red-700` outline everywhere; currently `text-red` on Forms vs `border-red` on others.
-7. **Increase touch target heights to ≥ 44px** for sidebar nav links and table row action buttons at mobile breakpoints.
-8. **Add `srcset` / responsive `<img>` sizing to form thumbnail images** — resolves NG0913 warnings on Forms and Category Pre-Start.
-9. **Add a "Create API Key" CTA inside the API Keys empty state** — only page with an empty state but no action button.
-10. **Add `<h1>` to the Category Pre-Start public page** — currently no level-one heading, failing `page-has-heading-one` axe rule.
+2. **Replace `+ New Key` text link with a filled primary button** — closes the most visible cross-page consistency gap; makes the API Keys create action as discoverable as every other admin page.
+3. **Add `aria-label` / `<label>` to unlabelled `<select>` and `<input type="date">` controls** — fixes 8 critical violations on Submissions, Reports, Synced Data, Logs, Audit Log.
+4. **Add `aria-label` to unlabelled file input on Profile** — fixes 8 critical violations on the profile page.
+5. **Increase contrast of `.text-gray-400` spans** — replace with `text-gray-500` minimum; fixes serious violations site-wide.
+6. **Wrap all `<table>` elements in `overflow-x-auto` containers** — fixes mobile overflow on Forms, Categories, Submissions, Users, Synced Data, Logs.
+7. **Replace the API Keys empty state with a structured `EmptyState` component** — add icon, description, and CTA button.
+8. **Standardise destructive action button style** — use `border-red-200 bg-red-50 text-red-700` outline everywhere; currently `text-red` on Forms vs `border-red` on others.
+9. **Introduce a shared `AdminPageShell` content container** — enforces consistent outer padding and max-width across all admin pages.
+10. **Increase touch target heights to ≥ 44px** for sidebar nav links and table row action buttons at mobile breakpoints.
 
 ---
 

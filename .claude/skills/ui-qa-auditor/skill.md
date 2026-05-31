@@ -211,6 +211,194 @@ Accessibility-only findings (axe violations with no visual component) may omit t
 
 ---
 
+## Cross-page visual consistency review
+
+This is a required part of Phase 2. Run it for every admin page after reading the JSON and before writing the report.
+
+The goal is to compare admin pages against a shared layout standard and flag deviations — not just per-page issues but patterns that break across the whole admin shell.
+
+---
+
+### 1. Page shell / layout
+
+For every admin page, note from the desktop-1440 screenshot:
+
+- Where the left edge of the main content starts (relative to the sidebar)
+- Whether the content has a consistent max-width or appears narrower/wider than peers
+- Whether the page header (title + subtitle + action) sits at the same vertical position as other pages
+- Whether the page uses the shared admin content container or something custom
+
+**Flag as Medium** if any admin page shows a noticeably different left margin, max-width, or top offset compared to the majority.
+
+---
+
+### 2. Page header pattern
+
+The expected standard across all admin pages:
+
+```
+[Page title — bold, left]          [Primary action — filled button, right]
+[Subtitle — gray, left, below title]
+[Content area below]
+```
+
+Check every admin page for:
+
+- Title present and bold on the left
+- Subtitle (if present) directly below the title in a lighter colour
+- Primary action on the right at the same vertical level as the title
+- Consistent top padding/spacing from the header bar to the page title
+- Consistent horizontal alignment of the title across all pages
+
+**Flag as Medium** if title alignment, subtitle presence, or top spacing is inconsistent.
+
+---
+
+### 3. Primary action consistency
+
+Check every admin page for:
+
+- Whether a primary action exists (if the page has a create/add use case, one is expected)
+- Whether the primary action uses the shared filled primary button style (`bg-brand-600 text-white rounded-md px-4 py-2`)
+- Whether the label follows a consistent pattern (e.g. `+ New {Entity}` or `+ Add {Entity}`)
+- Whether icon/plus-sign usage is consistent
+- Whether any primary action is rendered as a plain text link instead of a button
+
+**Flag as High** when a primary action is a text link while peer pages use filled buttons. This reduces discoverability.
+
+Example: `+ New Key` on API Keys is a plain text link. `+ New Dataset` and `+ New Category` are filled primary buttons. Flag this as High.
+
+---
+
+### 4. Content container consistency
+
+Classify each admin page into one of:
+
+- **Table page**: Forms, Categories, Submissions, Users, Synced Data, Logs, Audit Log
+- **Card-grid page**: Reports, Datasets
+- **Settings/form page**: Settings, Integrations, Profile
+- **Empty/stub page**: API Keys (empty), Audit Log (empty)
+
+Within each group, check:
+
+- Outer content container width is consistent
+- Card/table reaches the same right edge across the group
+- Left margin is consistent within the group and similar across groups
+- Narrow pages (visibly narrower content than the majority) are flagged unless a layout reason is visible
+
+**Flag as Medium** for inconsistent container widths or margins within the same page type.
+
+---
+
+### 5. Empty state consistency
+
+For every page that can be empty, check the empty state for:
+
+| Element | Expected |
+|---------|----------|
+| Icon or illustration | Yes — a relevant icon or simple illustration |
+| Heading | Yes — a short noun phrase, e.g. "No API keys yet" |
+| Explanatory text | Yes — 1–2 sentences describing what this section does |
+| Primary CTA | Yes — if the user can create an item from this page |
+| Card/border style | Consistent with other empty states |
+| Vertical centering | Centred within the content area |
+
+**Flag as Medium** if the empty state is missing the icon, explanatory text, or CTA.
+
+**Flag as High** if the only content is a short text string with no structure, no icon, and no CTA — especially when sibling pages have a structured empty state.
+
+Example: API Keys shows only `"No API keys yet."` inside a plain bordered box with no icon, no description, no CTA. This is inconsistent and weak.
+
+---
+
+### 6. Table / list / card pattern consistency
+
+Compare within each group:
+
+**Table pages** (Forms, Categories, Submissions, Users, Synced Data, Logs):
+- Table header row style (background, font weight, border)
+- Row padding / density
+- Row action button style — outline vs text vs filled
+- Destructive action style — should be outlined red, not plain text
+- Pagination or load-more pattern (if present)
+
+**Card-grid pages** (Reports, Datasets):
+- Card border radius and shadow
+- Card padding
+- Card action button style (Reports uses large filled "Run" buttons; Datasets uses full-width outline "Edit" + icon delete — flag the mismatch)
+- Destructive action in card: Reports uses a trash icon; Datasets uses a trash icon — consistent here
+
+**Flag as Medium** for mismatched action button styles between pages of the same type.
+
+---
+
+### 7. Screenshot-based comparison
+
+After loading screenshots from `recommendedScreenshotsForReview`, also load these desktop-1440 screenshots if they are not already in the set, for the cross-page consistency comparison:
+
+```text
+ui-qa-output/screenshots/desktop-1440/Admin-Datasets-desktop-1440.png
+ui-qa-output/screenshots/desktop-1440/Admin-Categories-desktop-1440.png
+ui-qa-output/screenshots/desktop-1440/Admin-API-Keys-desktop-1440.png
+ui-qa-output/screenshots/desktop-1440/Admin-Forms-desktop-1440.png
+ui-qa-output/screenshots/desktop-1440/Admin-Users-desktop-1440.png
+ui-qa-output/screenshots/desktop-1440/Admin-Reports-desktop-1440.png
+```
+
+Load only these 6 for the consistency comparison. Do not load all desktop screenshots.
+
+Copy all 6 to `docs/ui-ux/screenshots/ui-qa/` if not already there.
+
+Embed them in the **Cross-page Visual Consistency Findings** report section as evidence for each finding.
+
+---
+
+### Report section: Cross-page Visual Consistency Findings
+
+Add this section to `docs/ui-ux/ui-qa-report.md` **after** the Executive Summary and before Critical / High Priority Findings, or after it — whichever reads better for the specific run.
+
+Use this structure:
+
+```markdown
+## Cross-page Visual Consistency Findings
+
+### Layout comparison — desktop 1440px
+
+![Admin Datasets](screenshots/ui-qa/Admin-Datasets-desktop-1440.png)
+_Datasets — card-grid layout, content starts ~300px from left edge, filled "+ New Dataset" primary button._
+
+![Admin Categories](screenshots/ui-qa/Admin-Categories-desktop-1440.png)
+_Categories — table layout, content aligns with Datasets, filled "+ New Category" primary button._
+
+![Admin API Keys](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
+_API Keys — content appears narrower, primary action is a plain text link, empty state has no icon or CTA._
+
+### C-001 — Title
+
+- Severity: High / Medium / Low
+- Pattern affected:
+- Pages compared:
+- Evidence:
+- Recommendation:
+
+**Screenshot evidence**
+
+![...](screenshots/ui-qa/...)
+
+_Caption._
+```
+
+**Consistency finding severity rules:**
+
+| Severity | When to use |
+|----------|-------------|
+| High | Primary action style inconsistency that reduces discoverability or task completion |
+| Medium | Content container width / alignment / page header pattern inconsistency |
+| Medium | Weak or missing empty state (no icon, no CTA, no description) |
+| Low | Minor spacing, text, or icon inconsistency that does not affect usability |
+
+---
+
 ## Phase 2 — Token-aware report generation
 
 ### Token-awareness rules
@@ -286,6 +474,33 @@ Top 5 UX/UI risks in 3–5 sentences.
 
 A practical ordered list of the highest-value fixes, balancing severity, effort, and repeated impact.
 
+## Cross-page Visual Consistency Findings
+
+### Layout comparison — desktop 1440px
+
+![Admin Datasets](screenshots/ui-qa/Admin-Datasets-desktop-1440.png)
+_Caption describing layout observed._
+
+![Admin Categories](screenshots/ui-qa/Admin-Categories-desktop-1440.png)
+_Caption._
+
+![Admin API Keys](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
+_Caption._
+
+### C-001 — Title
+
+- Severity:
+- Pattern affected:
+- Pages compared:
+- Evidence:
+- Recommendation:
+
+**Screenshot evidence**
+
+![...](screenshots/ui-qa/...)
+
+_Caption._
+
 ## Critical / High Priority Findings
 
 For each finding:
@@ -303,18 +518,18 @@ For each finding:
 
 _One sentence caption describing what the screenshot shows._
 
-## Cross-Page Consistency Findings
+## Cross-page Component Consistency
 
-Group repeated inconsistencies. One heading per pattern where relevant:
+Group repeated inconsistencies across all pages. One heading per pattern where relevant:
 
 - Page headers
 - Breadcrumbs/page context
-- Primary action placement
+- Primary action placement and style
 - Button styles
 - Destructive action styles
-- Table patterns
+- Table patterns and density
 - Table row actions
-- Card spacing
+- Card spacing and style
 - Badge colours
 - Form input styles
 - Date input styles
