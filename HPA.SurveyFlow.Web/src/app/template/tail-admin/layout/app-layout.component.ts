@@ -31,7 +31,7 @@ import { ThemeService } from '../services/theme.service';
           (signOut)="signOut.emit()"
         />
         <main class="flex-1 overflow-y-auto overflow-x-hidden">
-          <div class="mx-auto flex min-h-full w-full max-w-screen-3xl flex-col p-4 md:p-6">
+          <div class="mx-auto flex min-h-full w-full max-w-screen-2xl flex-col p-4  md:p-6">
             <div class="flex-1">
               <router-outlet />
             </div>
