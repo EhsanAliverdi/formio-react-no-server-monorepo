@@ -13,13 +13,18 @@ interface CategoryFormModel {
   name: string;
   description: string;
   visibility: 'public' | 'restricted';
+  // Category image / icon
   image_url: string;
+  show_category_image: boolean;
   icon_key: string;
+  // Layout
+  layout_mode: 'card' | 'list';
+  page_size: number;
+  // Card-view display settings
   show_title: boolean;
   show_description: boolean;
   show_button: boolean;
   button_text: string;
-  layout_mode: 'card' | 'list';
   columns: number;
   card_style: 'overlay' | 'compact';
 }
@@ -30,12 +35,14 @@ const emptyForm = (): CategoryFormModel => ({
   description: '',
   visibility: 'public',
   image_url: '',
+  show_category_image: true,
   icon_key: '',
+  layout_mode: 'card',
+  page_size: 12,
   show_title: true,
   show_description: true,
   show_button: true,
   button_text: '',
-  layout_mode: 'card',
   columns: 3,
   card_style: 'overlay',
 });
@@ -171,8 +178,9 @@ const emptyForm = (): CategoryFormModel => ({
               <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{{ saveError() }}</div>
             }
 
-            <div class="space-y-4">
-              <!-- Slug (read-only on edit) -->
+            <div class="space-y-5">
+
+              <!-- ── Basic ── -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                   Slug <span class="text-red-500">*</span>
@@ -180,10 +188,9 @@ const emptyForm = (): CategoryFormModel => ({
                 <input type="text" [(ngModel)]="form.slug" placeholder="pre-start"
                   [disabled]="!!editCategory()"
                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400 font-mono"/>
-                <p class="mt-1 text-xs text-gray-400">Used in the URL: <code>/category/{{ form.slug || 'slug' }}</code>. Cannot be changed after creation.</p>
+                <p class="mt-1 text-xs text-gray-400">URL: <code>/category/{{ form.slug || 'slug' }}</code>. Cannot change after creation.</p>
               </div>
 
-              <!-- Name -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                   Name <span class="text-red-500">*</span>
@@ -192,126 +199,148 @@ const emptyForm = (): CategoryFormModel => ({
                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
               </div>
 
-              <!-- Description -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea [(ngModel)]="form.description" rows="2" placeholder="Optional description shown to users"
+                <textarea [(ngModel)]="form.description" rows="2" placeholder="Optional — shown on the category page"
                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
               </div>
 
-              <!-- Visibility -->
-              <div>
+              <!-- ── Visibility ── -->
+              <div class="border-t pt-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Visibility</label>
                 <div class="flex gap-4">
                   <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" [(ngModel)]="form.visibility" value="public"
+                    <input type="radio" name="cat_visibility" [checked]="form.visibility === 'public'" (change)="setVisibility('public')"
                       class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700"><strong>Public</strong> <span class="text-gray-400 font-normal">— anyone can access</span></span>
+                    <span class="text-sm text-gray-700"><strong>Public</strong> <span class="text-gray-400 font-normal">— anyone</span></span>
                   </label>
                   <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" [(ngModel)]="form.visibility" value="restricted"
+                    <input type="radio" name="cat_visibility" [checked]="form.visibility === 'restricted'" (change)="setVisibility('restricted')"
                       class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700"><strong>Restricted</strong> <span class="text-gray-400 font-normal">— requires login</span></span>
+                    <span class="text-sm text-gray-700"><strong>Restricted</strong> <span class="text-gray-400 font-normal">— login required</span></span>
                   </label>
                 </div>
                 @if (form.visibility === 'restricted') {
                   <p class="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
-                    Users must be logged in. Access is controlled by the allowed roles and users set on each form.
+                    Access controlled by the allowed roles and users set on each form.
                   </p>
                 }
               </div>
 
-              <!-- Image URL -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Card Image URL</label>
-                <input type="url" [(ngModel)]="form.image_url" placeholder="https://…"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                @if (form.image_url) {
-                  <img [src]="form.image_url" alt="Preview" class="mt-2 h-20 rounded-lg object-cover border border-gray-200"/>
-                }
+              <!-- ── Category Image / Icon ── -->
+              <div class="border-t pt-4 space-y-3">
+                <p class="text-sm font-medium text-gray-700">Category image / icon</p>
+                <p class="text-xs text-gray-400 -mt-2">This is the category-level image or icon. Each form's own card image is set on the form itself.</p>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Image URL</label>
+                  <input type="url" [(ngModel)]="form.image_url" placeholder="https://…"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                  @if (form.image_url) {
+                    <img [src]="form.image_url" alt="Preview" class="mt-2 h-16 rounded-lg object-cover border border-gray-200"/>
+                  }
+                </div>
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="form.show_category_image"
+                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                  <span class="text-sm text-gray-700">Show category image / icon on the page</span>
+                </label>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">Icon key <span class="text-gray-400 font-normal">(used when no image)</span></label>
+                  <input type="text" [(ngModel)]="form.icon_key" placeholder="fa:FaTruck"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                </div>
               </div>
 
-              <!-- Icon key -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Icon key <span class="text-gray-400 font-normal">(used when no image)</span></label>
-                <input type="text" [(ngModel)]="form.icon_key" placeholder="fa:FaTruck"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-              </div>
-
-              <!-- Layout -->
-              <div>
+              <!-- ── Layout ── -->
+              <div class="border-t pt-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Layout</label>
                 <div class="flex gap-4">
                   <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" [(ngModel)]="form.layout_mode" value="card"
+                    <input type="radio" name="cat_layout_mode" [checked]="form.layout_mode === 'card'" (change)="setLayoutMode('card')"
                       class="h-4 w-4 border-gray-300 text-indigo-600"/>
                     <span class="text-sm text-gray-700"><strong>Card view</strong></span>
                   </label>
                   <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" [(ngModel)]="form.layout_mode" value="list"
+                    <input type="radio" name="cat_layout_mode" [checked]="form.layout_mode === 'list'" (change)="setLayoutMode('list')"
                       class="h-4 w-4 border-gray-300 text-indigo-600"/>
                     <span class="text-sm text-gray-700"><strong>List view</strong></span>
                   </label>
                 </div>
               </div>
 
-              <!-- Columns (card view only) -->
-              @if (form.layout_mode === 'card') {
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Columns <span class="text-gray-400 font-normal">({{ form.columns }})</span>
-                  </label>
-                  <input type="range" [(ngModel)]="form.columns" min="1" max="4" step="1"
-                    class="w-full max-w-xs accent-indigo-600"/>
-                  <div class="flex justify-between text-xs text-gray-400 max-w-xs mt-0.5">
-                    <span>1</span><span>2</span><span>3</span><span>4</span>
-                  </div>
+              <!-- ── Pagination (both views) ── -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Items per page <span class="text-gray-400 font-normal text-xs">({{ form.page_size }})</span>
+                </label>
+                <input type="range" [(ngModel)]="form.page_size" min="4" max="48" step="4"
+                  class="w-full max-w-xs accent-indigo-600"/>
+                <div class="flex justify-between text-xs text-gray-400 max-w-xs mt-0.5">
+                  <span>4</span><span>12</span><span>24</span><span>48</span>
                 </div>
+              </div>
 
-                <!-- Card style -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Card style</label>
-                  <div class="flex gap-4">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" [(ngModel)]="form.card_style" value="overlay"
-                        class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                      <span class="text-sm text-gray-700"><strong>Overlay</strong> <span class="text-gray-400 font-normal">— hover to reveal</span></span>
+              <!-- ── Card view settings ── -->
+              @if (form.layout_mode === 'card') {
+                <div class="border-t pt-4 space-y-3">
+                  <p class="text-sm font-medium text-gray-700">Card display</p>
+
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" [(ngModel)]="form.show_title"
+                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                    <span class="text-sm text-gray-700">Show form title on card</span>
+                  </label>
+
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" [(ngModel)]="form.show_description"
+                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                    <span class="text-sm text-gray-700">Show description on card</span>
+                  </label>
+
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" [(ngModel)]="form.show_button"
+                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                    <span class="text-sm text-gray-700">Show button</span>
+                  </label>
+                  @if (form.show_button) {
+                    <div class="pl-6">
+                      <label class="block text-xs font-medium text-gray-600 mb-1">Button label</label>
+                      <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
+                        class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                    </div>
+                  }
+
+                  <div class="pt-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                      Columns <span class="text-gray-400 font-normal text-xs">({{ form.columns }})</span>
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" [(ngModel)]="form.card_style" value="compact"
-                        class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                      <span class="text-sm text-gray-700"><strong>Compact</strong> <span class="text-gray-400 font-normal">— always visible</span></span>
-                    </label>
+                    <input type="range" [(ngModel)]="form.columns" min="1" max="4" step="1"
+                      class="w-full max-w-xs accent-indigo-600"/>
+                    <div class="flex justify-between text-xs text-gray-400 max-w-xs mt-0.5">
+                      <span>1</span><span>2</span><span>3</span><span>4</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Card style</label>
+                    <div class="flex gap-4">
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="cat_card_style" [checked]="form.card_style === 'overlay'" (change)="setCardStyle('overlay')"
+                          class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                        <span class="text-sm text-gray-700"><strong>Overlay</strong> <span class="text-gray-400 font-normal">— hover to reveal</span></span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="cat_card_style" [checked]="form.card_style === 'compact'" (change)="setCardStyle('compact')"
+                          class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                        <span class="text-sm text-gray-700"><strong>Compact</strong> <span class="text-gray-400 font-normal">— always visible</span></span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               }
-
-              <!-- Display options -->
-              <div class="space-y-2">
-                <p class="text-sm font-medium text-gray-700">Card display</p>
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" [(ngModel)]="form.show_title"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  <span class="text-sm text-gray-700">Show form title on card</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" [(ngModel)]="form.show_description"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  <span class="text-sm text-gray-700">Show description on card</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" [(ngModel)]="form.show_button"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  <span class="text-sm text-gray-700">Show button</span>
-                </label>
-                @if (form.show_button) {
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Button text</label>
-                    <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
-                      class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                  </div>
-                }
-              </div>
             </div>
 
             <div class="mt-6 flex items-center justify-end gap-3 border-t pt-4">
@@ -385,12 +414,14 @@ export class CategoriesComponent implements OnInit {
       description: cat.description ?? '',
       visibility: cat.visibility,
       image_url: cat.image_url ?? '',
+      show_category_image: cat.show_category_image ?? true,
       icon_key: cat.icon_key ?? '',
+      layout_mode: cat.layout_mode ?? 'card',
+      page_size: cat.page_size ?? 12,
       show_title: cat.show_title,
       show_description: cat.show_description,
       show_button: cat.show_button,
       button_text: cat.button_text ?? '',
-      layout_mode: cat.layout_mode ?? 'card',
       columns: cat.columns ?? 3,
       card_style: cat.card_style ?? 'overlay',
     };
@@ -411,18 +442,22 @@ export class CategoriesComponent implements OnInit {
     this.saving.set(true);
     this.saveError.set(null);
 
+    console.log('[Category save] layout_mode =', this.form.layout_mode, '| visibility =', this.form.visibility);
+
     const payload = {
       slug: this.form.slug.trim(),
       name: this.form.name.trim(),
       description: this.form.description.trim() || null,
       visibility: this.form.visibility,
       image_url: this.form.image_url.trim() || null,
+      show_category_image: this.form.show_category_image,
       icon_key: this.form.icon_key.trim() || null,
+      layout_mode: this.form.layout_mode,
+      page_size: Number(this.form.page_size),
       show_title: this.form.show_title,
       show_description: this.form.show_description,
       show_button: this.form.show_button,
       button_text: this.form.button_text.trim() || null,
-      layout_mode: this.form.layout_mode,
       columns: Number(this.form.columns),
       card_style: this.form.card_style,
     };
@@ -445,6 +480,10 @@ export class CategoriesComponent implements OnInit {
       },
     });
   }
+
+  setVisibility(v: 'public' | 'restricted'): void { this.form = { ...this.form, visibility: v }; }
+  setLayoutMode(m: 'card' | 'list'): void { this.form = { ...this.form, layout_mode: m }; }
+  setCardStyle(s: 'overlay' | 'compact'): void { this.form = { ...this.form, card_style: s }; }
 
   async deleteCategory(cat: Category): Promise<void> {
     const ok = await this.confirmDialog.open({

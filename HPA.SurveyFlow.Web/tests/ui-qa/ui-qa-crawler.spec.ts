@@ -75,12 +75,18 @@ async function login(page: Page): Promise<boolean> {
   try {
     await page.goto(`${config.baseUrl}${config.adminLoginRoute}`, { timeout: config.pageTimeout });
     await waitForAngular(page);
+    const urlAfterNav = page.url();
+    // Already authenticated — context has a valid session
+    if (!urlAfterNav.includes('/login')) {
+      isAuthenticated = true;
+      return true;
+    }
     await page.fill('input[type="email"], input[name="email"]', config.username);
     await page.fill('input[type="password"], input[name="password"]', config.password);
     await page.click('button[type="submit"]');
     await waitForAngular(page, 8000);
     const finalUrl = page.url();
-    isAuthenticated = finalUrl.includes('/admin') && !finalUrl.includes('/login');
+    isAuthenticated = !finalUrl.includes('/login');
     return isAuthenticated;
   } catch {
     return false;
@@ -489,7 +495,7 @@ test.describe('UI QA Crawler', () => {
     console.log(`⚠  Global findings: ${globalFindings.length}`);
     console.log(`📱 Responsive issues: ${responsiveFindings.length}`);
     console.log(`♿ Accessibility violations: ${accessibilityFindings.length}`);
-    console.log('\nRun /ui-qa-reviewer to generate the full report.\n');
+    console.log('\nRun /ui-qa-auditor to generate the full report.\n');
 
     // The test always passes — it is a crawler, not a pass/fail assertion test
     expect(summary.totalRoutesDiscovered).toBeGreaterThan(0);

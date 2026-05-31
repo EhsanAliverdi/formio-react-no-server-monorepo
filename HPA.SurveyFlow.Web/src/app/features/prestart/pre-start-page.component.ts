@@ -6,8 +6,10 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { FormService } from '../../core/services/form.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { CategoryService } from '../../core/services/category.service';
@@ -21,11 +23,7 @@ interface CategoryCard {
   name: string;
   description: string | null;
   imageUrl: string | null;
-  imageFullWidth: boolean;
-  iconPack: string | null;
-  iconName: string | null;
   iconSvgUrl: string | null;
-  questions: number;
   showTitle: boolean;
   showDescription: boolean;
   showButton: boolean;
@@ -112,50 +110,15 @@ interface CategoryCard {
             <div class="text-center py-24 text-gray-400 text-lg">No forms available in this category.</div>
 
           } @else if (layoutMode() === 'list') {
-            <!-- ── List view ── -->
-            <div class="flex flex-col gap-3 max-w-3xl mx-auto">
-              @for (card of cards(); track card.id) {
+            <!-- ── List view — titles only ── -->
+            <div class="flex flex-col divide-y divide-gray-100 max-w-3xl mx-auto bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              @for (card of pagedCards(); track card.id) {
                 <a [routerLink]="['/form-public', card.id]"
-                  class="flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-4 group">
-                  <!-- Thumbnail -->
-                  <div class="shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center">
-                    @if (card.imageUrl) {
-                      <img [src]="card.imageUrl" [alt]="card.name" class="w-full h-full object-cover" />
-                    } @else if (card.iconSvgUrl) {
-                      <img [src]="card.iconSvgUrl" [alt]="card.name" class="w-10 h-10 object-contain" />
-                    } @else {
-                      <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    }
-                  </div>
-
-                  <!-- Text -->
-                  <div class="flex-1 min-w-0">
-                    @if (card.showTitle) {
-                      <div class="font-semibold text-gray-900 text-base truncate group-hover:text-blue-700 transition">{{ card.name }}</div>
-                    }
-                    @if (card.showDescription && card.description) {
-                      <div class="text-sm text-gray-500 mt-0.5 line-clamp-2">{{ card.description }}</div>
-                    }
-                  </div>
-
-                  <!-- Button / arrow -->
-                  @if (card.showButton) {
-                    <div class="shrink-0">
-                      <span class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 text-white text-sm font-semibold px-4 py-2 group-hover:bg-blue-500 transition">
-                        {{ card.buttonText }}
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-                        </svg>
-                      </span>
-                    </div>
-                  } @else {
-                    <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-600 shrink-0 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                  }
+                  class="flex items-center justify-between px-5 py-3.5 hover:bg-blue-50 transition group">
+                  <span class="text-sm font-medium text-gray-900 group-hover:text-blue-700 transition">{{ card.name }}</span>
+                  <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 shrink-0 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
                 </a>
               }
             </div>
@@ -163,7 +126,7 @@ interface CategoryCard {
           } @else {
             <!-- ── Card view ── -->
             <div class="grid gap-6" [class]="gridColsClass()">
-              @for (card of cards(); track card.id) {
+              @for (card of pagedCards(); track card.id) {
                 <a [routerLink]="['/form-public', card.id]" class="block">
                   <app-form-card
                     [name]="card.name"
@@ -180,6 +143,48 @@ interface CategoryCard {
               }
             </div>
           }
+
+          <!-- ── Pagination ── -->
+          @if (totalPages() > 1) {
+            <div class="mt-8 flex items-center justify-center gap-2">
+              <button type="button" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Previous
+              </button>
+
+              @for (p of pageNumbers(); track p) {
+                @if (p === -1) {
+                  <span class="px-2 text-gray-400 select-none">…</span>
+                } @else {
+                  <button type="button" (click)="goToPage(p)"
+                    class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-sm font-medium transition"
+                    [class.bg-blue-600]="p === currentPage()"
+                    [class.text-white]="p === currentPage()"
+                    [class.border]="p !== currentPage()"
+                    [class.border-gray-300]="p !== currentPage()"
+                    [class.bg-white]="p !== currentPage()"
+                    [class.text-gray-700]="p !== currentPage()"
+                    [class.hover:bg-gray-50]="p !== currentPage()">
+                    {{ p }}
+                  </button>
+                }
+              }
+
+              <button type="button" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                Next
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+            <p class="mt-3 text-center text-xs text-gray-400">
+              Page {{ currentPage() }} of {{ totalPages() }} · {{ cards().length }} forms
+            </p>
+          }
         </div>
       </main>
     </div>
@@ -192,7 +197,6 @@ export class PreStartPageComponent implements OnInit {
   private authService = inject(AuthService);
   private iconService = inject(IconService);
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
 
   forms = signal<Form[]>([]);
   categoryEntity = signal<Category | null>(null);
@@ -200,6 +204,7 @@ export class PreStartPageComponent implements OnInit {
   restricted = signal(false);
   siteSettings = signal<SiteSettings | null>(null);
   categorySlug = signal('');
+  currentPage = signal(1);
 
   logoSrc = computed(() => {
     const s = this.siteSettings();
@@ -250,11 +255,7 @@ export class PreStartPageComponent implements OnInit {
         name: f.name,
         description: appSettings.publicDescription || null,
         imageUrl,
-        imageFullWidth: !!(appSettings.categoryImageFullWidth ?? appSettings.preStartImageFullWidth),
-        iconPack: null,
-        iconName: null,
         iconSvgUrl,
-        questions: this.countQuestions(schema),
         showTitle: catShowTitle,
         showDescription: catShowDescription,
         showButton: catShowButton,
@@ -264,6 +265,33 @@ export class PreStartPageComponent implements OnInit {
     });
   });
 
+  pageSize = computed(() => this.categoryEntity()?.page_size ?? 12);
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.cards().length / this.pageSize())));
+
+  pageNumbers = computed(() => {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: number[] = [1];
+    if (current > 3) pages.push(-1);
+    for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) pages.push(p);
+    if (current < total - 2) pages.push(-1);
+    pages.push(total);
+    return pages;
+  });
+
+  pagedCards = computed(() => {
+    const size = this.pageSize();
+    const page = Math.min(this.currentPage(), this.totalPages());
+    const start = (page - 1) * size;
+    return this.cards().slice(start, start + size);
+  });
+
+  goToPage(page: number): void {
+    this.currentPage.set(Math.max(1, Math.min(page, this.totalPages())));
+  }
+
   ngOnInit(): void {
     this.settingsService.getSiteSettings().subscribe({ next: s => this.siteSettings.set(s), error: () => {} });
     this.route.paramMap.subscribe(params => {
@@ -272,22 +300,20 @@ export class PreStartPageComponent implements OnInit {
       this.loading.set(true);
       this.restricted.set(false);
       this.categoryEntity.set(null);
-      // Load category metadata (non-blocking — pre-start page still renders without it)
-      this.categoryService.get(slug).subscribe({
-        next: (cat) => this.categoryEntity.set(cat),
-        error: () => {},
-      });
-      this.formService.list(undefined, slug, true).subscribe({
-        next: forms => {
-          this.forms.set(forms);
-          this.loading.set(false);
-        },
-        error: (err: HttpErrorResponse) => {
-          this.loading.set(false);
-          if (err.status === 401) {
-            this.restricted.set(true);
-          }
-        },
+      this.currentPage.set(1);
+
+      forkJoin({
+        category: this.categoryService.get(slug).pipe(catchError(() => of(null))),
+        forms: this.formService.list(undefined, slug, true).pipe(
+          catchError((err: HttpErrorResponse) => {
+            if (err.status === 401) this.restricted.set(true);
+            return of([] as Form[]);
+          })
+        ),
+      }).subscribe(({ category, forms }) => {
+        this.categoryEntity.set(category);
+        this.forms.set(forms);
+        this.loading.set(false);
       });
     });
   }

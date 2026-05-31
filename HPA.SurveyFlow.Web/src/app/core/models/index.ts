@@ -111,12 +111,14 @@ export interface Category {
   description?: string | null;
   visibility: 'public' | 'restricted';
   image_url?: string | null;
+  show_category_image: boolean;
   icon_key?: string | null;
+  layout_mode: 'card' | 'list';
+  page_size: number;
   show_title: boolean;
   show_description: boolean;
   show_button: boolean;
   button_text?: string | null;
-  layout_mode: 'card' | 'list';
   columns: number;
   card_style: 'overlay' | 'compact';
   form_count: number;

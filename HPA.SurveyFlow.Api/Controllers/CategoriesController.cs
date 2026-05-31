@@ -71,12 +71,14 @@ public class CategoriesController(AppDbContext db) : ControllerBase
             Description = body.Description?.Trim(),
             Visibility = body.Visibility == "restricted" ? "restricted" : "public",
             ImageUrl = body.ImageUrl?.Trim(),
+            ShowCategoryImage = body.ShowCategoryImage,
             IconKey = body.IconKey?.Trim(),
+            LayoutMode = body.LayoutMode is "list" ? "list" : "card",
+            PageSize = Math.Clamp(body.PageSize, 1, 100),
             ShowTitle = body.ShowTitle,
             ShowDescription = body.ShowDescription,
             ShowButton = body.ShowButton,
             ButtonText = body.ButtonText?.Trim(),
-            LayoutMode = body.LayoutMode is "list" ? "list" : "card",
             Columns = Math.Clamp(body.Columns, 1, 4),
             CardStyle = body.CardStyle is "compact" ? "compact" : "overlay",
         };
@@ -96,15 +98,17 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         if (category == null) return NotFound(new { error = "Category not found." });
 
         if (body.Name != null) category.Name = body.Name.Trim();
-        if (body.Description != null) category.Description = body.Description.Trim();
+        if (body.Description != null) category.Description = body.Description.Trim() == "" ? null : body.Description.Trim();
         if (body.Visibility != null) category.Visibility = body.Visibility == "restricted" ? "restricted" : "public";
         if (body.ImageUrl != null) category.ImageUrl = body.ImageUrl.Trim() == "" ? null : body.ImageUrl.Trim();
+        if (body.ShowCategoryImage.HasValue) category.ShowCategoryImage = body.ShowCategoryImage.Value;
         if (body.IconKey != null) category.IconKey = body.IconKey.Trim() == "" ? null : body.IconKey.Trim();
+        if (body.LayoutMode != null) category.LayoutMode = body.LayoutMode is "list" ? "list" : "card";
+        if (body.PageSize.HasValue) category.PageSize = Math.Clamp(body.PageSize.Value, 1, 100);
         if (body.ShowTitle.HasValue) category.ShowTitle = body.ShowTitle.Value;
         if (body.ShowDescription.HasValue) category.ShowDescription = body.ShowDescription.Value;
         if (body.ShowButton.HasValue) category.ShowButton = body.ShowButton.Value;
         if (body.ButtonText != null) category.ButtonText = body.ButtonText.Trim() == "" ? null : body.ButtonText.Trim();
-        if (body.LayoutMode != null) category.LayoutMode = body.LayoutMode is "list" ? "list" : "card";
         if (body.Columns.HasValue) category.Columns = Math.Clamp(body.Columns.Value, 1, 4);
         if (body.CardStyle != null) category.CardStyle = body.CardStyle is "compact" ? "compact" : "overlay";
         category.UpdatedAt = DateTime.UtcNow;
@@ -154,12 +158,14 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         description = c.Description,
         visibility = c.Visibility,
         image_url = c.ImageUrl,
+        show_category_image = c.ShowCategoryImage,
         icon_key = c.IconKey,
+        layout_mode = c.LayoutMode,
+        page_size = c.PageSize,
         show_title = c.ShowTitle,
         show_description = c.ShowDescription,
         show_button = c.ShowButton,
         button_text = c.ButtonText,
-        layout_mode = c.LayoutMode,
         columns = c.Columns,
         card_style = c.CardStyle,
         form_count = formCount ?? 0,

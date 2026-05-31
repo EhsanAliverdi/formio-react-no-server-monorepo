@@ -7,15 +7,24 @@ public class Category
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
     public string Visibility { get; set; } = "public";
+
+    // Category-level image / icon (shown as the category header image, not per-form card image)
     public string? ImageUrl { get; set; }
+    public bool ShowCategoryImage { get; set; } = true;
     public string? IconKey { get; set; }
+
+    // Layout
+    public string LayoutMode { get; set; } = "card";   // "card" | "list"
+    public int PageSize { get; set; } = 12;             // items per page, both views
+
+    // Card-view-only display settings
     public bool ShowTitle { get; set; } = true;
     public bool ShowDescription { get; set; } = true;
     public bool ShowButton { get; set; } = true;
     public string? ButtonText { get; set; }
-    public string LayoutMode { get; set; } = "card";   // "card" | "list"
-    public int Columns { get; set; } = 3;               // 1–4, card view only
+    public int Columns { get; set; } = 3;               // 1–4
     public string CardStyle { get; set; } = "overlay";  // "overlay" | "compact"
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

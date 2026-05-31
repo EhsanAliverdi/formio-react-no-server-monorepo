@@ -130,11 +130,11 @@
 
     // ── UI/UX ─────────────────────────────────────────────────────────────────
     {
-      "label": "Claude: UI — Review App",
-      "detail": "Skill: ui-ux-designer — visual review of all pages, produce docs/ui-ux/ui-review.md",
+      "label": "Claude: UI QA — Full Audit",
+      "detail": "Skill: ui-qa-auditor — crawl all pages at 4 breakpoints, collect errors/axe/screenshots, then generate the full audit report",
       "type": "shell",
       "command": "claude",
-      "args": ["/ui-review"],
+      "args": ["/ui-qa-auditor"],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
     },

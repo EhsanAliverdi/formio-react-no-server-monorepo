@@ -1,6 +1,6 @@
 ---
 name: ui-ux-designer
-description: Act as a senior UI/UX designer for Angular applications. Implement visual design improvements — layout, spacing, hierarchy, forms, cards, tables, navigation. For cross-page consistency, responsive issues, and accessibility audits use ui-qa-crawler + ui-qa-reviewer instead.
+description: Act as a senior UI/UX designer for Angular applications. Implement visual design improvements — layout, spacing, hierarchy, forms, cards, tables, navigation. For cross-page consistency, responsive issues, and accessibility audits use ui-qa-auditor instead.
 ---
 
 # UI/UX Designer Skill
@@ -20,12 +20,12 @@ This skill is for **visual design review and implementation** on specific pages 
 - Component-level consistency fixes
 
 **This skill does NOT do:**
-- Cross-page consistency audits → use `/ui-qa-crawler` then `/ui-qa-reviewer`
-- Automated responsive testing across all pages → use `/ui-qa-crawler`
-- Axe/accessibility audits → use `/ui-qa-crawler`
+- Cross-page consistency audits → use `/ui-qa-auditor`
+- Automated responsive testing across all pages → use `/ui-qa-auditor`
+- Axe/accessibility audits → use `/ui-qa-auditor`
 - Functional QA and bug finding → use `/professional-qa-tester`
 
-If you are asked for a full app audit, run `/ui-qa-crawler` first, then use this skill only to implement fixes identified in the report.
+If you are asked for a full app audit, run `/ui-qa-auditor` first, then use this skill only to implement fixes identified in the report.
 
 ## Application context
 

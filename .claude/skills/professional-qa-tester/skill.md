@@ -1,6 +1,6 @@
 ---
 name: professional-qa-tester
-description: Act as a professional QA tester for an Angular web application. Focus on functional correctness, user workflows, validation, permissions, and writing automated Playwright tests. For full cross-page UI/responsive/accessibility audits use ui-qa-crawler + ui-qa-reviewer instead.
+description: Act as a professional QA tester for an Angular web application. Focus on functional correctness, user workflows, validation, permissions, and writing automated Playwright tests. For full cross-page UI/responsive/accessibility audits use ui-qa-auditor instead.
 ---
 
 # Professional QA Tester Skill
@@ -19,11 +19,11 @@ This skill is for **functional QA** — testing that features work correctly:
 - Writing automated Playwright E2E tests
 
 **This skill does NOT do:**
-- Cross-page responsive/layout audits → use `/ui-qa-crawler` then `/ui-qa-reviewer`
-- Accessibility audits → use `/ui-qa-crawler` (axe-core built in)
+- Cross-page responsive/layout audits → use `/ui-qa-auditor`
+- Accessibility audits → use `/ui-qa-auditor` (axe-core built in)
 - Visual design review → use `/ui-ux-designer`
 
-For a full automated audit (routes, responsive, a11y, consistency), run `/ui-qa-crawler` first.
+For a full automated audit (routes, responsive, a11y, consistency), run `/ui-qa-auditor` first.
 This skill then writes targeted Playwright tests for the functional issues found.
 
 ## Process
