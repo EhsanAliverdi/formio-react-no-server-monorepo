@@ -12,7 +12,7 @@ type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok'; me
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="w-full space-y-6">
+    <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-xl font-semibold text-gray-800 dark:text-white">Integrations</h1>

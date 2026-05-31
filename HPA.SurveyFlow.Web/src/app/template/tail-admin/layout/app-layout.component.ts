@@ -30,13 +30,13 @@ import { ThemeService } from '../services/theme.service';
           [loginHref]="loginHref"
           (signOut)="signOut.emit()"
         />
-        <div class="flex-1 overflow-y-auto overflow-x-hidden">
-          <div class="mx-auto flex min-h-full max-w-screen-2xl flex-col p-4 md:p-6">
+        <main class="flex-1 overflow-y-auto overflow-x-hidden">
+          <div class="mx-auto flex min-h-full w-full max-w-screen-3xl flex-col p-4 md:p-6">
             <div class="flex-1">
               <router-outlet />
             </div>
           </div>
-        </div>
+        </main>
         @if (showCopyright && copyrightText) {
           <footer class="w-full border-t border-gray-200 bg-white px-4 py-3 text-center text-xs text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 lg:px-6">
             {{ copyrightText }}

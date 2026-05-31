@@ -9,32 +9,58 @@ import { ApiKey, CreateApiKeyResponse } from '../../../core/models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 max-w-4xl mx-auto space-y-6">
+    <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">API Keys</h1>
           <p class="text-sm text-gray-500 mt-1">Manage programmatic access to the API</p>
         </div>
-        <button class="btn btn-primary btn-sm" (click)="openCreate()">+ New Key</button>
+        <button
+          class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition"
+          (click)="openCreate()"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Key
+        </button>
       </div>
 
-      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         @if (loading()) {
           <div class="p-8 text-center text-gray-400">Loading…</div>
         } @else if (keys().length === 0) {
-          <div class="p-8 text-center text-gray-400">No API keys yet.</div>
+          <div class="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900 mb-1">No API keys yet</h3>
+            <p class="text-sm text-gray-500 mb-4 max-w-xs">API keys let external tools and integrations access SurveyFlow data programmatically.</p>
+            <button
+              class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition"
+              (click)="openCreate()"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Create API Key
+            </button>
+          </div>
         } @else {
-          <table class="w-full text-sm">
+          <div class="overflow-x-auto">
+          <table class="min-w-[640px] w-full text-sm">
             <thead class="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Prefix</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Scopes</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Created</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Last Used</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Expires</th>
-                <th class="px-4 py-3"></th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Prefix</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Scopes</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Created</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Last Used</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Expires</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -54,13 +80,17 @@ import { ApiKey, CreateApiKeyResponse } from '../../../core/models';
                   <td class="px-4 py-3 text-gray-500 text-xs">{{ key.expires_at ? (key.expires_at | date:'dd/MM/yy') : '—' }}</td>
                   <td class="px-4 py-3 text-right">
                     @if (key.is_active) {
-                      <button class="text-red-500 hover:text-red-700 text-xs" (click)="revoke(key)">Revoke</button>
+                      <button
+                        class="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition"
+                        (click)="revoke(key)"
+                      >Revoke</button>
                     }
                   </td>
                 </tr>
               }
             </tbody>
           </table>
+          </div>
         }
       </div>
     </div>
@@ -77,7 +107,7 @@ import { ApiKey, CreateApiKeyResponse } from '../../../core/models';
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Scopes</label>
             <input class="w-full input" placeholder="Comma-separated permissions (blank = all)" [(ngModel)]="form.scopes" />
-            <p class="text-xs text-gray-400 mt-1">Leave blank to grant all permissions</p>
+            <p class="text-xs text-gray-500 mt-1">Leave blank to grant all permissions</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Expires At</label>

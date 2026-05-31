@@ -13,10 +13,13 @@ import { Form } from '../../../core/models';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="p-6">
+    <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Forms</h1>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Forms</h1>
+          <p class="text-sm text-gray-500 mt-0.5">Create and manage survey forms.</p>
+        </div>
         <div class="flex items-center gap-2">
           <input #importFileInput type="file" accept="application/json,.json" class="hidden" (change)="importForm($event)" />
           <button
@@ -59,19 +62,19 @@ import { Form } from '../../../core/models';
       </div>
 
       <!-- Table -->
-      <div *ngIf="!loading()" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-100">
+      <div *ngIf="!loading()" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+        <table class="min-w-[640px] w-full divide-y divide-gray-100">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Visibility</th>
-              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Anonymous</th>
-              <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Visibility</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Anonymous</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
             <tr *ngIf="filteredForms().length === 0">
-              <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-400">
+              <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
                 {{ searchQuery ? 'No forms match your search.' : 'No forms yet. Create your first form.' }}
               </td>
             </tr>

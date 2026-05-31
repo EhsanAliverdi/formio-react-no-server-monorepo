@@ -14,9 +14,10 @@ import { User } from '../../../core/models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="w-full">
+    <div>
       <div class="rounded-2xl border border-gray-200 bg-white p-6">
-        <h1 class="text-xl font-semibold text-gray-800 mb-6">My Profile</h1>
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">My Profile</h1>
+        <p class="text-sm text-gray-500 mb-6">Manage your personal information and preferences.</p>
 
         @if (error()) {
           <div class="rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">{{ error() }}</div>
@@ -41,6 +42,7 @@ import { User } from '../../../core/models';
               <input
                 type="file"
                 accept="image/*"
+                aria-label="Upload profile photo"
                 class="text-sm"
                 (change)="onAvatarChange($event)"
               />

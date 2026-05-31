@@ -11,7 +11,7 @@ const LEVEL_STYLE: Record<string, string> = {
   Warning:     'bg-amber-100 text-amber-800',
   Information: 'bg-blue-100 text-blue-800',
   Debug:       'bg-gray-100 text-gray-600',
-  Verbose:     'bg-gray-50 text-gray-400',
+  Verbose:     'bg-gray-50 text-gray-500',
 };
 
 const ROW_STYLE: Record<string, string> = {
@@ -25,13 +25,14 @@ const ROW_STYLE: Record<string, string> = {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6">
+    <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">Log Viewer</h1>
+          <p class="text-sm text-gray-500 mt-0.5">Browse and filter application logs.</p>
           @if (logFile()) {
-            <p class="text-xs text-gray-400 font-mono mt-0.5">{{ logFile() }}</p>
+            <p class="text-xs text-gray-500 font-mono mt-0.5">{{ logFile() }}</p>
           }
         </div>
         <button type="button" (click)="load()" [disabled]="loading()"
@@ -46,7 +47,7 @@ const ROW_STYLE: Record<string, string> = {
       <!-- Filters -->
       <div class="flex flex-wrap gap-3 mb-4">
         <!-- Level filter -->
-        <select [(ngModel)]="filterLevel" (ngModelChange)="load()"
+        <select [(ngModel)]="filterLevel" (ngModelChange)="load()" aria-label="Log level"
           class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           @for (lvl of levels; track lvl) {
             <option [value]="lvl">{{ lvl || 'All levels' }}</option>
@@ -54,7 +55,7 @@ const ROW_STYLE: Record<string, string> = {
         </select>
 
         <!-- Date picker -->
-        <select [(ngModel)]="filterDate" (ngModelChange)="load()"
+        <select [(ngModel)]="filterDate" (ngModelChange)="load()" aria-label="Log date"
           class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           @for (f of files(); track f.name) {
             <option [value]="f.date">{{ f.date }} ({{ formatBytes(f.size_bytes) }})</option>
@@ -65,7 +66,7 @@ const ROW_STYLE: Record<string, string> = {
         </select>
 
         <!-- Limit -->
-        <select [(ngModel)]="filterLimit" (ngModelChange)="load()"
+        <select [(ngModel)]="filterLimit" (ngModelChange)="load()" aria-label="Log limit"
           class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="100">Last 100</option>
           <option value="200">Last 200</option>
@@ -103,24 +104,24 @@ const ROW_STYLE: Record<string, string> = {
             <table class="min-w-full text-xs font-mono">
               <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th class="px-4 py-2 text-left font-semibold text-gray-500 w-36">Time</th>
-                  <th class="px-4 py-2 text-left font-semibold text-gray-500 w-24">Level</th>
-                  <th class="px-4 py-2 text-left font-semibold text-gray-500 w-32">Correlation</th>
-                  <th class="px-4 py-2 text-left font-semibold text-gray-500">Message</th>
+                  <th scope="col" class="px-4 py-2 text-left font-semibold text-gray-500 w-36">Time</th>
+                  <th scope="col" class="px-4 py-2 text-left font-semibold text-gray-500 w-24">Level</th>
+                  <th scope="col" class="px-4 py-2 text-left font-semibold text-gray-500 w-32">Correlation</th>
+                  <th scope="col" class="px-4 py-2 text-left font-semibold text-gray-500">Message</th>
                 </tr>
               </thead>
               <tbody>
                 @for (entry of entries(); track $index) {
                   <tr class="border-t border-gray-50 hover:bg-gray-50/50 transition"
                     [class]="rowStyle(entry.level)">
-                    <td class="px-4 py-1.5 text-gray-400 whitespace-nowrap">{{ formatTime(entry.timestamp) }}</td>
+                    <td class="px-4 py-1.5 text-gray-500 whitespace-nowrap">{{ formatTime(entry.timestamp) }}</td>
                     <td class="px-4 py-1.5">
                       <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold"
                         [class]="levelStyle(entry.level)">
                         {{ entry.level }}
                       </span>
                     </td>
-                    <td class="px-4 py-1.5 text-gray-400 truncate max-w-[8rem]" [title]="entry.correlation_id ?? ''">
+                    <td class="px-4 py-1.5 text-gray-500 truncate max-w-[8rem]" [title]="entry.correlation_id ?? ''">
                       {{ entry.correlation_id ?? '—' }}
                     </td>
                     <td class="px-4 py-1.5">

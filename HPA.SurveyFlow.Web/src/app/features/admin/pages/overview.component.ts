@@ -10,7 +10,7 @@ import { AdminStats, ActivityItem, ReportTemplate } from '../../../core/models';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="p-6">
+    <div>
       <h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
 
       <!-- Error -->

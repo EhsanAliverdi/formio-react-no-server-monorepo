@@ -9,7 +9,7 @@ import { AuditLog } from '../../../core/models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 max-w-7xl mx-auto space-y-6">
+    <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">Audit Log</h1>
@@ -45,21 +45,21 @@ import { AuditLog } from '../../../core/models';
       </div>
 
       <!-- Table -->
-      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div class="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         @if (loading()) {
-          <div class="p-8 text-center text-gray-400">Loading…</div>
+          <div class="p-8 text-center text-gray-500">Loading…</div>
         } @else if (items().length === 0) {
-          <div class="p-8 text-center text-gray-400">No audit records found.</div>
+          <div class="p-8 text-center text-gray-500">No audit records found.</div>
         } @else {
-          <table class="w-full text-sm">
+          <table class="min-w-[640px] w-full text-sm">
             <thead class="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Time</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Actor</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Action</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Entity</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Name / ID</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">IP</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Time</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Actor</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Action</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Entity</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Name / ID</th>
+                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">IP</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -75,7 +75,7 @@ import { AuditLog } from '../../../core/models';
                   </td>
                   <td class="px-4 py-3 text-gray-600">{{ item.entity_type }}</td>
                   <td class="px-4 py-3 text-gray-700">{{ item.entity_name || item.entity_id }}</td>
-                  <td class="px-4 py-3 text-gray-400 text-xs">{{ item.ip_address || '—' }}</td>
+                  <td class="px-4 py-3 text-gray-500 text-xs">{{ item.ip_address || '—' }}</td>
                 </tr>
               }
             </tbody>
@@ -99,7 +99,7 @@ import { AuditLog } from '../../../core/models';
         <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-auto p-6" (click)="$event.stopPropagation()">
           <div class="flex justify-between items-start mb-4">
             <h2 class="text-lg font-semibold">Audit Detail</h2>
-            <button class="text-gray-400 hover:text-gray-600" (click)="selectedItem.set(null)">✕</button>
+            <button class="text-gray-500 hover:text-gray-600" (click)="selectedItem.set(null)">✕</button>
           </div>
           <dl class="grid grid-cols-2 gap-3 text-sm">
             <dt class="text-gray-500">Time</dt><dd>{{ selectedItem()!.occurred_at | date:'medium' }}</dd>

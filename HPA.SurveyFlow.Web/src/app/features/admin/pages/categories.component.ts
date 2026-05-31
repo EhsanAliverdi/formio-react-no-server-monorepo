@@ -52,7 +52,7 @@ const emptyForm = (): CategoryFormModel => ({
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="p-6">
+    <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>

@@ -23,9 +23,10 @@ const PAGE_SIZE = 25;
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6">
+    <div>
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Submissions</h1>
+        <p class="text-sm text-gray-500 mt-0.5">Browse and search all form submissions.</p>
       </div>
 
       <div class="w-full">
@@ -35,11 +36,11 @@ const PAGE_SIZE = 25;
             {{ loading() ? 'Loading…' : total() + ' submission(s)' }}
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input type="date" [(ngModel)]="fromDateModel"
+            <input type="date" [(ngModel)]="fromDateModel" aria-label="From date"
               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-            <input type="date" [(ngModel)]="toDateModel"
+            <input type="date" [(ngModel)]="toDateModel" aria-label="To date"
               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-            <select [(ngModel)]="formFilterModel"
+            <select [(ngModel)]="formFilterModel" aria-label="Filter by form"
               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">All forms</option>
               @for (f of forms(); track f.id) {
@@ -60,17 +61,17 @@ const PAGE_SIZE = 25;
         }
 
         <!-- Table -->
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <table class="min-w-full text-sm">
+        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <table class="min-w-[640px] w-full text-sm">
             <thead>
               <tr class="bg-gray-50">
-                <th class="px-5 py-3 text-left font-medium text-gray-500">#</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Form</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Abnormal</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Integration</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Submitted</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Submitted By</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Actions</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">#</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Form</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Abnormal</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Integration</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Submitted</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Submitted By</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody>

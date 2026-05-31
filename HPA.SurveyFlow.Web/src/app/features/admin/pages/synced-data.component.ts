@@ -14,7 +14,7 @@ const SOURCE_LABEL: Record<string, string> = {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6">
+    <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -63,7 +63,7 @@ const SOURCE_LABEL: Record<string, string> = {
                   </span>
                   <span class="font-mono">{{ r.external_id }}</span>
                   <span class="text-gray-500">{{ r.display_name ?? '' }}</span>
-                  <span class="text-gray-400">({{ r.status }})</span>
+                  <span class="text-gray-500">({{ r.status }})</span>
                 </div>
               }
             </div>
@@ -114,7 +114,7 @@ const SOURCE_LABEL: Record<string, string> = {
               <div class="min-w-0">
                 <div class="font-semibold text-gray-900 text-sm">{{ sourceLabel(s.source) }}</div>
                 <div class="text-2xl font-bold text-indigo-700 mt-0.5">{{ s.count.toLocaleString() }}</div>
-                <div class="text-xs text-gray-400 mt-0.5">Last synced {{ formatDate(s.last_synced_at) }}</div>
+                <div class="text-xs text-gray-500 mt-0.5">Last synced {{ formatDate(s.last_synced_at) }}</div>
               </div>
             </div>
           }
@@ -127,7 +127,7 @@ const SOURCE_LABEL: Record<string, string> = {
           placeholder="Search name, ID, category…"
           class="flex-1 min-w-48 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
 
-        <select [(ngModel)]="filterSource" (ngModelChange)="load()"
+        <select [(ngModel)]="filterSource" (ngModelChange)="load()" aria-label="Filter by source"
           class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="">All sources</option>
           @for (s of sources(); track s.source) {
@@ -135,7 +135,7 @@ const SOURCE_LABEL: Record<string, string> = {
           }
         </select>
 
-        <select [(ngModel)]="filterActive" (ngModelChange)="load()"
+        <select [(ngModel)]="filterActive" (ngModelChange)="load()" aria-label="Filter by status"
           class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="">Active & inactive</option>
           <option value="true">Active only</option>
@@ -176,13 +176,13 @@ const SOURCE_LABEL: Record<string, string> = {
             </thead>
             <tbody>
               @if (loading()) {
-                <tr><td colspan="6" class="px-5 py-8 text-center text-gray-400">
+                <tr><td colspan="6" class="px-5 py-8 text-center text-gray-500">
                   <div class="flex justify-center">
                     <div class="w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 </td></tr>
               } @else if (visibleNodes().length === 0) {
-                <tr><td colspan="6" class="px-5 py-8 text-center text-gray-400">
+                <tr><td colspan="6" class="px-5 py-8 text-center text-gray-500">
                   No records found. Run a sync job to populate data.
                 </td></tr>
               } @else {
@@ -194,7 +194,7 @@ const SOURCE_LABEL: Record<string, string> = {
                         <!-- Expand/collapse -->
                         @if (node.has_children) {
                           <button type="button" (click)="toggleNode(node.external_id); $event.stopPropagation()"
-                            class="w-5 h-5 mr-1.5 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-200 shrink-0 transition">
+                            class="w-5 h-5 mr-1.5 flex items-center justify-center rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200 shrink-0 transition">
                             {{ collapsed().has(node.external_id) ? '▸' : '▾' }}
                           </button>
                         } @else {
@@ -217,7 +217,7 @@ const SOURCE_LABEL: Record<string, string> = {
                           {{ node.display_name }}
                         </span>
                         @if (node.has_children) {
-                          <span class="ml-1.5 text-xs text-gray-400">({{ node.child_count }})</span>
+                          <span class="ml-1.5 text-xs text-gray-500">({{ node.child_count }})</span>
                         }
                       </div>
                     </td>
@@ -256,9 +256,9 @@ const SOURCE_LABEL: Record<string, string> = {
                   <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
                     {{ sourceLabel(selectedAsset()!.source) }}
                   </span>
-                  <span class="text-xs text-gray-400 font-mono">ID: {{ selectedAsset()!.external_id }}</span>
+                  <span class="text-xs text-gray-500 font-mono">ID: {{ selectedAsset()!.external_id }}</span>
                   @if (selectedAsset()!.parent_external_id) {
-                    <span class="text-xs text-gray-400 font-mono">Parent: {{ selectedAsset()!.parent_external_id }}</span>
+                    <span class="text-xs text-gray-500 font-mono">Parent: {{ selectedAsset()!.parent_external_id }}</span>
                   }
                   @if (selectedAsset()!.is_active) {
                     <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Active</span>
@@ -268,7 +268,7 @@ const SOURCE_LABEL: Record<string, string> = {
                 </div>
               </div>
               <button type="button" (click)="selectedAsset.set(null)"
-                class="text-gray-400 hover:text-gray-700 text-xl leading-none ml-4 shrink-0">✕</button>
+                class="text-gray-500 hover:text-gray-700 text-xl leading-none ml-4 shrink-0">✕</button>
             </div>
 
             <div class="flex border-b border-gray-200 bg-gray-50 shrink-0">
@@ -300,7 +300,7 @@ const SOURCE_LABEL: Record<string, string> = {
                   <div class="divide-y divide-gray-100">
                     @for (group of renderedGroups(); track group.title) {
                       <div class="px-6 py-4">
-                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{{ group.title }}</h4>
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{ group.title }}</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
                           @for (field of group.fields; track field.label) {
                             <div>
@@ -333,7 +333,7 @@ const SOURCE_LABEL: Record<string, string> = {
             </div>
 
             <div class="px-6 py-3 border-t border-gray-200 flex items-center justify-between shrink-0">
-              <span class="text-xs text-gray-400">Last synced: {{ formatDate(selectedAsset()!.last_synced_at) }}</span>
+              <span class="text-xs text-gray-500">Last synced: {{ formatDate(selectedAsset()!.last_synced_at) }}</span>
               <div class="flex items-center gap-2">
                 <button type="button" (click)="syncOneFromDetail()"
                   [disabled]="syncingOne()"

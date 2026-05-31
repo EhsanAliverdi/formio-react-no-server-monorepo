@@ -102,7 +102,7 @@ function ensureWizardHasPage(schema: any): any {
   standalone: true,
   imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent],
   template: `
-    <div class="p-6">
+    <div>
       <!-- Header -->
       <div class="flex items-center gap-3 mb-6">
         <button type="button" (click)="router.navigate(['/admin/forms'])"

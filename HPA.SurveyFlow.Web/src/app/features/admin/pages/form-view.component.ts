@@ -40,7 +40,7 @@ function panelTitle(p: Panel, i: number): string {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6">
+    <div>
       <div class="flex items-center gap-3 mb-6">
         <button type="button" (click)="router.navigate(['/admin/forms'])"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">

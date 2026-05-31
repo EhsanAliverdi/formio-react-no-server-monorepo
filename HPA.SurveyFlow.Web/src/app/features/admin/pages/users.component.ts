@@ -19,10 +19,13 @@ interface UserFormModel {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6">
+    <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Users</h1>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Users</h1>
+          <p class="text-sm text-gray-500 mt-0.5">Manage user accounts and role assignments.</p>
+        </div>
         @if (isAdmin()) {
           <button
             type="button"
@@ -53,22 +56,22 @@ interface UserFormModel {
 
       <!-- Table -->
       @if (!loading()) {
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <table class="min-w-full text-sm">
+        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <table class="min-w-[640px] w-full text-sm">
             <thead>
               <tr class="bg-gray-50">
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Name / Email</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Role</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Status</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Name / Email</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Role</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Status</th>
                 @if (isAdmin()) {
-                  <th class="px-5 py-3 text-left font-medium text-gray-500">Actions</th>
+                  <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Actions</th>
                 }
               </tr>
             </thead>
             <tbody>
               @if (users().length === 0) {
                 <tr>
-                  <td [attr.colspan]="isAdmin() ? 4 : 3" class="px-5 py-8 text-center text-sm text-gray-400">
+                  <td [attr.colspan]="isAdmin() ? 4 : 3" class="px-5 py-8 text-center text-sm text-gray-500">
                     No users found.
                   </td>
                 </tr>

@@ -76,7 +76,7 @@ export interface SidebarBranding {
 
       <!-- Nav -->
       <div class="flex flex-1 flex-col overflow-y-auto no-scrollbar">
-        <nav class="mb-6">
+        <nav class="mb-6" aria-label="Main navigation">
           <div class="flex flex-col gap-4">
             <div>
               <h2 class="mb-4 text-xs uppercase leading-5 text-gray-400 flex"

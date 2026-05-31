@@ -49,7 +49,7 @@ function panelTitle(p: Panel, i: number): string {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="p-6">
+    <div>
 
       <!-- Header -->
       <div class="flex items-center gap-3 mb-6">

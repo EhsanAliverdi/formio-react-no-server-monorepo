@@ -42,7 +42,7 @@ function formatDuration(ms: number | null): string {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6">
+    <div>
       <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">Scheduled Jobs</h1>

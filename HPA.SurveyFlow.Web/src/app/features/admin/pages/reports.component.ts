@@ -12,17 +12,17 @@ import { forkJoin } from 'rxjs';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 max-w-7xl mx-auto">
+    <div>
 
       <!-- Page header -->
       <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Reports</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Create and run dynamic reports on your form submissions</p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-500">Create and run dynamic reports on your form submissions</p>
         </div>
         @if (forms().length > 0) {
           <div class="flex items-center gap-2 flex-shrink-0">
-            <select [(ngModel)]="newReportFormId" class="ta-field text-sm h-10 w-48">
+            <select [(ngModel)]="newReportFormId" aria-label="Select form for new report" class="ta-field text-sm h-10 w-48">
               <option value="">Select a form…</option>
               @for (f of forms(); track f.id) {
                 <option [value]="f.id">{{ f.name }}</option>
@@ -47,12 +47,12 @@ import { forkJoin } from 'rxjs';
       <!-- Recently Used section -->
       @if (recentlyUsed().length > 0 && !filterCategory && !searchQuery && !showDriftOnly && !filterFormId) {
         <div class="mb-6">
-          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Recently Used</h2>
+          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wide mb-3">Recently Used</h2>
           <div class="flex gap-2 flex-wrap">
             @for (t of recentlyUsedTemplates(); track t.id) {
               <button type="button" (click)="runReport(t)"
                 class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/20 dark:hover:text-brand-300 transition-colors">
-                <svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 {{ t.name }}
@@ -65,7 +65,7 @@ import { forkJoin } from 'rxjs';
       <!-- Favourites section -->
       @if (favouriteTemplates().length > 0 && !filterCategory && !searchQuery && !showDriftOnly && !filterFormId) {
         <div class="mb-6">
-          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Favourites</h2>
+          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wide mb-3">Favourites</h2>
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             @for (t of favouriteTemplates(); track t.id) {
               <ng-container *ngTemplateOutlet="templateCard; context: { $implicit: t, compact: true }"></ng-container>
@@ -77,7 +77,7 @@ import { forkJoin } from 'rxjs';
       <!-- Filter bar -->
       <div class="mb-5 flex flex-wrap items-center gap-3">
         <!-- Form filter -->
-        <select [(ngModel)]="filterFormId" (ngModelChange)="loadTemplates()" class="ta-field text-sm h-9 w-44">
+        <select [(ngModel)]="filterFormId" (ngModelChange)="loadTemplates()" aria-label="Filter by form" class="ta-field text-sm h-9 w-44">
           <option value="">All forms</option>
           @for (f of forms(); track f.id) {
             <option [value]="f.id">{{ f.name }}</option>
@@ -86,7 +86,7 @@ import { forkJoin } from 'rxjs';
 
         <!-- Category filter -->
         @if (categories().length > 0) {
-          <select [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()" class="ta-field text-sm h-9 w-36">
+          <select [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()" aria-label="Filter by category" class="ta-field text-sm h-9 w-36">
             <option value="">All categories</option>
             @for (cat of categories(); track cat) {
               <option [value]="cat">{{ cat }}</option>
@@ -96,7 +96,7 @@ import { forkJoin } from 'rxjs';
 
         <!-- Search -->
         <div class="relative flex-1 min-w-36 max-w-64">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
           <input type="search" [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()"
@@ -127,7 +127,7 @@ import { forkJoin } from 'rxjs';
           </span>
         </label>
 
-        <span class="text-sm text-gray-400 ml-auto">
+        <span class="text-sm text-gray-500 ml-auto">
           {{ loading() ? 'Loading…' : filteredTemplates().length + ' result' + (filteredTemplates().length !== 1 ? 's' : '') }}
         </span>
       </div>
@@ -149,16 +149,16 @@ import { forkJoin } from 'rxjs';
       @else if (filteredTemplates().length === 0) {
         <div class="ta-card flex flex-col items-center justify-center py-16 text-center">
           <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-            <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-7 h-7 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
           </div>
           @if (templates().length === 0) {
             <h3 class="text-base font-semibold text-gray-800 dark:text-white mb-1">No report templates yet</h3>
-            <p class="text-sm text-gray-400 mb-6 max-w-xs">Select a form and create your first report template to get started.</p>
+            <p class="text-sm text-gray-500 mb-6 max-w-xs">Select a form and create your first report template to get started.</p>
             @if (forms().length > 0) {
               <div class="flex items-center gap-2">
-                <select [(ngModel)]="newReportFormId" class="ta-field text-sm h-10 w-48">
+                <select [(ngModel)]="newReportFormId" aria-label="Select form for new report" class="ta-field text-sm h-10 w-48">
                   <option value="">Select a form…</option>
                   @for (f of forms(); track f.id) {
                     <option [value]="f.id">{{ f.name }}</option>
@@ -170,7 +170,7 @@ import { forkJoin } from 'rxjs';
             }
           } @else {
             <h3 class="text-base font-semibold text-gray-800 dark:text-white mb-1">No results</h3>
-            <p class="text-sm text-gray-400 mb-4">Try adjusting your filters.</p>
+            <p class="text-sm text-gray-500 mb-4">Try adjusting your filters.</p>
             <button type="button" (click)="clearFilters()" class="ta-btn ta-btn-secondary text-sm">Clear filters</button>
           }
         </div>
@@ -197,7 +197,7 @@ import { forkJoin } from 'rxjs';
             <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate group-hover:text-brand-600 transition-colors">
               {{ t.name }}
             </h3>
-            <p class="text-xs text-gray-400 mt-0.5">{{ t.form_name }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">{{ t.form_name }}</p>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <!-- Favourite star -->
@@ -248,11 +248,11 @@ import { forkJoin } from 'rxjs';
 
         <!-- Description -->
         @if (t.description && !compact) {
-          <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{ t.description }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 line-clamp-2">{{ t.description }}</p>
         }
 
         <!-- Meta -->
-        <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+        <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-500">
           <span class="flex items-center gap-1">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/>
@@ -282,7 +282,7 @@ import { forkJoin } from 'rxjs';
             Edit
           </button>
           <button type="button" (click)="deleteReport(t)"
-            class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             title="Delete template">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -297,7 +297,7 @@ import { forkJoin } from 'rxjs';
       <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
         <div class="ta-card w-full max-w-sm shadow-xl">
           <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-2">Delete Report Template</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+          <p class="text-sm text-gray-600 dark:text-gray-500 mb-6">
             Are you sure you want to delete <strong class="text-gray-900 dark:text-white">{{ deletingTemplate()!.name }}</strong>? This cannot be undone.
           </p>
           <div class="flex gap-3 justify-end">
