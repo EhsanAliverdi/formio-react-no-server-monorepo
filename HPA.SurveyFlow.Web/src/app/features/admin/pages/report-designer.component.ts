@@ -33,7 +33,7 @@ import { ReportDriftWizardComponent } from '../../../shared/components/report-dr
     <div class="flex flex-col h-full">
 
       <!-- Top bar -->
-      <div class="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center gap-3">
+      <div class="mb-6 flex items-center gap-3">
         <button type="button" (click)="goBack()"
           class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

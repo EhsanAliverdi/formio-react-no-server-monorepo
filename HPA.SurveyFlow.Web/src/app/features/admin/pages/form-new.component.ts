@@ -1,9 +1,10 @@
 import { Component, OnInit, ViewChild, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormService } from '../../../core/services/form.service';
 import { UserService } from '../../../core/services/user.service';
+import { CategoryService } from '../../../core/services/category.service';
 import { ToastrService } from 'ngx-toastr';
 import { FormEditorComponent } from '../../../shared/components/formio/form-editor.component';
 import { IntegrationPayloadMappingComponent } from '../../../shared/components/integration-payload-mapping/integration-payload-mapping.component';
@@ -67,7 +68,6 @@ function normalizeEmailNotificationConfig(raw: any): Record<SecondarySubmitOutco
     warning: defaultEmailNotificationConfig(),
     error: defaultEmailNotificationConfig(),
   };
-
   return {
     success: { ...defaults.success, ...(raw?.success ?? {}) },
     warning: { ...defaults.warning, ...(raw?.warning ?? {}) },
@@ -100,9 +100,10 @@ function ensureWizardHasPage(schema: any): any {
 @Component({
   selector: 'app-admin-form-new',
   standalone: true,
-  imports: [CommonModule, FormsModule, FormEditorComponent, IntegrationPayloadMappingComponent],
+  imports: [CommonModule, FormsModule, RouterLink, FormEditorComponent, IntegrationPayloadMappingComponent],
   template: `
     <div>
+
       <!-- Header -->
       <div class="flex items-center gap-3 mb-6">
         <button type="button" (click)="router.navigate(['/admin/forms'])"
@@ -115,379 +116,367 @@ function ensureWizardHasPage(schema: any): any {
         <h1 class="text-2xl font-bold text-gray-900">New Form</h1>
       </div>
 
-      @if (error()) {
-        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+      @if (saveError()) {
+        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{{ saveError() }}</div>
       }
 
-      <!-- Basic settings -->
-      <div class="mb-6 space-y-4 bg-white rounded-xl border border-gray-200 p-6">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Form Name <span class="text-red-500">*</span></label>
-          <input type="text" [(ngModel)]="name" placeholder="Enter form name"
-            class="w-full max-w-lg rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      <!-- ── 1. General Configuration (always open) ─────────────────────── -->
+      <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100">
+          <h2 class="text-base font-semibold text-gray-900">General Configuration</h2>
         </div>
-        <div class="flex items-center gap-3">
-          <input type="checkbox" id="allowAnon" [(ngModel)]="allowAnonymous"
-            class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-          <label for="allowAnon" class="text-sm font-medium text-gray-700">Allow anonymous submissions</label>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
-          <select [(ngModel)]="visibility"
-            class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="public">Public</option>
-            <option value="restricted">Restricted</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Parent form</label>
-          <select [(ngModel)]="parentFormId"
-            class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option [ngValue]="null">No parent form</option>
-            @for (f of allForms(); track f.id) {
-              <option [ngValue]="f.id">{{ f.name }}</option>
-            }
-          </select>
-          <p class="mt-1 text-xs text-gray-500">Use this when this form is shown after another form is submitted.</p>
-        </div>
-      </div>
+        <div class="px-6 py-5 space-y-4">
 
-      <!-- Access control -->
-      @if (visibility === 'restricted') {
-        <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
-          <h2 class="text-base font-semibold text-gray-800 mb-4">Access Control</h2>
-          <div class="mb-4">
-            <p class="text-sm font-medium text-gray-700 mb-2">Allowed Roles</p>
-            <div class="flex flex-wrap gap-4">
-              @for (role of availableRoles; track role.value) {
-                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input type="checkbox" [checked]="allowedRoles.includes(role.value)"
-                    (change)="toggleRole(role.value)"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  {{ role.label }}
-                </label>
-              }
+          <!-- Form Name -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Form Name <span class="text-red-500">*</span></label>
+            <input type="text" [(ngModel)]="name" placeholder="Enter form name"
+              class="w-full max-w-lg rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+          </div>
+
+          <!-- Visibility + Anonymous -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+              <select [(ngModel)]="visibility"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="public">Public</option>
+                <option value="restricted">Restricted</option>
+              </select>
+            </div>
+            <div class="flex items-end pb-2">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="allowAnon" [(ngModel)]="allowAnonymous"
+                  class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                <span class="text-sm font-medium text-gray-700">Allow anonymous submissions</span>
+              </label>
             </div>
           </div>
-          <div>
-            <p class="text-sm font-medium text-gray-700 mb-2">Allowed Users</p>
-            @if (usersLoading()) {
-              <p class="text-sm text-gray-500">Loading users…</p>
-            } @else {
-              <div class="max-h-48 overflow-y-auto space-y-1 border border-gray-200 rounded-lg p-3">
-                @for (user of allUsers(); track user.id) {
-                  <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                    <input type="checkbox" [checked]="allowedUserIds.includes(user.id)"
-                      (change)="toggleUser(user.id)"
-                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                    {{ user.display_name || user.email }}
-                    <span class="text-xs text-gray-400">({{ user.role }})</span>
-                  </label>
-                }
-              </div>
-            }
-          </div>
-        </div>
-      }
 
-      <!-- App settings -->
-      <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
-        <h2 class="text-base font-semibold text-gray-800 mb-4">Form Settings</h2>
-        <div class="space-y-3">
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="appSettings.previewBeforeSubmit"
-              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-            <span class="text-sm text-gray-700">Show preview before submission</span>
-          </label>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="appSettings.allowDraftPdfBeforeSubmit"
-              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-            <span class="text-sm text-gray-700">Allow draft PDF before submit</span>
-          </label>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="appSettings.allowSubmissionPdfExport"
-              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-            <span class="text-sm text-gray-700">Allow submission PDF export</span>
-          </label>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="appSettings.showColorCodedAnswers"
-              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-            <span class="flex items-center gap-2 text-sm text-gray-700">
-              Show color-coded answers while filling
-              <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                title="When enabled, answers configured in the Abnormalities tab are highlighted for people filling the form: green for normal, amber for warning, and red for critical/error.">
-                ?
-              </span>
-            </span>
-          </label>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" [(ngModel)]="categoryEnabled"
-              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-            <span class="text-sm text-gray-700">Show on a category page</span>
-          </label>
-          @if (categoryEnabled) {
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Parent form -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Parent form</label>
+            <select [(ngModel)]="parentFormId"
+              class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option [ngValue]="null">No parent form</option>
+              @for (f of allForms(); track f.id) {
+                <option [ngValue]="f.id">{{ f.name }}</option>
+              }
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Use this when this form is shown after another form is submitted.</p>
+          </div>
+
+          <!-- Access control (shown when restricted) -->
+          @if (visibility === 'restricted') {
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-4">
+              <p class="text-sm font-semibold text-amber-800">Access Control</p>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Category slug <span class="text-red-500">*</span></label>
-                <input type="text" [(ngModel)]="categorySlug" placeholder="pre-start"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                <p class="mt-1 text-xs text-gray-500">Used in the public URL, for example <code>/category/pre-start</code>.</p>
+                <p class="text-sm font-medium text-gray-700 mb-2">Allowed Roles</p>
+                <div class="flex flex-wrap gap-4">
+                  @for (role of availableRoles(); track role.value) {
+                    <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                      <input type="checkbox" [checked]="allowedRoles.includes(role.value)"
+                        (change)="toggleRole(role.value)"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                      {{ role.label }}
+                    </label>
+                  }
+                </div>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Category name</label>
-                <input type="text" [(ngModel)]="categoryName" placeholder="Pre-Start"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                <p class="text-sm font-medium text-gray-700 mb-2">Allowed Users</p>
+                @if (usersLoading()) {
+                  <p class="text-sm text-gray-500">Loading users…</p>
+                } @else {
+                  <div class="max-h-48 overflow-y-auto space-y-1 border border-gray-200 rounded-lg p-3 bg-white">
+                    @for (user of allUsers(); track user.id) {
+                      <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" [checked]="allowedUserIds.includes(user.id)"
+                          (change)="toggleUser(user.id)"
+                          class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                        {{ user.display_name || user.email }}
+                        <span class="text-xs text-gray-400">({{ user.role }})</span>
+                      </label>
+                    }
+                  </div>
+                }
               </div>
             </div>
           }
+
+          <!-- Form Settings checkboxes -->
+          <div class="border-t pt-4">
+            <p class="text-sm font-semibold text-gray-700 mb-3">Form Settings</p>
+            <div class="space-y-2.5">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="appSettings.previewBeforeSubmit"
+                  class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                <span class="text-sm text-gray-700">Show preview before submission</span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="appSettings.allowDraftPdfBeforeSubmit"
+                  class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                <span class="text-sm text-gray-700">Allow draft PDF before submit</span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="appSettings.allowSubmissionPdfExport"
+                  class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                <span class="text-sm text-gray-700">Allow submission PDF export</span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="appSettings.showColorCodedAnswers"
+                  class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                <span class="flex items-center gap-2 text-sm text-gray-700">
+                  Show color-coded answers while filling
+                  <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                    title="When enabled, answers configured in the Abnormalities tab are highlighted for people filling the form: green for normal, amber for warning, and red for critical/error.">?</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Public description -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Public description</label>
-            <textarea [(ngModel)]="appSettings.publicDescription" rows="2"
-              placeholder="Shown to users on the forms list page"
+            <textarea [(ngModel)]="appSettings.publicDescription" rows="2" placeholder="Shown to users on the forms list page"
               class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
           </div>
-        </div>
 
-        <div class="mt-6 border-t pt-5">
-          <div class="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-800">Submission Result Flow</h3>
-              <p class="text-xs text-gray-500 mt-1">Configure the message, follow-up routing, and secondary integration submit for each submission outcome.</p>
-            </div>
-            <span class="text-xs text-gray-500" [attr.title]="placeholderHelp">
-              Placeholder help
-            </span>
+          <!-- Category -->
+          <div class="border-t pt-4">
+            <p class="text-sm font-semibold text-gray-700 mb-1">Category</p>
+            <p class="text-xs text-gray-400 mb-3">
+              Assign this form to a category so it appears on the category page.
+              Manage categories in <a routerLink="/admin/categories" class="text-indigo-600 hover:underline">Admin → Categories</a>.
+            </p>
+            <select [(ngModel)]="categorySlug"
+              class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">— None —</option>
+              @for (cat of availableCategories(); track cat.slug) {
+                <option [value]="cat.slug">{{ cat.name }} ({{ cat.slug }})</option>
+              }
+            </select>
           </div>
 
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            @for (outcome of secondarySubmitOutcomes; track outcome.value) {
-              <section class="rounded-lg border p-4 space-y-4" [class]="outcome.panelClass">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset" [class]="outcome.badgeClass">
-                      {{ outcome.label }}
-                    </span>
-                    <p class="mt-2 text-xs text-gray-600">{{ outcome.description }}</p>
-                  </div>
-                  <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
-                    <input type="checkbox" [(ngModel)]="secondarySubmitConfigs[outcome.value].enabled"
-                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                    Integration
-                  </label>
-                </div>
+        </div>
+      </div>
 
-                <div>
-                  <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                    Message
-                    <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                      [attr.title]="placeholderHelp">
-                      ?
-                    </span>
-                  </label>
-                  <textarea [(ngModel)]="appSettings[messageSettingKey(outcome.value)]" rows="3"
-                    [placeholder]="messagePlaceholder(outcome.value)"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                    [class]="outcome.focusClass"></textarea>
-                </div>
+      <!-- ── 2. Submission Flow (collapsible) ────────────────────────────── -->
+      <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <button type="button" (click)="sectionOpen['flow'] = !sectionOpen['flow']"
+          class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
+          <span class="text-base font-semibold text-gray-900">Submission Flow</span>
+          <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['flow']"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        @if (sectionOpen['flow']) {
+          <div class="border-t border-gray-100 px-6 py-5">
+            <p class="text-xs text-gray-500 mb-4">Configure the message, follow-up routing, and secondary integration submit for each submission outcome.</p>
 
-                <div class="grid grid-cols-1 gap-3">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">After message</label>
-                    <select [(ngModel)]="resultActions[outcome.value].mode"
-                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                      [class]="outcome.focusClass">
-                      <option value="stay">Stay on result message</option>
-                      <option value="redirect">Redirect to URL</option>
-                      <option value="next_form">Open follow-up form</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Delay before action</label>
-                    <div class="flex items-center gap-2">
-                      <input type="number" min="0" step="1" [(ngModel)]="resultActions[outcome.value].delaySeconds"
-                        class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                        [class]="outcome.focusClass"/>
-                      <span class="text-xs text-gray-500">seconds. Use 0 for immediate.</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Redirect URL</label>
-                  <input type="url" [(ngModel)]="appSettings[redirectSettingKey(outcome.value)]"
-                    placeholder="https://example.com/thank-you"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                    [class]="outcome.focusClass"/>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Follow-up form</label>
-                  <select [(ngModel)]="appSettings.nextForms[outcome.value]"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                    [class]="outcome.focusClass">
-                    <option [ngValue]="null">No follow-up form</option>
-                    @for (f of allForms(); track f.id) {
-                      <option [ngValue]="f.id">{{ f.name }}</option>
-                    }
-                  </select>
-                </div>
-
-                @if (secondarySubmitConfigs[outcome.value].enabled) {
-                  <div class="rounded-lg border border-gray-200 bg-white p-3">
-                    <div class="text-xs font-semibold text-gray-700 mb-3">Secondary submit</div>
-                    <div class="grid grid-cols-1 gap-3">
-                      <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
-                        <select [(ngModel)]="secondarySubmitConfigs[outcome.value].integration"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                          <option value="mex">MEX Maintenance</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
-                        <select [(ngModel)]="secondarySubmitConfigs[outcome.value].action"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                          <option value="create_request">Create Request</option>
-                        </select>
-                      </div>
-                      <app-integration-payload-mapping
-                        [actionKey]="(secondarySubmitConfigs[outcome.value].integration || 'mex') + ':' + (secondarySubmitConfigs[outcome.value].action || 'create_request')"
-                        [fieldMappings]="secondarySubmitConfigs[outcome.value].fieldMappings || {}"
-                        [formFields]="collectFormFields(currentSchema)"
-                        (fieldMappingsChange)="secondarySubmitConfigs[outcome.value].fieldMappings = $event"
-                      />
-                    </div>
-                  </div>
-                }
-
-                <div class="rounded-lg border border-gray-200 bg-white p-3">
-                  <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+              @for (outcome of secondarySubmitOutcomes; track outcome.value) {
+                <section class="rounded-lg border p-4 space-y-4" [class]="outcome.panelClass">
+                  <div class="flex items-start justify-between gap-3">
                     <div>
-                      <div class="text-xs font-semibold text-gray-700">Email notification</div>
-                      <p class="mt-1 text-xs text-gray-500">Send outcome-based emails to one or more recipients. HTML is supported in the body.</p>
+                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset" [class]="outcome.badgeClass">
+                        {{ outcome.label }}
+                      </span>
+                      <p class="mt-2 text-xs text-gray-600">{{ outcome.description }}</p>
                     </div>
                     <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
-                      <input type="checkbox" [(ngModel)]="emailNotifications[outcome.value].enabled"
+                      <input type="checkbox" [(ngModel)]="secondarySubmitConfigs[outcome.value].enabled"
                         class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                      Enabled
+                      Integration
                     </label>
                   </div>
 
-                  @if (emailNotifications[outcome.value].enabled) {
-                    <div class="grid grid-cols-1 gap-3">
-                      <div>
-                        <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                          Recipients
-                          <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                            title="Separate recipients with commas, semicolons, or new lines.">
-                            ?
-                          </span>
-                        </label>
-                        <textarea [(ngModel)]="emailNotifications[outcome.value].to" rows="2"
-                          placeholder="team@example.com, manager@example.com"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                          [class]="outcome.focusClass"></textarea>
-                      </div>
+                  <div>
+                    <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
+                      Message
+                      <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                        [attr.title]="placeholderHelp">?</span>
+                    </label>
+                    <textarea [(ngModel)]="appSettings[messageSettingKey(outcome.value)]" rows="3"
+                      [placeholder]="messagePlaceholder(outcome.value)"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                      [class]="outcome.focusClass"></textarea>
+                  </div>
 
-                      <div>
-                        <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                          Subject
-                          <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                            [attr.title]="placeholderHelp">
-                            ?
-                          </span>
-                        </label>
-                        <input type="text" [(ngModel)]="emailNotifications[outcome.value].subject"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                  <div class="grid grid-cols-1 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">After message</label>
+                      <select [(ngModel)]="resultActions[outcome.value].mode"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                        [class]="outcome.focusClass">
+                        <option value="stay">Stay on result message</option>
+                        <option value="redirect">Redirect to URL</option>
+                        <option value="next_form">Open follow-up form</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">Delay before action</label>
+                      <div class="flex items-center gap-2">
+                        <input type="number" min="0" step="1" [(ngModel)]="resultActions[outcome.value].delaySeconds"
+                          class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
                           [class]="outcome.focusClass"/>
+                        <span class="text-xs text-gray-500">seconds. 0 = immediate.</span>
                       </div>
+                    </div>
+                  </div>
 
-                      <div>
-                        <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                          Body (HTML supported)
-                          <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                            [attr.title]="placeholderHelp">
-                            ?
-                          </span>
-                        </label>
-                        <textarea [(ngModel)]="emailNotifications[outcome.value].bodyHtml" rows="6"
-                          placeholder="<p>A {{outcome}} submission was received.</p>"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2"
-                          [class]="outcome.focusClass"></textarea>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Redirect URL</label>
+                    <input type="url" [(ngModel)]="appSettings[redirectSettingKey(outcome.value)]"
+                      placeholder="https://example.com/thank-you"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                      [class]="outcome.focusClass"/>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Follow-up form</label>
+                    <select [(ngModel)]="appSettings.nextForms[outcome.value]"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                      [class]="outcome.focusClass">
+                      <option [ngValue]="null">No follow-up form</option>
+                      @for (f of allForms(); track f.id) {
+                        <option [ngValue]="f.id">{{ f.name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  @if (secondarySubmitConfigs[outcome.value].enabled) {
+                    <div class="rounded-lg border border-gray-200 bg-white p-3">
+                      <div class="text-xs font-semibold text-gray-700 mb-3">Secondary submit</div>
+                      <div class="grid grid-cols-1 gap-3">
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
+                          <select [(ngModel)]="secondarySubmitConfigs[outcome.value].integration"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="mex">MEX Maintenance</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
+                          <select [(ngModel)]="secondarySubmitConfigs[outcome.value].action"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="create_request">Create Request</option>
+                          </select>
+                        </div>
+                        <app-integration-payload-mapping
+                          [actionKey]="(secondarySubmitConfigs[outcome.value].integration || 'mex') + ':' + (secondarySubmitConfigs[outcome.value].action || 'create_request')"
+                          [fieldMappings]="secondarySubmitConfigs[outcome.value].fieldMappings || {}"
+                          [formFields]="collectFormFields(currentSchema)"
+                          (fieldMappingsChange)="secondarySubmitConfigs[outcome.value].fieldMappings = $event"
+                        />
                       </div>
-
-                      <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" [(ngModel)]="emailNotifications[outcome.value].attachPdf"
-                          class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                        <span class="text-sm text-gray-700">Attach submission PDF</span>
-                      </label>
                     </div>
                   }
-                </div>
-              </section>
-            }
+
+                  <div class="rounded-lg border border-gray-200 bg-white p-3">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <div class="text-xs font-semibold text-gray-700">Email notification</div>
+                        <p class="mt-1 text-xs text-gray-500">Send outcome-based emails to one or more recipients.</p>
+                      </div>
+                      <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+                        <input type="checkbox" [(ngModel)]="emailNotifications[outcome.value].enabled"
+                          class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                        Enabled
+                      </label>
+                    </div>
+
+                    @if (emailNotifications[outcome.value].enabled) {
+                      <div class="grid grid-cols-1 gap-3">
+                        <div>
+                          <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
+                            Recipients
+                            <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                              title="Separate recipients with commas, semicolons, or new lines.">?</span>
+                          </label>
+                          <textarea [(ngModel)]="emailNotifications[outcome.value].to" rows="2"
+                            placeholder="team@example.com, manager@example.com"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                            [class]="outcome.focusClass"></textarea>
+                        </div>
+                        <div>
+                          <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
+                            Subject
+                            <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                              [attr.title]="placeholderHelp">?</span>
+                          </label>
+                          <input type="text" [(ngModel)]="emailNotifications[outcome.value].subject"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                            [class]="outcome.focusClass"/>
+                        </div>
+                        <div>
+                          <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
+                            Body (HTML supported)
+                            <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
+                              [attr.title]="placeholderHelp">?</span>
+                          </label>
+                          <textarea [(ngModel)]="emailNotifications[outcome.value].bodyHtml" rows="6"
+                            placeholder="<p>A submission was received.</p>"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2"
+                            [class]="outcome.focusClass"></textarea>
+                        </div>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                          <input type="checkbox" [(ngModel)]="emailNotifications[outcome.value].attachPdf"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+                          <span class="text-sm text-gray-700">Attach submission PDF</span>
+                        </label>
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
           </div>
-        </div>
+        }
       </div>
 
-      <!-- Wizard toggle -->
-      <div class="mb-4 bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
-        <span class="text-sm font-medium text-gray-700">Form type:</span>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="radio" [(ngModel)]="formDisplay" value="form" (ngModelChange)="onDisplayChange($event)"
-            class="h-4 w-4 border-gray-300 text-indigo-600"/>
-          <span class="text-sm text-gray-700">Single page</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="radio" [(ngModel)]="formDisplay" value="wizard" (ngModelChange)="onDisplayChange($event)"
-            class="h-4 w-4 border-gray-300 text-indigo-600"/>
-          <span class="text-sm text-gray-700">Multi-step wizard</span>
-        </label>
+      <!-- ── 3. Form Builder (collapsible) ───────────────────────────────── -->
+      <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <button type="button" (click)="sectionOpen['builder'] = !sectionOpen['builder']"
+          class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
+          <span class="text-base font-semibold text-gray-900">Form Builder</span>
+          <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['builder']"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        @if (sectionOpen['builder']) {
+          <div class="border-t border-gray-100 px-6 py-5 space-y-4">
+
+            <!-- Form type toggle -->
+            <div class="flex items-center gap-4">
+              <span class="text-sm font-medium text-gray-700">Form type:</span>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [(ngModel)]="formDisplay" value="form" (ngModelChange)="onDisplayChange($event)"
+                  class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                <span class="text-sm text-gray-700">Single page</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [(ngModel)]="formDisplay" value="wizard" (ngModelChange)="onDisplayChange($event)"
+                  class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                <span class="text-sm text-gray-700">Multi-step wizard</span>
+              </label>
+            </div>
+
+            <!-- Builder canvas -->
+            <app-form-editor #editorRef [formSchema]="currentSchema" (schemaChange)="onSchemaChange($event)"/>
+          </div>
+        }
       </div>
 
-      <!-- Wizard page management -->
-      @if (false && formDisplay === 'wizard') {
-        <div class="mb-4 bg-white rounded-xl border border-gray-200 p-4">
-          <div class="flex items-center gap-2 flex-wrap">
-            @for (panel of wizardPanels(); track panel.key; let i = $index) {
-              <div class="inline-flex items-center gap-1 rounded-full border px-3 py-1"
-                [class]="activePageIndex() === i ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'">
-                <button type="button" (click)="selectPage(i)" class="text-sm"
-                  [class]="activePageIndex() === i ? 'font-semibold text-blue-700' : 'font-medium text-gray-800'">
-                  {{ panel.title }}
-                </button>
-                <button type="button" (click)="renamePage(i)" title="Rename"
-                  class="ml-1 text-gray-400 hover:text-gray-700 text-xs">✏️</button>
-                @if (wizardPanels().length > 1) {
-                  <button type="button" (click)="deletePage(i)" title="Delete"
-                    class="ml-0.5 text-gray-400 hover:text-red-600 text-xs">✕</button>
-                }
-                @if (i > 0) {
-                  <button type="button" (click)="movePage(i, -1)" title="Move left"
-                    class="ml-0.5 text-gray-400 hover:text-gray-700 text-xs">◀</button>
-                }
-                @if (i < wizardPanels().length - 1) {
-                  <button type="button" (click)="movePage(i, 1)" title="Move right"
-                    class="ml-0.5 text-gray-400 hover:text-gray-700 text-xs">▶</button>
-                }
-              </div>
-            }
-            <button type="button" (click)="addPage()"
-              class="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-3 py-1 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600">
-              + Add page
-            </button>
-          </div>
-        </div>
-      }
-
-      <!-- Schema builder -->
-      <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
-        <h2 class="text-base font-semibold text-gray-800 mb-4">Form Builder</h2>
-        <app-form-editor #editorRef [formSchema]="currentSchema" (schemaChange)="onSchemaChange($event)"/>
+      <!-- Post-create hint -->
+      <div class="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <strong class="font-semibold">After saving</strong>, you'll be able to configure the card image &amp; icon, notification rules, and integration rules — these settings become available once the form has been created.
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 pt-2 pb-8">
         <button type="button" (click)="save()" [disabled]="saving()"
           class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition">
           @if (saving()) {
@@ -496,7 +485,7 @@ function ensureWizardHasPage(schema: any): any {
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
             </svg>
             Saving…
-          } @else { Save Form }
+          } @else { Create Form }
         </button>
         <button type="button" (click)="router.navigate(['/admin/forms'])"
           class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition">
@@ -512,6 +501,7 @@ export class FormNewComponent implements OnInit {
   router = inject(Router);
   private formService = inject(FormService);
   private userService = inject(UserService);
+  private categoryService = inject(CategoryService);
   private toastr = inject(ToastrService);
 
   name = '';
@@ -521,10 +511,8 @@ export class FormNewComponent implements OnInit {
   formDisplay: 'form' | 'wizard' = 'form';
   allowedRoles: string[] = [];
   allowedUserIds: number[] = [];
-  appSettings: any = { nextForms: { success: null, warning: null, error: null } };
-  categoryEnabled = false;
   categorySlug = '';
-  categoryName = '';
+  appSettings: any = { nextForms: { success: null, warning: null, error: null } };
   placeholderHelp = 'Available placeholders: {{outcome}}, {{submission_id}}, {{form_name}}, {{user_email}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
   secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
   secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = {
@@ -540,27 +528,42 @@ export class FormNewComponent implements OnInit {
   emailNotifications: Record<SecondarySubmitOutcome, EmailNotificationConfig> = normalizeEmailNotificationConfig(null);
   currentSchema: any = { type: 'form', display: 'form', components: [] };
 
+  sectionOpen: Record<string, boolean> = {
+    flow: false,
+    builder: true,
+  };
+
   saving = signal(false);
-  error = signal<string | null>(null);
+  saveError = signal<string | null>(null);
   usersLoading = signal(false);
   allUsers = signal<User[]>([]);
   allForms = signal<Form[]>([]);
-  wizardPanels = signal<WizardPanel[]>([]);
-  activePageIndex = signal(0);
-
-  availableRoles = [
+  availableRoles = signal<{ value: string; label: string }[]>([
     { value: 'admin', label: 'Admin' },
     { value: 'editor', label: 'Editor' },
     { value: 'viewer', label: 'Viewer' },
-  ];
+  ]);
+  availableCategories = signal<{ slug: string; name: string }[]>([]);
+  wizardPanels = signal<WizardPanel[]>([]);
 
   ngOnInit(): void {
+    this.usersLoading.set(true);
     this.userService.list().subscribe({
       next: (u) => { this.allUsers.set(u); this.usersLoading.set(false); },
       error: () => this.usersLoading.set(false),
     });
     this.formService.list().subscribe({
       next: (forms) => this.allForms.set(forms),
+      error: () => {},
+    });
+    this.userService.getRoles().subscribe({
+      next: (roles) => this.availableRoles.set(
+        roles.map(r => ({ value: r, label: r.charAt(0).toUpperCase() + r.slice(1) }))
+      ),
+      error: () => {},
+    });
+    this.categoryService.list().subscribe({
+      next: (cats) => this.availableCategories.set(cats.map(c => ({ slug: c.slug, name: c.name }))),
       error: () => {},
     });
   }
@@ -576,53 +579,6 @@ export class FormNewComponent implements OnInit {
     if (display === 'wizard') schema = ensureWizardHasPage(schema);
     this.currentSchema = schema;
     this.wizardPanels.set(getPanels(schema));
-  }
-
-  selectPage(i: number): void { this.activePageIndex.set(i); }
-
-  addPage(): void {
-    const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
-    const comps: any[] = Array.isArray(schema.components) ? [...schema.components] : [];
-    const idx = comps.length + 1;
-    comps.push({ type: 'panel', breadcrumb: `Page ${idx}`, title: `Page ${idx}`, label: `Page ${idx}`, key: `page${idx}`, components: [] });
-    const next = { ...schema, display: 'wizard', components: comps };
-    this.currentSchema = next;
-    this.wizardPanels.set(getPanels(next));
-    this.activePageIndex.set(comps.length - 1);
-  }
-
-  deletePage(i: number): void {
-    const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
-    const comps: any[] = Array.isArray(schema.components) ? [...schema.components] : [];
-    comps.splice(i, 1);
-    const next = { ...schema, components: comps };
-    this.currentSchema = next;
-    this.wizardPanels.set(getPanels(next));
-    this.activePageIndex.set(Math.max(0, Math.min(this.activePageIndex(), comps.length - 1)));
-  }
-
-  renamePage(i: number): void {
-    const current = this.wizardPanels()[i]?.title ?? `Page ${i + 1}`;
-    const newTitle = prompt('Rename page:', current);
-    if (!newTitle?.trim()) return;
-    const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
-    const comps: any[] = Array.isArray(schema.components) ? [...schema.components] : [];
-    comps[i] = { ...comps[i], breadcrumb: newTitle.trim(), title: newTitle.trim(), label: newTitle.trim() };
-    const next = { ...schema, components: comps };
-    this.currentSchema = next;
-    this.wizardPanels.set(getPanels(next));
-  }
-
-  movePage(i: number, dir: -1 | 1): void {
-    const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
-    const comps: any[] = Array.isArray(schema.components) ? [...schema.components] : [];
-    const j = i + dir;
-    if (j < 0 || j >= comps.length) return;
-    [comps[i], comps[j]] = [comps[j], comps[i]];
-    const next = { ...schema, components: comps };
-    this.currentSchema = next;
-    this.wizardPanels.set(getPanels(next));
-    this.activePageIndex.set(j);
   }
 
   toggleRole(role: string): void {
@@ -656,13 +612,8 @@ export class FormNewComponent implements OnInit {
   }
 
   save(): void {
-    if (!this.name.trim()) { this.error.set('Form name is required.'); return; }
-    const categorySlug = this.normalizeCategorySlug(this.categorySlug);
-    if (this.categoryEnabled && !categorySlug) {
-      this.error.set('Category slug is required when category page is enabled.');
-      return;
-    }
-    this.error.set(null);
+    if (!this.name.trim()) { this.saveError.set('Form name is required.'); return; }
+    this.saveError.set(null);
     const schema = this.editorRef ? this.editorRef.getSchema() : this.currentSchema;
     const secondarySubmit = {
       success: { ...this.secondarySubmitConfigs.success },
@@ -687,8 +638,7 @@ export class FormNewComponent implements OnInit {
         resultActions,
         secondarySubmit,
         emailNotifications,
-        categorySlug: this.categoryEnabled ? categorySlug : null,
-        categoryName: this.categoryEnabled ? this.categoryName.trim() || null : null,
+        categorySlug: this.categorySlug.trim() || null,
       },
     };
     this.saving.set(true);
@@ -702,16 +652,8 @@ export class FormNewComponent implements OnInit {
       allowed_user_ids: this.allowedUserIds,
     }).subscribe({
       next: () => { this.toastr.success('Form created.'); this.router.navigate(['/admin/forms']); },
-      error: (err) => { this.saving.set(false); this.error.set(err?.error?.error || 'Failed to create form.'); this.toastr.error(this.error()!); },
+      error: (err) => { this.saving.set(false); this.saveError.set(err?.error?.error || 'Failed to create form.'); this.toastr.error(this.saveError()!); },
     });
-  }
-
-  private normalizeCategorySlug(value: string): string {
-    return (value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
   }
 
   collectFormFields(schema: any): { key: string; label: string; type: string }[] {
