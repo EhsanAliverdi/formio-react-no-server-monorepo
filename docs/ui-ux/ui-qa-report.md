@@ -1,7 +1,7 @@
 # UI QA Audit — SurveyFlow Admin
 
 Generated: 2026-06-01
-Crawler run: 2026-05-31T21:46:17.773Z
+Crawler run: 2026-05-31T22:28:50.040Z
 
 ---
 
@@ -11,17 +11,34 @@ Crawler run: 2026-05-31T21:46:17.773Z
 |------|-------|
 | Base URL | http://localhost:4200 |
 | Breakpoints tested | mobile-375, tablet-768, desktop-1024, desktop-1440 |
-| Routes discovered | 23 |
-| Routes visited | 23 |
+| Routes discovered | 24 |
+| Routes visited | 24 |
 | Routes failed/skipped | 0 |
 | Axe enabled | Yes |
-| Coverage gaps | None — all 23 routes visited successfully |
+| Coverage gaps | None — all 24 routes visited successfully |
+
+New this run: `/form-public/15` (public form fill page) added to known routes.
 
 ---
 
 ## Executive Summary
 
-The application is visually polished and structurally complete — all 23 routes loaded without errors and the overall layout is clean and consistent. The primary risks are accessibility and mobile responsiveness: 65 axe violations were found across every page (8 critical, 18 serious), driven by three systemic patterns — missing `<main>` landmarks, unlabelled form controls, and insufficient colour contrast on `text-gray-400` spans. Mobile (375px) is the weakest breakpoint: tables on Forms, Categories, Submissions, Users, Synced Data, and Logs overflow the viewport because they lack `overflow-x-auto` wrappers, and touch targets on nav links and row action buttons are below 36px on every admin page. A secondary consistency issue is that the "Delete" button style varies between pages (`text-red` on Forms vs `border-red` on Categories, Submissions, and Users). Fixing the three systemic accessibility patterns and wrapping tables in `overflow-x-auto` would resolve the majority of findings in a single pass.
+All 24 routes loaded successfully and the admin shell is visually clean. The most impactful new finding from this run is on the public form page (`/form-public/15`): a critical `aria-allowed-attr` violation on the Choices.js dropdown placeholder, and 9 under-sized touch targets at mobile. Cross-page visual consistency remains the most structurally important issue class: the API Keys primary action is a plain text link while every peer page uses a filled primary button, the API Keys empty state has no icon or CTA, and page content containers have visibly inconsistent widths across admin pages. Accessibility violations total 67 (9 critical, 19 serious) driven by three systemic patterns — missing `<main>` landmark on all 24 pages, unlabelled filter controls, and insufficient colour contrast on `text-gray-400` spans. Mobile (375px) has 24 responsive issues, all tables that lack `overflow-x-auto` wrappers.
+
+---
+
+## Top 10 Fixes in Recommended Order
+
+1. **Add `<main>` landmark to shell layout** — single template change, eliminates `landmark-one-main` + `region` violations across all 24 pages.
+2. **Replace `+ New Key` text link with a filled primary button** — closes the most visible cross-page consistency gap.
+3. **Fix `aria-allowed-attr` on Choices.js dropdown** (`/form-public/15`) — critical axe violation on the public-facing form used by operators.
+4. **Add `aria-label` / `<label>` to unlabelled `<select>` and `<input type="date">` controls** — fixes critical violations on Submissions, Reports, Synced Data, Logs, Audit Log.
+5. **Add `aria-label` to unlabelled file inputs on Profile** — fixes 8 critical violations.
+6. **Replace `.text-gray-400` with `.text-gray-500`** — resolves serious contrast violations site-wide.
+7. **Wrap all `<table>` elements in `<div class="overflow-x-auto">`** — fixes mobile overflow on Forms, Categories, Submissions, Users, Synced Data, Logs.
+8. **Replace the API Keys empty state with a structured `EmptyState` component** — add icon, heading, description, CTA.
+9. **Standardise destructive action button style** — `border-red-200 bg-red-50 text-red-700` outline everywhere; currently three variants across Forms, admin pages, and the public form.
+10. **Increase touch targets to ≥ 44px** — sidebar nav links and table row action buttons at mobile breakpoints.
 
 ---
 
@@ -29,19 +46,17 @@ The application is visually polished and structurally complete — all 23 routes
 
 ### Layout comparison — desktop 1440px
 
-The three screenshots below illustrate the most significant cross-page consistency gap in the admin shell.
-
 ![Admin Datasets — desktop 1440px](screenshots/ui-qa/Admin-Datasets-desktop-1440.png)
 
-_Datasets — 2-column card grid, content aligns with the sidebar boundary, filled `+ New Dataset` primary button top-right, subtitle present below the page title._
+_Datasets — 2-column card grid, white background, content flush to the sidebar boundary, filled `+ New Dataset` primary button top-right, subtitle present below the title._
 
 ![Admin Categories — desktop 1440px](screenshots/ui-qa/Admin-Categories-desktop-1440.png)
 
-_Categories — table layout, content left-aligned similarly to Datasets, filled `+ New Category` primary button top-right, subtitle present._
+_Categories — table layout, content aligns consistently with Datasets, filled `+ New Category` primary button top-right, subtitle present._
 
 ![Admin API Keys — desktop 1440px](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
 
-_API Keys — content appears with a visibly narrower container (lighter background, tighter width), primary action is a plain `+ New Key` text link (not a filled button), and the only content is a plain bordered box reading "No API keys yet." with no icon, description, or CTA._
+_API Keys — light-gray background (noticeably different from the white content area on other pages), primary action is a plain `+ New Key` text link (not a button), and the only page content is a plain bordered rectangle reading "No API keys yet." with no icon, description, or CTA._
 
 ---
 
@@ -50,14 +65,14 @@ _API Keys — content appears with a visibly narrower container (lighter backgro
 - Severity: **High**
 - Pattern affected: Primary action button style
 - Pages compared: Datasets, Categories, Forms, Users vs API Keys
-- Evidence: Every other admin list page uses a filled brand-coloured button for the primary create action (`+ New Dataset`, `+ New Category`, `+ New Form`, `+ Add User`). The API Keys page uses a plain `+ New Key` text link at the same position. Text links are significantly less discoverable than filled buttons — a user scanning the page for an action will likely miss it.
-- Recommendation: Replace the `+ New Key` text link with the standard primary button: `<button class="bg-brand-600 text-white rounded-md px-4 py-2 hover:bg-brand-700">+ New Key</button>`. Use the same shared `PrimaryButton` or `ta-btn-primary` component already used elsewhere.
+- Evidence: Every admin list page with a create action uses a filled brand-coloured primary button: `+ New Dataset`, `+ New Category`, `+ New Form`, `+ Add User`. The API Keys page uses a plain text `+ New Key` link at the same position. The crawler confirmed `primaryActionLabels: []` for API Keys — the text link was not detected as a button-style action at all. Text links are significantly less discoverable than filled buttons.
+- Recommendation: Replace the `+ New Key` text link with `<button class="bg-brand-600 text-white rounded-md px-4 py-2 hover:bg-brand-700">+ New Key</button>` using the same shared primary button component already used on Datasets and Categories.
 
 **Screenshot evidence**
 
-![API Keys — text link primary action vs filled button on Datasets](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
+![API Keys — text link primary action](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
 
-_The `+ New Key` text link (top right, plain text) compared to the filled `+ New Dataset` button on the Datasets page. The text link is far less visible._
+_The `+ New Key` text link (top-right, plain dark text) is visually weak compared to the filled `+ New Dataset` button on the Datasets page._
 
 ---
 
@@ -65,157 +80,147 @@ _The `+ New Key` text link (top right, plain text) compared to the filled `+ New
 
 - Severity: **Medium**
 - Pattern affected: Empty state component
-- Pages compared: API Keys vs any future empty state across admin pages
-- Evidence: The API Keys empty state is a plain bordered rectangle containing only the text `"No API keys yet."` — no icon, no descriptive sentence explaining what API keys are for, and no CTA button to create one. An effective empty state should orient the user and offer the next action directly.
+- Pages compared: API Keys vs all other admin pages
+- Evidence: The API Keys empty state is a plain bordered rectangle containing only the text `"No API keys yet."` — no icon, no descriptive sentence, no CTA button. The crawler detected `emptyStateCount: 1` on this page and `emptyStateText: "No API keys yet."` with `primaryActionLabels: []`, confirming there is no action offered inside the empty state.
 - Recommendation: Replace with a structured empty state:
 
   ```
-  [Key icon]
+  [🔑 key icon]
   No API keys yet
   API keys let external tools access SurveyFlow data programmatically.
   [+ Create API Key  ← filled primary button]
   ```
 
-  Build a reusable `<app-empty-state [icon]="..." [title]="..." [description]="..." [ctaLabel]="..." (ctaClick)="...">` component and use it here and on any future empty admin pages.
+  Build a reusable `<app-empty-state [icon]="..." [title]="..." [description]="..." [ctaLabel]="..." (ctaClick)="...">` Angular component and use it here and on any future empty admin page.
 
 **Screenshot evidence**
 
-![API Keys empty state — plain bordered box with no icon or CTA](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
+![API Keys empty state — plain box, no icon, no CTA](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
 
-_The entire content area shows a single bordered rectangle with "No API keys yet." — no icon, no description, no button._
+_The full content area of API Keys shows only a bordered box with "No API keys yet." — no icon, no description, no button._
 
 ---
 
-**C-003 — Admin content container alignment is inconsistent across page types**
+**C-003 — Admin content container background and width are inconsistent**
 
 - Severity: **Medium**
 - Pattern affected: Admin page shell / content container
-- Pages compared: Datasets, Categories, API Keys, Forms, Users, Reports
-- Evidence: Comparing desktop-1440 screenshots side-by-side reveals that page content starts at noticeably different horizontal positions and fills different widths depending on the page. Table pages (Forms, Categories, Users) use a full-width table wrapper that reaches close to the right edge. Card-grid pages (Datasets, Reports) use a narrower grid with visible right margin. The API Keys page has a visibly different content container — the background shade, left margin, and max-width all differ from both groups. There is no shared `AdminContentShell` or `PageContainer` component enforcing consistent outer padding.
-- Recommendation: Introduce a single `AdminPageShell` or `PageContainer` wrapper component that all admin pages use, providing:
-  - Consistent `px-6 py-6` (or equivalent) outer padding
-  - A consistent `max-w-screen-xl` or equivalent max-width
-  - The standard page header layout (title left / subtitle below / action right) as a slot
-
-  Individual pages control their inner content (table vs card grid) but the outer frame is always the same.
+- Pages compared: Datasets (white bg), Categories (white bg), Forms (white bg), API Keys (light-gray bg)
+- Evidence: The API Keys page renders with a noticeably lighter gray content background compared to the white content area of Datasets, Categories, and Forms. The content also appears slightly narrower. This suggests the API Keys page uses a different content wrapper or CSS class, not the shared admin shell. The visual mismatch breaks the perception of a unified admin UI.
+- Recommendation: Audit the API Keys Angular component template. Ensure it uses the same outer container class (e.g. `<div class="p-6">` or `<app-admin-page-shell>`) as Categories and Datasets. If a shared `AdminPageShell` component doesn't exist, create one with a standard `bg-white px-6 py-6 rounded-lg` wrapper that all admin content pages use.
 
 **Screenshot evidence**
 
-![Admin Forms — full-width table layout](screenshots/ui-qa/Admin-Forms-desktop-1440.png)
+![Admin Categories — white content background](screenshots/ui-qa/Admin-Categories-desktop-1440.png)
 
-_Forms — table reaches edge-to-edge within the content frame._
+_Categories: content area has white background, consistent with Forms, Users, Datasets._
 
-![Admin Datasets — card-grid with right margin](screenshots/ui-qa/Admin-Datasets-desktop-1440.png)
+![Admin API Keys — different background shade](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
 
-_Datasets — two-column card grid with visible right margin; content width narrower than the Forms table._
-
-![Admin API Keys — different container and background](screenshots/ui-qa/Admin-API-Keys-desktop-1440.png)
-
-_API Keys — the content container has a visibly different background shade and narrower width, suggesting a different wrapper component or CSS class._
+_API Keys: the background behind the content is noticeably lighter gray, indicating a different wrapper component or CSS class._
 
 ---
 
-**C-004 — Card action button styles differ between Reports and Datasets**
+**C-004 — Card action button hierarchy differs between Datasets and Reports**
 
 - Severity: **Medium**
-- Pattern affected: Card action buttons in card-grid pages
+- Pattern affected: Card-grid page action buttons
 - Pages compared: Datasets vs Reports
-- Evidence: Both pages use a card-grid layout, but their in-card action buttons differ:
-  - **Datasets**: full-width outline `Edit` button + a small trash icon button beside it
+- Evidence: Both pages use a card-grid layout, but their in-card action buttons differ significantly:
+  - **Datasets**: full-width outline `Edit` button + a small trash icon beside it — `Edit` is the only explicit action
   - **Reports**: large filled blue `Run` button + separate outline `Edit` button + trash icon
-
-  The primary action hierarchy is inverted: on Datasets the primary action (Edit dataset config) uses an outline button; on Reports the primary action (Run report) uses a filled button. This is contextually appropriate — running a report is a more prominent action than editing a dataset definition — but the visual inconsistency between the two card-grid pages should be documented and a decision recorded on whether this is intentional.
-- Recommendation: If the distinction is intentional (run = primary, edit = secondary), document it in the design system. If not, align both to the same hierarchy. Either way, ensure the trash icon delete action uses a consistent style (icon button with `text-red-600` or the outlined red style) across both.
+  The primary action hierarchy is inverted: on Datasets the edit action is primary (outline); on Reports the run action is primary (filled). This is contextually appropriate — running a report is more prominent than editing a dataset config — but it should be explicitly documented in the design system as an intentional exception, not left as an implied inconsistency.
+- Recommendation: Document the distinction in the design system: card pages where the primary action is *execution* (Reports: Run) use a filled button; card pages where the primary action is *configuration* (Datasets: Edit) use an outline button. Both should use a consistent trash icon style for destructive actions.
 
 **Screenshot evidence**
 
 ![Admin Reports — filled Run button in cards](screenshots/ui-qa/Admin-Reports-desktop-1440.png)
 
-_Reports cards use a large filled `Run` button as the primary action._
+_Reports cards: large filled `Run` primary button + outline `Edit` + trash icon._
 
 ![Admin Datasets — outline Edit button in cards](screenshots/ui-qa/Admin-Datasets-desktop-1440.png)
 
-_Datasets cards use a full-width outline `Edit` button with a trash icon beside it — no filled primary action._
+_Datasets cards: full-width outline `Edit` button only + trash icon. No filled primary action._
 
 ---
 
-**C-005 — Page header subtitle is missing on some pages, present on others**
+**C-005 — Page header subtitle present on some admin pages, absent on others**
 
 - Severity: **Low**
 - Pattern affected: Page header subtitle
-- Pages compared: Datasets, Categories, API Keys, Forms, Users
-- Evidence:
-  - **Has subtitle**: Datasets ("Reusable filtered subsets of form submissions for reports"), Categories ("Manage shared form categories and their access settings."), API Keys ("Manage programmatic access to the API"), Reports ("Create and run dynamic reports on your form submissions")
-  - **No subtitle**: Forms, Users, Jobs, Submissions, Logs, Audit Log
-  - The presence of a subtitle is inconsistent — it appears on some pages but not others with no obvious rule. Pages that have subtitles benefit from a quick orientation sentence; pages without them leave users to infer the purpose.
-- Recommendation: Either add a short subtitle to every admin page (preferred — it costs little and aids first-time users), or remove subtitles from pages that have them and rely on the page title alone. Pick one approach and apply it consistently.
-
----
-
-## Top 10 Fixes in Recommended Order
-
-1. **Add `<main>` landmark to shell layout** — fixes `landmark-one-main` and `region` violations across all 23 pages in one change.
-2. **Replace `+ New Key` text link with a filled primary button** — closes the most visible cross-page consistency gap; makes the API Keys create action as discoverable as every other admin page.
-3. **Add `aria-label` / `<label>` to unlabelled `<select>` and `<input type="date">` controls** — fixes 8 critical violations on Submissions, Reports, Synced Data, Logs, Audit Log.
-4. **Add `aria-label` to unlabelled file input on Profile** — fixes 8 critical violations on the profile page.
-5. **Increase contrast of `.text-gray-400` spans** — replace with `text-gray-500` minimum; fixes serious violations site-wide.
-6. **Wrap all `<table>` elements in `overflow-x-auto` containers** — fixes mobile overflow on Forms, Categories, Submissions, Users, Synced Data, Logs.
-7. **Replace the API Keys empty state with a structured `EmptyState` component** — add icon, description, and CTA button.
-8. **Standardise destructive action button style** — use `border-red-200 bg-red-50 text-red-700` outline everywhere; currently `text-red` on Forms vs `border-red` on others.
-9. **Introduce a shared `AdminPageShell` content container** — enforces consistent outer padding and max-width across all admin pages.
-10. **Increase touch target heights to ≥ 44px** for sidebar nav links and table row action buttons at mobile breakpoints.
+- Pages compared: all admin pages
+- Evidence from `consistencyFindings`:
+  - **Has subtitle**: Datasets, Categories, API Keys, Reports, Integrations, Settings
+  - **No subtitle**: Forms, Users, Submissions, Jobs, Synced Data, Logs, Audit Log, Profile
+  No rule governs when subtitles appear. Pages with subtitles gain a quick orientation sentence for first-time users; pages without rely on the title alone.
+- Recommendation: Add a one-sentence subtitle to every admin page (preferred), or remove subtitles entirely and rely on page titles. Either is acceptable; inconsistency is not.
 
 ---
 
 ## Critical / High Priority Findings
 
-**F-001 — Missing `<main>` landmark on every page**
+**F-001 — Missing `<main>` landmark on all 24 pages**
 - Severity: High
 - Type: Accessibility
-- Affected routes: All 23 pages
-- Evidence: `landmark-one-main` violation (moderate) and `region` violation (3–105 elements per page) found on every page
-- Recommendation: Wrap the content area in `<main>` in the root shell component. Single template change that resolves the two most-repeated axe rules across the entire app.
+- Affected routes: All 24 pages
+- Evidence: `landmark-one-main` (moderate) and `region` (3–105 elements per page) violations on every page
+- Recommendation: Add `<main>` wrapper to the root shell component. Single template change; resolves both axe rules globally.
 
 **Screenshot evidence**
 
-Not available — landmark absence is not visually observable in screenshots.
+Not available — landmark absence is not visually observable.
 
 ---
 
-**F-002 — Unlabelled `<select>` controls on filter bars**
+**F-002 — Critical `aria-allowed-attr` on public form Choices.js dropdown**
+- Severity: Critical
+- Type: Accessibility / Functional
+- Affected routes: `/form-public/15`
+- Evidence: `aria-allowed-attr` critical violation on `.choices__placeholder` — the Choices.js library applies ARIA attributes (`aria-placeholder`) to an element whose role does not permit them. This is a known Choices.js v9/v10 issue. Screen readers may announce the Forklift ID search field incorrectly or skip it entirely.
+- Recommendation: Upgrade Choices.js to the latest version (which fixes this), or apply a post-render attribute correction: remove `aria-placeholder` from the `.choices__inner` element and set it only on the underlying `<input>` if present. Test with a screen reader after the fix.
+
+**Screenshot evidence**
+
+![Form Public (seed) — desktop 1440px](screenshots/ui-qa/Form-Public-seed-desktop-1440.png)
+
+_The "Forklift ID" field uses a Choices.js searchable dropdown. The `.choices__placeholder` element carries an invalid ARIA attribute triggering a critical axe violation._
+
+---
+
+**F-003 — Unlabelled `<select>` controls on filter bars**
 - Severity: Critical
 - Type: Accessibility
 - Affected routes: `/admin/submissions`, `/admin/reports`, `/admin/synced-data`, `/admin/logs`, `/admin/audit-log`
-- Evidence: `select-name` critical violation — 10 selects total (3 on Reports, 3 on Logs, 2 on Synced Data, 1 each on Submissions and Audit Log). Example selectors: `select`, `select[ng-reflect-model=""]`, `.w-48`
-- Recommendation: Add `aria-label` or a visually hidden `<label>` to every `<select>`. Use `aria-label="Filter by form"`, `aria-label="Log level"` etc.
+- Evidence: `select-name` critical — 10 selects total (3 on Reports, 3 on Logs, 2 on Synced Data, 1 each on Submissions and Audit Log). Example selectors: `select`, `select[ng-reflect-model=""]`, `.w-48`
+- Recommendation: Add `aria-label` or a visually-hidden `<label>` to every bare `<select>`. Use `aria-label="Filter by form"`, `aria-label="Log level"` etc.
 
 **Screenshot evidence**
 
-![Admin Submissions — unlabelled date and select filter controls](screenshots/ui-qa/Admin-Submissions-desktop-1440.png)
+![Admin Submissions — unlabelled filter controls at desktop 1440px](screenshots/ui-qa/Admin-Submissions-desktop-1440.png)
 
-_Desktop 1440px — the date pickers, form-filter select, and search input in the Submissions filter bar have no associated labels._
+_The date pickers, form-filter `<select>`, and search input in the Submissions filter bar have no associated labels._
 
 ---
 
-**F-003 — Unlabelled date inputs on filter bars**
+**F-004 — Unlabelled date inputs on filter bars**
 - Severity: Critical
 - Type: Accessibility
 - Affected routes: `/admin/submissions`, `/admin/audit-log`
-- Evidence: `label` critical violation — `input[type="date"]:nth-child(1)`, `div:nth-child(3) > input[type="date"]`
-- Recommendation: Add `<label>` elements (visually hidden if needed) or `aria-label="From date"` / `aria-label="To date"` to each date range input pair.
+- Evidence: `label` critical — `input[type="date"]:nth-child(1)`, `div:nth-child(3) > input[type="date"]`
+- Recommendation: Add `aria-label="From date"` / `aria-label="To date"` to each date range input pair.
 
 **Screenshot evidence**
 
-Not available — same screenshot as F-002 covers this; label absence is not visually distinguishable.
+Not available — same filter bar as F-003; label absence is not visually distinguishable.
 
 ---
 
-**F-004 — Unlabelled file input on Profile page**
+**F-005 — Unlabelled file inputs on Profile page**
 - Severity: Critical
 - Type: Accessibility
 - Affected routes: `/admin/profile`
-- Evidence: `label` critical violation — `input[type="file"]`, 8 affected elements
-- Recommendation: Add explicit `<label for="...">` or `aria-label="Upload profile avatar"` to the file upload control.
+- Evidence: `label` critical — `input[type="file"]`, 8 affected elements
+- Recommendation: Add `aria-label="Upload profile avatar"` or an explicit `<label>` to the file upload control.
 
 **Screenshot evidence**
 
@@ -223,35 +228,35 @@ Not available from crawler output.
 
 ---
 
-**F-005 — Tables overflow viewport on mobile (375px) — missing scroll wrapper**
+**F-006 — Tables overflow viewport at mobile 375px — missing `overflow-x-auto`**
 - Severity: High
 - Type: Responsive
 - Affected routes: `/admin/forms`, `/admin/categories`, `/admin/submissions`, `/admin/users`, `/admin/synced-data`, `/admin/logs`
-- Evidence: `table.min-w-full` overflows viewport at 375px on all six pages — right-hand columns (Actions, Anonymous, Public URL) are cut off and row actions are unreachable
+- Evidence: `table.min-w-full` overflows at 375px on all six pages — right-hand columns (Actions, Anonymous, Public URL) are cut off; row actions are unreachable
 - Recommendation: Wrap every `<table>` with `<div class="overflow-x-auto">`.
 
 **Screenshot evidence**
 
 ![Admin Forms — table overflows at mobile 375px](screenshots/ui-qa/Admin-Forms-mobile-375.png)
 
-_375px mobile — the Forms table clips horizontally. The ANONYMOUS and ACTIONS columns are cut off; Delete/Edit/Export buttons are unreachable without scrolling._
+_Forms table clips horizontally at 375px. ANONYMOUS and ACTIONS columns are cut off; Edit/Export/Delete are unreachable._
 
 ![Admin Categories — table overflows at mobile 375px](screenshots/ui-qa/Admin-Categories-mobile-375.png)
 
-_375px mobile — the Categories table clips. The Public URL and Actions columns are not visible._
+_Categories table clips at 375px. Public URL and Actions columns are not visible._
 
 ![Admin Submissions — table overflows at mobile 375px](screenshots/ui-qa/Admin-Submissions-mobile-375.png)
 
-_375px mobile — the Submissions table clips. Integration status, date, and Actions columns are cut off. The filter bar stacks vertically but the table still needs `overflow-x-auto`._
+_Submissions table clips at 375px. Integration status, date, and Actions columns are cut off._
 
 ---
 
-**F-006 — Submissions filter bar overflows at tablet (768px) and desktop (1024px)**
+**F-007 — Submissions filter bar overflows at tablet (768px) and desktop (1024px)**
 - Severity: High
 - Type: Responsive
 - Affected routes: `/admin/submissions`
 - Evidence: `select.rounded-lg`, `input.rounded-lg`, `button.rounded-lg` overflow viewport at both 768px and 1024px
-- Recommendation: Use `flex-wrap gap-2` on the filter row or convert to a two-row layout at narrower breakpoints.
+- Recommendation: Use `flex-wrap gap-2` on the filter row, or convert to a two-row layout at narrower breakpoints.
 
 **Screenshot evidence**
 
@@ -259,54 +264,68 @@ Not available from crawler output.
 
 ---
 
-**F-007 — Low colour contrast on `.text-gray-400` spans (site-wide)**
+**F-008 — Low colour contrast on `.text-gray-400` spans — site-wide**
 - Severity: High (axe `serious`)
 - Type: Accessibility
-- Affected routes: 15+ pages — every page with card subtitles, sidebar labels, or count badges
-- Evidence: `color-contrast` serious violation — `.text-gray-400 > span`, `h2 > span`, `.mb-4.leading-5 > span`; worst case: 41 elements on Logs, 20 on Reports, 13 on Datasets
-- Recommendation: Replace `text-gray-400` with `text-gray-500` for body/secondary text on white or light-gray backgrounds.
+- Affected routes: 16+ pages
+- Evidence: `color-contrast` serious on `.text-gray-400 > span`, `h2 > span`, `.mb-4 > span`; worst: Logs (41 elements), Reports (20), Datasets (13)
+- Recommendation: Replace `text-gray-400` with `text-gray-500` for all secondary/body text on white or light-gray backgrounds.
 
 **Screenshot evidence**
 
-![Admin Overview — dashboard in good state at 1440px](screenshots/ui-qa/Admin-Overview-desktop-1440.png)
+![Admin Overview — dashboard at desktop 1440px](screenshots/ui-qa/Admin-Overview-desktop-1440.png)
 
-_Desktop 1440px — card subheadings and sidebar section labels use `text-gray-400` which fails WCAG AA contrast. Most visible on "MENU" label and card stat subtitles._
+_The "MENU" sidebar label and card stat subtitles use `text-gray-400` which fails WCAG AA contrast on white backgrounds._
 
 ---
 
-**F-008 — 25 console warnings for oversized seed images**
+**F-009 — 25 console warnings for oversized seed images**
 - Severity: High
-- Type: Functional / Performance
+- Type: Performance / Functional
 - Affected routes: `/admin/forms`, `/category/pre-start`
-- Evidence: `NG0913: An image with src .../seed/Forklift.png has intrinsic file dimensions much larger than its rendered size` — 20 warnings on Forms (one per breakpoint × 5 images), 5 on Category Pre-Start
-- Recommendation: Add `width` and `height` attributes to `<img>` tags serving thumbnails, or use Angular's `NgOptimizedImage`. Alternatively generate thumbnails server-side.
+- Evidence: `NG0913` warnings for Forklift.png, Reach Stacker.png, Shuttle.png, Light Vehicle.png, Quay Crane.png — 20 warnings on Forms (5 images × 4 breakpoints), 5 on Category Pre-Start
+- Recommendation: Add `width` and `height` attributes to `<img>` tags or use `NgOptimizedImage`. Generate thumbnails server-side for the seed images.
 
 **Screenshot evidence**
 
-![Admin Forms — form thumbnails at desktop 1440px](screenshots/ui-qa/Admin-Forms-desktop-1440.png)
+![Admin Forms — form image thumbnails at desktop 1440px](screenshots/ui-qa/Admin-Forms-desktop-1440.png)
 
-_Desktop 1440px — each row has a small thumbnail (≈40×40px) served from the full-resolution seed image (original dimensions much larger), triggering NG0913 warnings._
+_Each table row shows a ~40×40px thumbnail served from a full-resolution seed image, triggering NG0913 on every breakpoint._
 
 ---
 
-## Cross-Page Consistency Findings
+**F-010 — Public form touch targets too small at mobile 375px**
+- Severity: High
+- Type: Responsive
+- Affected routes: `/form-public/15`
+- Evidence: 9 touch targets < 36px — `a:"Start Over"`, `button:"1. Operator & Machine"` (step tab buttons)
+- Recommendation: Ensure all step tab buttons and the "Start Over" link have `min-height: 44px`. The form is the primary user-facing page for operators — small targets are a real usability problem on mobile devices.
 
-### Destructive action button styles — inconsistent
+**Screenshot evidence**
 
-Two different styles in use across pages with delete actions:
+![Form Public (seed) — mobile 375px](screenshots/ui-qa/Form-Public-seed-mobile-375.png)
 
-- **Forms**: plain `text-red-600` text link — "Delete"
-- **Categories, Submissions, Users**: `border-red` outlined button — "Delete"
+_At 375px the step tab buttons (1–7) wrap to two rows but remain below 44px in height. The "Start Over" link is also undersized._
 
-![Admin Forms vs Admin Categories — Delete button style difference](screenshots/ui-qa/Admin-Forms-desktop-1440.png)
+---
 
-_Forms page uses a plain text "Delete" link (right column). Categories and Users use an outlined red button. Standardise to the outlined style._
+## Cross-page Component Consistency
 
-Recommendation: Use `border-red-200 bg-red-50 text-red-700 hover:bg-red-100` outlined style everywhere. Plain text links are easier to click accidentally.
+### Destructive action button styles — now 3 variants
 
-### Breadcrumbs — absent site-wide
+The crawler detected 3 different destructive action styles across 5 pages:
 
-No page has breadcrumbs. Acceptable for the single-level admin hierarchy, but the public category page (`/category/pre-start`) has no navigation aid back to the home listing.
+| Page | Style |
+|------|-------|
+| Forms | `text-red` (plain red text link) |
+| Categories, Submissions, Users | `border-red` (outlined red button) |
+| Form Public (`/form-public/15`) | flagged but no `destructiveActionStyle` resolved |
+
+Recommendation: Standardise to `border-red-200 bg-red-50 text-red-700 hover:bg-red-100` outlined style everywhere.
+
+### Primary action placement — mostly consistent, one exception
+
+Most admin list pages place primary actions top-right as filled buttons. Exception: **API Keys** uses a plain text link (see C-001).
 
 ### Save button location — inconsistent across form pages
 
@@ -316,72 +335,41 @@ No page has breadcrumbs. Acceptable for the single-level admin hierarchy, but th
 | Integrations | Top-right |
 | Profile | Bottom of form |
 
-![Admin Settings — Save button top-right](screenshots/ui-qa/Admin-Settings-desktop-1440.png)
+Recommendation: Standardise to top-right sticky save for all admin form pages.
 
-_Settings places Save top-right. Profile places "Save changes" at the bottom of the form. Standardise to top-right sticky save for all admin form pages._
+### Table density — three variants
 
-### Table density — inconsistent
+| Pages | Density |
+|-------|---------|
+| Forms, Users | Standard |
+| Categories, Synced Data | Loose |
+| Submissions, Logs | Compact |
 
-| Page | Density |
-|------|---------|
-| Forms | Standard |
-| Categories | Loose |
-| Submissions | Compact |
-| Users | Standard |
-| Synced Data | Loose |
-| Logs | Compact |
-
-Three distinct densities in use. Recommend a single standard density for admin tables; compact only for high-volume log/audit views.
+Recommend: one standard density for admin tables; compact only for high-volume read-only views (Logs).
 
 ### Table row action labels — mixed text and icon patterns
 
-- Synced Data uses `▸` (chevron icon) alongside "Details" text buttons.
-- Jobs uses `▶ Run Now` with an emoji-style glyph.
+- Synced Data uses `▸` icon beside text "Details" buttons
+- Jobs uses `▶ Run Now` with emoji-style glyph
 
-Recommend: use text labels only for all table row actions. Reserve icons for icon-only ghost buttons, always with `aria-label`.
+Recommendation: use text labels only for all table row actions.
 
-### Empty state patterns
+### Badge colours — consistent
 
-Only the API Keys page has a proper empty state (`"No API keys yet."`), but without a CTA button. Reports, Datasets, Audit Log show nothing when empty.
+`bg-green-100` for active/public, `bg-amber-100` for warnings, `bg-red-100` for errors/inactive, `bg-blue-100` for role badges (Users only). No major inconsistency.
+
+### Empty states — only one page, structurally weak
+
+Only API Keys has a detected empty state. It lacks icon, description, and CTA (see C-002). All other pages that may be empty (Audit Log, Datasets with no datasets, etc.) show nothing at all when empty.
 
 ---
 
 ## Responsive Findings
 
-### Mobile (375px)
-
-![Login page at mobile 375px](screenshots/ui-qa/Login-mobile-375.png)
-
-_Login page at 375px — 4 touch targets below 36px ("View all" links at the bottom of category cards)._
-
-![Admin Reports at mobile 375px](screenshots/ui-qa/Admin-Reports-mobile-375.png)
-
-_Reports at 375px — filter/tab buttons overflow the viewport (82 touch targets below minimum size)._
-
-![Admin Datasets at mobile 375px](screenshots/ui-qa/Admin-Datasets-mobile-375.png)
-
-_Datasets at 375px — inline-flex action buttons overflow. 21 touch targets below minimum size._
-
-![Admin Jobs at mobile 375px](screenshots/ui-qa/Admin-Jobs-mobile-375.png)
-
-_Jobs at 375px — job card action buttons (`button.px-2.5`) overflow. 9 touch targets below minimum size._
-
-![Admin Synced Data at mobile 375px](screenshots/ui-qa/Admin-Synced-Data-mobile-375.png)
-
-_Synced Data at 375px — table and action buttons overflow. 9 touch targets below minimum size._
-
-![Admin Logs at mobile 375px](screenshots/ui-qa/Admin-Logs-mobile-375.png)
-
-_Logs at 375px — compact table overflows horizontally._
-
-![Admin Users at mobile 375px](screenshots/ui-qa/Admin-Users-mobile-375.png)
-
-_Users at 375px — table overflows, 11 touch targets below minimum. Edit/Delete buttons cut off._
-
-**Summary of mobile-375 issues:**
+### Mobile (375px) — 24 issues
 
 | Page | Table overflow | Touch targets < 36px |
-|------|---------------|----------------------|
+|------|--------------|----------------------|
 | Login / Public Home | — | 4 each |
 | Forms | Yes | 21 |
 | Categories | Yes | 7 |
@@ -392,22 +380,43 @@ _Users at 375px — table overflows, 11 touch targets below minimum. Edit/Delete
 | Jobs | — | 9 |
 | Synced Data | Yes | 9 |
 | Logs | Yes | — |
+| Form Public | — | 9 |
+
+![Admin Reports — mobile 375px](screenshots/ui-qa/Admin-Reports-mobile-375.png)
+
+_Reports at 375px — filter/tab buttons overflow the viewport; 82 touch targets below minimum size._
+
+![Admin Jobs — mobile 375px](screenshots/ui-qa/Admin-Jobs-mobile-375.png)
+
+_Jobs at 375px — job card action buttons overflow._
+
+![Admin Synced Data — mobile 375px](screenshots/ui-qa/Admin-Synced-Data-mobile-375.png)
+
+_Synced Data at 375px — table and action buttons overflow._
+
+![Admin Users — mobile 375px](screenshots/ui-qa/Admin-Users-mobile-375.png)
+
+_Users at 375px — table clips, Edit/Delete buttons unreachable._
+
+![Public Home — mobile 375px](screenshots/ui-qa/Public-Home-mobile-375.png)
+
+_Public Home at 375px — "View all" links below minimum touch target height._
 
 ### Tablet (768px)
 
-- **Submissions filter bar overflow**: The date + select + search + Refresh row exceeds 768px width.
-- **Forms table overflow**: `table.min-w-full` overflows at 768px within the sidebar layout.
+- **Submissions filter bar overflow**: date + select + search + Refresh row exceeds 768px width.
+- **Forms table overflow**: `table.min-w-full` overflows within the sidebar layout.
 
 ### Desktop (1024px)
 
-- **Submissions filter bar overflow**: Same filter row issue persists at 1024px.
-- **Forms table overflow**: Still overflows at 1024px — column widths exceed available content width within the sidebar layout.
+- **Submissions filter bar overflow**: same filter row issue persists at 1024px.
+- **Forms table overflow**: still overflows at 1024px.
 
 ### Large Desktop (1440px)
 
-No overflow or layout issues. All pages render correctly.
+No layout or overflow issues. All pages render correctly.
 
-![Admin Overview at desktop 1440px](screenshots/ui-qa/Admin-Overview-desktop-1440.png)
+![Admin Overview — desktop 1440px](screenshots/ui-qa/Admin-Overview-desktop-1440.png)
 
 _Dashboard at 1440px — layout, sidebar, stat cards, and recent activity all render correctly._
 
@@ -417,67 +426,73 @@ _Dashboard at 1440px — layout, sidebar, stat cards, and recent activity all re
 
 ### Critical — Missing form labels
 
-| Rule | Severity | Pages | Affected elements | Example selector |
-|------|----------|-------|-------------------|------------------|
-| `select-name` | Critical | Submissions, Reports, Synced Data, Logs, Audit Log | 10 selects | `select[ng-reflect-model=""]` |
-| `label` | Critical | Submissions, Audit Log | 4 date inputs | `input[type="date"]:nth-child(1)` |
-| `label` | Critical | Profile | 8 file inputs | `input[type="file"]` |
+| Rule | Pages | Count | Example selector |
+|------|-------|-------|-----------------|
+| `aria-allowed-attr` | `/form-public/15` | 1 | `.choices__placeholder` |
+| `select-name` | Submissions, Reports, Synced Data, Logs, Audit Log | 10 | `select[ng-reflect-model=""]` |
+| `label` | Submissions, Audit Log | 4 | `input[type="date"]:nth-child(1)` |
+| `label` | Profile | 8 | `input[type="file"]` |
 
-Fix: Add `aria-label` or `<label>` to every bare `<select>` and `<input>` in filter bars and the profile avatar uploader.
+Fix: Add `aria-label` or `<label>` to all bare `<select>` and `<input>` in filter bars and the profile avatar uploader. Fix `aria-allowed-attr` by upgrading Choices.js.
 
 ### Serious — Colour contrast (all pages)
 
-| Rule | Severity | Worst affected | Elements |
-|------|----------|----------------|---------|
-| `color-contrast` | Serious | Logs (41), Reports (20), Datasets (13) | `h2 > span`, `.text-gray-400 > span` |
+| Worst affected | Elements |
+|---------------|---------|
+| Logs (41), Reports (20), Datasets (13), Admin/Dashboard (8) | `h2 > span`, `.text-gray-400 > span`, `.mb-4 > span` |
 
-Replace `text-gray-400` with `text-gray-500` or darker for all secondary/body text.
+Replace `text-gray-400` with `text-gray-500` or darker for secondary/body text.
 
-### Moderate — Missing `<main>` landmark (all pages)
+### Moderate — Missing `<main>` landmark (all 24 pages)
 
-| Rule | Affected pages | Element count |
-|------|---------------|--------------|
-| `landmark-one-main` | 23/23 | 1 per page |
-| `region` | 23/23 | 3–105 per page |
-
-Adding `<main>` to the shell layout resolves both rules globally.
+Adding `<main>` to the root shell template resolves `landmark-one-main` and `region` globally.
 
 ### Moderate — Heading order (Datasets)
 
-Rule `heading-order` — a card title uses a heading level that skips the document sequence. Ensure dataset card headings follow the page `<h1>` in order.
-
-### Minor — Empty table header (Synced Data)
-
-Rule `empty-table-header` — the actions column `<th>` (`.w-20:nth-child(6)`) has no text. Add `scope="col"` and `aria-label="Actions"`.
+Rule `heading-order` on `/admin/datasets` — card titles skip a heading level. Ensure dataset card headings follow `h1` in sequence.
 
 ### Moderate — Missing `<h1>` on Category Pre-Start public page
 
-Rule `page-has-heading-one` — the public category listing page has no `<h1>`. Add a visible or visually-hidden `<h1>` with the category name.
+Rule `page-has-heading-one` — `/category/pre-start` has no `<h1>`. Add a visible or `sr-only` `<h1>` with the category name.
+
+### Minor — Empty table header (Synced Data)
+
+Rule `empty-table-header` — the Actions column `<th>` (`.w-20:nth-child(6)`) has no text. Add `scope="col"` and `aria-label="Actions"`.
 
 ---
 
 ## Page-Specific Findings
 
-### `/category/pre-start` — Public category page
+### `/form-public/15` — Public form fill page (new)
 
-- No `<h1>` heading (`page-has-heading-one` violation; crawler detected `heading: null`).
-- No breadcrumb or "back" link to the home listing (`/`).
-- 5 NG0913 console warnings for oversized seed images.
+- Critical `aria-allowed-attr` on Choices.js `.choices__placeholder` element (F-002).
+- Serious colour contrast on `.choices__placeholder` text.
+- 9 touch targets < 36px at mobile — step tabs and "Start Over" link (F-010).
+- The form itself renders correctly at desktop 1440px with a clean card layout, progress tabs, and clear field labels.
+- No console errors specific to this page.
 
 ### `/admin/api-keys` — API Keys page
 
-- Only page with a detected empty state (`"No API keys yet."`), but no CTA action button to create one. Add `+ Create API Key` inside the empty state.
+- Primary action is a text link, not a button (C-001 — High).
+- Empty state has no icon, description, or CTA (C-002 — Medium).
+- Colour contrast violation on `h2 > span` (serious).
 
 ### `/admin/logs` — Log Viewer
 
-- No primary action detected — appropriate for a read-only view, but consider an "Export" button for operational utility.
-- 41 colour contrast violations — highest of any single page. Likely log-level badge text or timestamps using `text-gray-400`.
+- 41 colour contrast violations — most of any single page.
+- No primary action detected; appropriate for a read-only view but consider an "Export" button.
 
 ### `/admin/reports` — Reports page
 
-- 20 colour contrast violations on `.mb-4 > span` elements (report card subtitles).
+- 20 colour contrast violations on `.mb-4 > span` (report card subtitles).
 - 3 unlabelled `<select>` controls in the chart toolbar.
-- 82 touch targets too small at mobile — the entire toolbar needs a responsive redesign.
+- 82 touch targets below minimum size at mobile.
+
+### `/category/pre-start` — Public category page
+
+- No `<h1>` heading (`page-has-heading-one` axe violation; crawler detected `heading: null`).
+- 5 NG0913 console warnings for oversized seed images.
+- No breadcrumb or navigation back to home listing.
 
 ---
 
@@ -490,25 +505,25 @@ Rule `page-has-heading-one` — the public category listing page has no `<h1>`. 
 | Primary | `bg-brand-600 text-white hover:bg-brand-700 rounded-md px-4 py-2 min-h-[44px]` |
 | Secondary | `border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 rounded-md px-4 py-2 min-h-[44px]` |
 | Destructive | `border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 rounded-md px-4 py-2 min-h-[44px]` |
-| Ghost / icon | `text-gray-500 hover:text-gray-700 p-2 min-h-[44px]` + `aria-label` required |
+| Ghost / icon | `text-gray-500 hover:text-gray-700 p-2 rounded min-h-[44px]` + `aria-label` required |
+
+All buttons must have `min-h-[44px]` for WCAG 2.5.5 touch target compliance.
 
 ### Tables
 
 - Wrap every `<table>` in `<div class="overflow-x-auto">`.
 - Use `class="min-w-[640px]"` on the `<table>` to preserve column readability.
 - Every `<th>` must have `scope="col"` and accessible text.
-- Aim for one density standard; use compact only for log/audit views.
 
 ### Forms
 
 - Every `<input>`, `<select>`, `<textarea>` must have a visible `<label>` or `sr-only` label.
-- Date range pairs: label both — `aria-label="From date"` / `aria-label="To date"`.
-- File uploads: `aria-label="Upload profile avatar"` or equivalent.
+- Date range pairs: `aria-label="From date"` / `aria-label="To date"`.
+- File uploads: `aria-label="Upload profile avatar"` or explicit `<label>`.
 
 ### Colour
 
 - Secondary / body text: `text-gray-500` minimum (not `text-gray-400`) on light backgrounds.
-- Badge text: verify WCAG AA contrast for each colour combination.
 
 ### Badges
 
@@ -519,6 +534,10 @@ Rule `page-has-heading-one` — the public category listing page has no `<h1>`. 
 | Error / inactive | `bg-red-100 text-red-800` |
 | Neutral | `bg-gray-100 text-gray-700` |
 
+### Empty states
+
+Build `<app-empty-state [icon] [title] [description] [ctaLabel] (ctaClick)>` and use on API Keys immediately. Prepare for Datasets (no datasets), Audit Log, and Reports (no reports).
+
 ### Semantic landmarks
 
 ```html
@@ -526,15 +545,15 @@ Rule `page-has-heading-one` — the public category listing page has no `<h1>`. 
 <main><!-- page content --></main>
 ```
 
-Adding these to the root shell template eliminates `landmark-one-main` and `region` violations across all 23 pages.
+Single shell template change; eliminates `landmark-one-main` and `region` violations across all 24 pages.
+
+### Admin page shell
+
+Create a shared `AdminPageShell` or `PageContainer` wrapper with consistent `bg-white px-6 py-6` applied to all admin content pages. This fixes the API Keys background inconsistency (C-003) and prevents future divergence.
 
 ### Save button location
 
 Standardise to top-right sticky save for all admin form pages (Settings, Integrations, Profile).
-
-### Empty states
-
-Build a reusable `<app-empty-state>` component with: icon, heading, description, and optional CTA button. Apply to API Keys immediately; prepare for Datasets, Reports, Audit Log.
 
 ---
 
@@ -542,37 +561,39 @@ Build a reusable `<app-empty-state>` component with: icon, heading, description,
 
 ### Quick wins (< 1 hour each)
 
-- Add `<main>` wrapper in shell component template.
+- Add `<main>` wrapper to shell component template.
 - Replace `text-gray-400` with `text-gray-500` in card subtitles and sidebar labels.
-- Add `aria-label` to all `<select>` elements in filter bars (Submissions, Reports, Synced Data, Logs, Audit Log).
-- Add `aria-label` to all `input[type="date"]` filter inputs (Submissions, Audit Log).
-- Add `scope="col"` and text to the empty `<th>` on Synced Data.
+- Add `aria-label` to all `<select>` elements in filter bars (5 pages, ~10 selects).
+- Add `aria-label` to `input[type="date"]` filter inputs (Submissions, Audit Log).
+- Add `scope="col"` and `aria-label="Actions"` to the empty `<th>` on Synced Data.
 - Add `<h1>` to `/category/pre-start` public page.
-- Add `+ Create API Key` CTA button inside the API Keys empty state.
+- Replace `+ New Key` text link with a filled primary button on API Keys.
 
 ### High-impact fixes (1–4 hours each)
 
+- **Fix `aria-allowed-attr` on Choices.js** — upgrade library or apply post-render attribute correction on `/form-public/15`.
 - **Table `overflow-x-auto` wrappers** — 6 tables: Forms, Categories, Submissions, Users, Synced Data, Logs.
-- **Touch target sizing** — `min-h-[44px]` on sidebar nav links and table row action buttons.
-- **Submissions filter bar responsive layout** — `flex-wrap gap-2` on the 4-control filter row; also fixes tablet-768 and desktop-1024 overflow.
-- **Profile file input label** — `aria-label="Upload profile avatar"`.
-- **Standardise Delete button style** — update Forms page to use outlined `border-red` style.
-- **Standardise Save button position** — top-right for Settings, Integrations, and Profile.
+- **Touch target sizing** — `min-h-[44px]` on sidebar nav links, table row action buttons, form step tabs.
+- **Submissions filter bar responsive layout** — `flex-wrap gap-2` on the 4-control filter row.
+- **Standardise destructive button style** — update Forms page to `border-red` outlined style.
+- **Add structured empty state to API Keys** — icon + heading + description + CTA button.
+- **Apply shared `AdminPageShell` wrapper to API Keys** — fixes background and container inconsistency.
 
 ### Larger redesign items
 
-- **Image optimisation** — Server-side thumbnails or `NgOptimizedImage` to eliminate NG0913 warnings.
-- **Responsive table reflow** — Card-based reflow for Forms and Users at 375px.
-- **Empty state system** — Build `<app-empty-state>` and retrofit to API Keys, Datasets, Reports, Audit Log.
-- **Reports page mobile layout** — Full responsive redesign of the chart/filter toolbar at 375px.
+- **Image optimisation** — server-side thumbnails or `NgOptimizedImage` to eliminate NG0913 warnings.
+- **Reports page mobile layout** — full responsive redesign; 82 touch targets below minimum.
+- **Empty state system** — build `<app-empty-state>` and retrofit to API Keys, Datasets, Audit Log, Reports.
+- **Admin page subtitle consistency** — decide: all pages have subtitles, or none do.
+- **Responsive table reflow** — card-based reflow for Forms and Users at 375px beyond just `overflow-x-auto`.
 
 ---
 
 ## Coverage Gaps
 
-All 23 discovered routes were visited successfully. No gaps in this run.
+All 24 discovered routes were visited successfully. No gaps in this run.
 
-**Dynamic routes not yet covered** — require seeded IDs to visit:
+**Dynamic routes not yet covered** — require seeded IDs:
 
 | Route pattern | Description |
 |---------------|-------------|
@@ -580,6 +601,6 @@ All 23 discovered routes were visited successfully. No gaps in this run.
 | `/admin/forms/:id/view` | Form viewer / preview |
 | `/admin/submissions/:id` | Submission detail |
 | `/admin/reports/:id` | Report detail / chart view |
-| `/form-public/:id` | Public form fill page (e.g. `/form-public/15`) |
+| `/form-public/:id` (other IDs) | Other public forms beyond seed ID 15 |
 
-To cover these in a future run, seed known IDs into `ui-qa-config.ts` as parameterised known routes, or extract live IDs from the API at crawl time.
+To cover these in a future run, seed known IDs into `ui-qa-config.ts` as parameterised known routes.
