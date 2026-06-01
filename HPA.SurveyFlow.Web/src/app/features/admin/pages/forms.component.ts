@@ -23,11 +23,11 @@ import { Form } from '../../../core/models';
         </div>
         <div class="flex items-center gap-2">
           <input #importFileInput type="file" accept="application/json,.json" class="hidden" (change)="importForm($event)" />
-          <div class="inline-flex">
+          <div class="ta-btn-group">
             <button
               type="button"
               (click)="importFileInput.click()"
-              class="inline-flex items-center gap-2 rounded-l-lg border border-r-0 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              class="ta-btn-group-action"
             >
               Import JSON
             </button>

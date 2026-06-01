@@ -41,6 +41,18 @@
   .ta-btn-secondary {
     @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700;
   }
+  .ta-btn-group {
+    @apply inline-flex overflow-hidden rounded-lg border border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800;
+  }
+  .ta-btn-group app-help-trigger {
+    @apply flex;
+  }
+  .ta-btn-group-action {
+    @apply inline-flex h-9 items-center justify-center gap-2 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500/40 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700;
+  }
+  .ta-btn-group-help {
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center border-l border-gray-300 bg-white text-indigo-500 transition hover:bg-gray-50 hover:text-indigo-700 focus:z-10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500/40 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700;
+  }
   .ta-field-label {
     @apply mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300;
   }
