@@ -271,12 +271,14 @@ const emptyForm = (): CategoryFormModel => ({
           </label>
 
           <div>
-            <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
               Icon key <span class="text-gray-400 font-normal">(fallback metadata)</span>
-              <app-help-trigger helpKey="admin.categories.image-icon" label="Help for category icon key" />
             </label>
-            <input type="text" [(ngModel)]="form.icon_key" placeholder="fa:FaTruck"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+            <div class="ta-input-group w-full">
+              <input type="text" [(ngModel)]="form.icon_key" placeholder="fa:FaTruck"
+                class="ta-input-group-field px-3 py-2 font-mono"/>
+              <app-help-trigger helpKey="admin.categories.image-icon" label="Help for category icon key" [inputGrouped]="true" />
+            </div>
           </div>
         </div>
 
@@ -349,12 +351,12 @@ const emptyForm = (): CategoryFormModel => ({
             </label>
             @if (form.show_button) {
               <div class="pl-6">
-                <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
-                  Button label
-                  <app-help-trigger helpKey="admin.categories.button-label" label="Help for card button label" />
-                </label>
-                <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
-                  class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Button label</label>
+                <div class="ta-input-group w-full max-w-xs">
+                  <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
+                    class="ta-input-group-field px-3 py-2"/>
+                  <app-help-trigger helpKey="admin.categories.button-label" label="Help for card button label" [inputGrouped]="true" />
+                </div>
               </div>
             }
 

@@ -2,17 +2,18 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiKeyService } from '../../../core/services/api-key.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { ApiKey, CreateApiKeyResponse } from '../../../core/models';
 
 @Component({
   selector: 'app-api-keys',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">API Keys</h1>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">API Keys <app-help-trigger helpKey="admin.api-keys.list" label="API keys help" /></h1>
           <p class="text-sm text-gray-500 mt-1">Manage programmatic access to the API</p>
         </div>
         <button

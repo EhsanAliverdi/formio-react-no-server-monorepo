@@ -23,9 +23,75 @@ Keep help accurate without loading unnecessary context.
 - Use the shared slide panel. Do not add hover-only explanatory help.
 - Add concise examples for non-obvious workflows, rules, mappings, permissions, and outcomes.
 - Put button-owned help in `.ta-btn-group` with `[grouped]="true"`.
+- For input-field-adjacent help use `.ta-input-group` wrapper with `[inputGrouped]="true"`.
 - Reuse a topic when controls share meaning; create a new key when behavior differs.
 - Treat stale help after a page or business-logic change as a regression.
 - Avoid broad repository reads. Expand scope only when direct dependencies do not prove the behavior.
+- **Do not over-trigger.** Self-explanatory labels (Edit, Delete, Cancel, plain text badges) do not need individual help icons. Consolidate card-level actions under a single help trigger on the card title instead.
+
+## Page-Title Help Standard
+
+The help trigger on a page heading (`<h1>`) is the primary help entry point for the whole page. It must be written as a **complete end-user guide**, not a one-liner summary. Always include:
+
+1. **What is this page?** — plain-language explanation of the concept and why it exists.
+2. **How to get started / step-by-step** — bullet walkthrough of the most common first task.
+3. **Key workflows** — one section per non-obvious workflow (running, filtering, editing, etc.).
+4. **Status indicators / badges** — explain every badge or icon that can appear and what action to take.
+5. **Permissions / visibility note** — if the page or items on it have access controls, explain them in a `note`.
+
+### ❌ Too brief (do not write like this)
+
+```ts
+'admin.example.list': {
+  title: 'Example',
+  summary: 'Manage and run saved example items.',
+  sections: [
+    { heading: 'Example items', paragraphs: ['An item belongs to one form.'] },
+    { heading: 'Outdated items', paragraphs: ['A badge appears when the schema changed.'] },
+  ],
+},
+```
+
+### ✅ Correct standard
+
+```ts
+'admin.example.list': {
+  title: 'Example',
+  summary: 'Plain-language hook — what this page does and why a user would come here.',
+  sections: [
+    {
+      heading: 'What is an example item?',
+      paragraphs: [
+        'Full explanation of the concept in user terms.',
+        'Second paragraph if needed.',
+      ],
+    },
+    {
+      heading: 'How to create your first item',
+      bullets: [
+        'Step one — what to click.',
+        'Step two — what to fill in.',
+        'Step three — what happens after saving.',
+      ],
+    },
+    {
+      heading: 'Using the item',
+      paragraphs: ['What clicking Run / Open / View actually does and what the user sees.'],
+    },
+    {
+      heading: 'Organising items',
+      bullets: ['Favourites, categories, tags, search — one bullet per feature.'],
+    },
+    {
+      heading: 'Status badge name',
+      paragraphs: ['What causes it, whether it blocks anything, and how to resolve it.'],
+    },
+    {
+      note: 'Permissions or visibility note if applicable.',
+    },
+  ],
+},
+```
 
 ## Existing Pattern
 

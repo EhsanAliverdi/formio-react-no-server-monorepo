@@ -26,10 +26,13 @@ import { HelpTriggerComponent } from '../../help/help-trigger.component';
           </select>
         </div>
         <div class="flex-1">
-          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">URL <app-help-trigger helpKey="admin.form.webhook-url" label="Help for webhook URL" /></label>
-          <input type="url" [ngModel]="config.url" (ngModelChange)="update({ url: $event })"
-            placeholder="https://your-system.example.com/webhook"
-            class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">URL</label>
+          <div class="ta-input-group w-full">
+            <input type="url" [ngModel]="config.url" (ngModelChange)="update({ url: $event })"
+              placeholder="https://your-system.example.com/webhook"
+              class="ta-input-group-field px-3 py-2" />
+            <app-help-trigger helpKey="admin.form.webhook-url" label="Help for webhook URL" [inputGrouped]="true" />
+          </div>
         </div>
       </div>
 

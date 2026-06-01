@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { JobService, ExternalAsset, AssetTreeNode } from '../../../core/services/job.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { getFieldMap } from '../../../core/utils/field-maps/source-field-map.registry';
 import { renderGroups, RenderedGroup } from '../../../core/utils/field-maps/field-renderer';
 
@@ -12,13 +13,13 @@ const SOURCE_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-synced-data',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Synced Integration Data</h1>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">Synced Integration Data <app-help-trigger helpKey="admin.synced-data.list" label="Synced data help" /></h1>
           <p class="text-sm text-gray-500 mt-0.5">Assets and records pulled from connected integrations</p>
         </div>
         <button type="button" (click)="load()" [disabled]="loading()"

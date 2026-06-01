@@ -190,9 +190,12 @@ function ensureWizardHasPage(schema: any): any {
 
             <!-- Form Name -->
             <div>
-              <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Form Name <span class="text-red-500">*</span><app-help-trigger helpKey="admin.form.name" label="Help for form name" /></label>
-              <input type="text" [(ngModel)]="name" placeholder="Enter form name"
-                class="w-full max-w-lg rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Form Name <span class="text-red-500">*</span></label>
+              <div class="ta-input-group w-full max-w-lg">
+                <input type="text" [(ngModel)]="name" placeholder="Enter form name"
+                  class="ta-input-group-field px-4 py-2"/>
+                <app-help-trigger helpKey="admin.form.name" label="Help for form name" [inputGrouped]="true" />
+              </div>
             </div>
 
             <!-- Visibility + Anonymous -->
@@ -526,11 +529,13 @@ function ensureWizardHasPage(schema: any): any {
                     </div>
 
                     <div>
-                      <label class="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1">Redirect URL <app-help-trigger helpKey="admin.form.redirect-url" label="Help for redirect URL" /></label>
-                      <input type="url" [(ngModel)]="appSettings[redirectSettingKey(outcome.value)]"
-                        placeholder="https://example.com/thank-you"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                        [class]="outcome.focusClass"/>
+                      <label class="block text-xs font-medium text-gray-700 mb-1">Redirect URL</label>
+                      <div class="ta-input-group w-full" [class]="outcome.focusClass">
+                        <input type="url" [(ngModel)]="appSettings[redirectSettingKey(outcome.value)]"
+                          placeholder="https://example.com/thank-you"
+                          class="ta-input-group-field px-3 py-2"/>
+                        <app-help-trigger helpKey="admin.form.redirect-url" label="Help for redirect URL" [inputGrouped]="true" />
+                      </div>
                     </div>
 
                     <div>

@@ -2,6 +2,7 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LogService, LogEntry } from '../../../core/services/log.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 
 const LEVELS = ['', 'Verbose', 'Debug', 'Information', 'Warning', 'Error', 'Fatal'];
 
@@ -23,13 +24,13 @@ const ROW_STYLE: Record<string, string> = {
 @Component({
   selector: 'app-log-viewer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Log Viewer</h1>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">Log Viewer <app-help-trigger helpKey="admin.logs.list" label="Log viewer help" /></h1>
           <p class="text-sm text-gray-500 mt-0.5">Browse and filter application logs.</p>
           @if (logFile()) {
             <p class="text-xs text-gray-500 font-mono mt-0.5">{{ logFile() }}</p>

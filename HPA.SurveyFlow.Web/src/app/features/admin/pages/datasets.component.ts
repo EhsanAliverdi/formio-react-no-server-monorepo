@@ -2,19 +2,20 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatasetService } from '../../../core/services/dataset.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { FormService } from '../../../core/services/form.service';
 import { Dataset, Form } from '../../../core/models';
 
 @Component({
   selector: 'app-datasets',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div>
 
       <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Datasets</h1>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">Datasets <app-help-trigger helpKey="admin.datasets.list" label="Datasets help" /></h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Reusable filtered subsets of form submissions for reports</p>
         </div>
         <button type="button" (click)="openNew()" class="ta-btn ta-btn-primary">

@@ -53,6 +53,19 @@
   .ta-btn-group-help {
     @apply inline-flex h-9 w-9 shrink-0 items-center justify-center border-l border-gray-300 bg-white text-indigo-500 transition hover:bg-gray-50 hover:text-indigo-700 focus:z-10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500/40 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700;
   }
+  /* Input field + help trigger group */
+  .ta-input-group {
+    @apply inline-flex overflow-hidden rounded-lg border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 dark:border-gray-600 dark:bg-gray-800;
+  }
+  .ta-input-group app-help-trigger {
+    @apply flex;
+  }
+  .ta-input-group-field {
+    @apply flex-1 border-0 bg-transparent px-3 py-1.5 text-sm outline-none placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500;
+  }
+  .ta-input-group-help {
+    @apply inline-flex w-8 shrink-0 items-center justify-center border-l border-gray-300 bg-white text-indigo-500 transition hover:bg-gray-50 hover:text-indigo-700 focus:z-10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-500/40 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700;
+  }
   .ta-field-label {
     @apply mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300;
   }

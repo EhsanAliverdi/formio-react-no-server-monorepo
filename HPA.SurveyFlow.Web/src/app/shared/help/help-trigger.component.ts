@@ -9,7 +9,9 @@ import { HelpService } from './help.service';
       type="button"
       [class]="grouped()
         ? 'ta-btn-group-help'
-        : 'inline-flex h-5 w-5 shrink-0 items-center justify-center text-indigo-500 transition hover:text-indigo-700 focus:outline-none'"
+        : inputGrouped()
+          ? 'ta-input-group-help'
+          : 'inline-flex h-5 w-5 shrink-0 items-center justify-center text-indigo-500 transition hover:text-indigo-700 focus:outline-none'"
       [attr.aria-label]="label()"
       (click)="openHelp($event)">
       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -23,6 +25,7 @@ export class HelpTriggerComponent {
   helpKey = input.required<string>();
   label = input('Open help');
   grouped = input(false);
+  inputGrouped = input(false);
 
   private help = inject(HelpService);
 

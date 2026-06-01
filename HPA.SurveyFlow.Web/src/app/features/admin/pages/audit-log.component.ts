@@ -2,17 +2,18 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuditLogService } from '../../../core/services/audit-log.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { AuditLog } from '../../../core/models';
 
 @Component({
   selector: 'app-audit-log',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Audit Log</h1>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">Audit Log <app-help-trigger helpKey="admin.audit-log.list" label="Audit log help" /></h1>
           <p class="text-sm text-gray-500 mt-1">Track all system activity and changes</p>
         </div>
         <a [href]="exportUrl()" class="btn btn-sm btn-outline">Export CSV</a>

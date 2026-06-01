@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../../core/services/user.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { User } from '../../../core/models';
@@ -17,13 +18,13 @@ interface UserFormModel {
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Users</h1>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">Users <app-help-trigger helpKey="admin.users.list" label="Users help" /></h1>
           <p class="text-sm text-gray-500 mt-0.5">Manage user accounts and role assignments.</p>
         </div>
         @if (isAdmin()) {

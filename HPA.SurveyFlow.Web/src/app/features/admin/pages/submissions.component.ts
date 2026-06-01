@@ -40,11 +40,16 @@ const PAGE_SIZE = 25;
             {{ loading() ? 'Loading…' : total() + ' submission(s)' }}
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <app-help-trigger helpKey="admin.submissions.filters" label="Help for submission filters" />
-            <input type="date" [(ngModel)]="fromDateModel" aria-label="From date"
-              class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-            <input type="date" [(ngModel)]="toDateModel" aria-label="To date"
-              class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+            <div class="ta-input-group">
+              <input type="date" [(ngModel)]="fromDateModel" aria-label="From date"
+                class="ta-input-group-field px-3"/>
+              <app-help-trigger helpKey="admin.submissions.date-from" label="Help for from date filter" [inputGrouped]="true" />
+            </div>
+            <div class="ta-input-group">
+              <input type="date" [(ngModel)]="toDateModel" aria-label="To date"
+                class="ta-input-group-field px-3"/>
+              <app-help-trigger helpKey="admin.submissions.date-to" label="Help for to date filter" [inputGrouped]="true" />
+            </div>
             <select [(ngModel)]="formFilterModel" aria-label="Filter by form"
               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">All forms</option>
@@ -52,10 +57,10 @@ const PAGE_SIZE = 25;
                 <option [value]="f.id">{{ f.name }}</option>
               }
             </select>
-            <div class="flex items-center gap-1">
+            <div class="ta-input-group">
               <input type="search" (input)="onQInput($event)" placeholder="Search…"
-                class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-              <app-help-trigger helpKey="admin.submissions.search" label="Help for searching submissions" />
+                class="ta-input-group-field"/>
+              <app-help-trigger helpKey="admin.submissions.search" label="Help for searching submissions" [inputGrouped]="true" />
             </div>
             <div class="ta-btn-group">
               <button type="button" (click)="loadSubmissions()" class="ta-btn-group-action">Refresh</button>
@@ -73,7 +78,7 @@ const PAGE_SIZE = 25;
           <table class="min-w-[640px] w-full text-sm">
             <thead>
               <tr class="bg-gray-50">
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1"># <app-help-trigger helpKey="admin.submissions.id" label="Help for submission numbers" /></span></th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">#</th>
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Form <app-help-trigger helpKey="admin.submissions.form" label="Help for submitted forms" /></span></th>
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Abnormal <app-help-trigger helpKey="admin.submissions.abnormal" label="Help for abnormal answers" /></span></th>
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Integration <app-help-trigger helpKey="admin.submissions.integration" label="Help for integration status" /></span></th>

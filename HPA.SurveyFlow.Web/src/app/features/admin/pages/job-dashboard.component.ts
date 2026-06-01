@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { interval, Subscription } from 'rxjs';
 import { switchMap, startWith } from 'rxjs/operators';
 import { JobService } from '../../../core/services/job.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { ScheduledJob, JobRun, TriggerJobParams } from '../../../core/models';
 
 // Parse a Quartz cron expression into a simple human-readable string.
@@ -40,12 +41,12 @@ function formatDuration(ms: number | null): string {
 @Component({
   selector: 'app-job-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div>
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Scheduled Jobs</h1>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">Scheduled Jobs <app-help-trigger helpKey="admin.jobs.list" label="Scheduled jobs help" /></h1>
           <p class="text-sm text-gray-500 mt-0.5">Background jobs • auto-refreshes every 30s</p>
         </div>
         <button type="button" (click)="refresh()"

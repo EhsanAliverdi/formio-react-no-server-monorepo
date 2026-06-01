@@ -207,6 +207,8 @@ export const HELP_CATALOG = {
     ],
   },
   'admin.submissions.filters': topic('Submission filters', 'Narrow the list by submission date range or form. Choosing a form filters directly to that form submissions. The date range is applied to the saved submission time.'),
+  'admin.submissions.date-from': topic('From date', 'Filter submissions to those saved on or after this date. Leave blank to include all dates from the beginning.'),
+  'admin.submissions.date-to': topic('To date', 'Filter submissions to those saved on or before this date. Leave blank to include all dates up to now.'),
   'admin.submissions.search': topic('Search submissions', 'Searches by submission ID or submitted user email address after a short delay. Example: enter 184 to find submission #184, or enter an email address to find submissions associated with that account.'),
   'admin.submissions.refresh': topic('Refresh submissions', 'Reloads the current page using the active filters and search text.'),
   'admin.submissions.id': topic('Submission number', 'Unique saved submission ID. A plus button appears when a parent submission has linked sub-form submissions; expand it to review those child rows.'),
@@ -458,6 +460,632 @@ export const HELP_CATALOG = {
   'admin.form.pdf-validation': topic('PDF validation rules', 'Includes supported validation details such as required, minimum and maximum length, numeric limits, and patterns in the form definition PDF.'),
   'admin.form.pdf-keys': topic('PDF field keys', 'Includes each internal form field key beside its label in the form definition PDF.'),
   'admin.form.pdf-steps': topic('PDF wizard steps', 'Adds a section heading for each wizard panel when exporting a multi-step form definition PDF.'),
+  'admin.reports.list': {
+    key: 'admin.reports.list',
+    title: 'Reports',
+    summary: 'Reports let you build custom tables from your form submissions — choose exactly which fields to show as columns, pre-set filters, and save the layout as a reusable template.',
+    sections: [
+      {
+        heading: 'What is a report template?',
+        paragraphs: [
+          'A report template is a saved view for one specific form. It defines which submission fields appear as columns in the results table, what default filters are applied, and how the results are sorted.',
+          'Once saved, anyone with access can open the template and run it instantly — no configuration needed each time.',
+        ],
+      },
+      {
+        heading: 'How to create your first report',
+        bullets: [
+          'Select a form from the "Select a form…" dropdown at the top right.',
+          'Click New Report — the report designer opens with that form pre-loaded.',
+          'Pick which fields to include as columns, set any default filters, then save.',
+          'Your new template appears on this page, ready to run.',
+        ],
+      },
+      {
+        heading: 'Running a report',
+        paragraphs: [
+          'Click Run on any template card. SurveyFlow fetches the matching submissions and displays them in a table using only the columns you configured. You can then sort, filter further, and export the results.',
+        ],
+      },
+      {
+        heading: 'Organising your templates',
+        bullets: [
+          'Star a template (★) to pin it in the Favourites section at the top of this page.',
+          'Assign a category in the editor to group related templates together.',
+          'Add tags to make templates easier to find with the search bar.',
+          'Use the form, category, search, and filter controls to narrow the list when you have many templates.',
+        ],
+      },
+      {
+        heading: 'Outdated badge',
+        paragraphs: [
+          'An Outdated badge appears when the form\'s fields have changed since the template was last saved — for example, a field was renamed or removed.',
+          'The report can still run, but affected columns may show blank or incorrect data. Open the editor to review the column list and save an updated version.',
+        ],
+      },
+      {
+        note: 'Public templates are visible to all users who can access the linked form. Private templates are visible to administrators only. Toggle this setting in the template editor.',
+      },
+    ],
+  },
+  'admin.reports.new': {
+    key: 'admin.reports.new',
+    title: 'New report template',
+    summary: 'Create a new report template for a form.',
+    sections: [
+      {
+        paragraphs: ['Select the form you want to report on, then click New Report. The template editor opens with the selected form pre-filled. Choose which field columns to include, add optional filters and sorting, then save.'],
+      },
+    ],
+  },
+  'admin.reports.filter-form': topic('Filter by form', 'Narrows the template list to those belonging to a specific form. Selecting a form here also scopes the list to that form when loading templates from the server.'),
+  'admin.reports.filter-category': topic('Filter by category', 'Narrows the template list to those tagged with a specific category. Categories are set in the template editor.'),
+  'admin.reports.search': topic('Search reports', 'Filters the visible template list by report name, form name, description, or tag. The search runs instantly as you type.'),
+  'admin.reports.drift': topic('Outdated only', 'Shows only report templates whose form schema has changed since the template was last saved. Use this filter to find and update templates that may have stale column references.'),
+  'admin.reports.favourites': topic('Favourites filter', 'Shows only templates you have starred. Starred templates also appear in the Favourites section at the top of the page for quick access.'),
+  'admin.reports.run': topic('Run report', 'Opens the report execution page for this template. SurveyFlow queries submissions for the linked form and displays the results using the columns configured in this template.'),
+  'admin.reports.edit': topic('Edit report template', 'Opens the template editor where you can rename the template, change its columns, update filters and sorting, set a category, and control public visibility.'),
+  'admin.reports.delete': topic('Delete report template', 'Permanently removes this report template. Existing submissions are not affected. This action cannot be undone.'),
+  'admin.reports.favourite': topic('Favourite', 'Stars or unstars this template. Starred templates appear in the Favourites section at the top of the page and are also highlighted by the Favourites filter.'),
+  'admin.reports.public': topic('Public report', 'A public report template is visible to all users who can access the linked form. Private templates are only visible to administrators.'),
+  'admin.reports.outdated': topic('Outdated badge', 'Indicates that the form schema has changed since this template was last saved. The report can still run, but some configured columns may reference fields that have been renamed or removed. Open the editor to review and fix the column list.'),
+  'admin.reports.card': {
+    key: 'admin.reports.card',
+    title: 'Report template card',
+    summary: 'Each card represents one saved report template. From here you can run, edit, delete, or favourite the template.',
+    sections: [
+      {
+        heading: 'Run',
+        paragraphs: ['Opens the report execution page at /admin/reports/:id/run. SurveyFlow queries submissions for the linked form and renders the results using only the columns configured in this template.'],
+      },
+      {
+        heading: 'Edit',
+        paragraphs: ['Opens the report designer at /admin/reports/:form_id/designer?templateId=:id. From there you can rename the template, change which columns are shown, update pre-set filters and sort order, set a category, and toggle public visibility.'],
+      },
+      {
+        heading: 'Delete (trash icon)',
+        paragraphs: ['Clicking the trash icon opens a confirmation dialog. Confirming permanently removes the template from the database. Existing form submissions are not affected. This action cannot be undone.'],
+      },
+      {
+        heading: 'Favourite (★ star)',
+        paragraphs: ['Clicking the star toggles the template in or out of your favourites list. Starred templates appear in the Favourites section at the top of the page for quick access, and are highlighted by the Favourites filter in the filter bar.'],
+      },
+      {
+        heading: 'Public badge',
+        paragraphs: ['When shown, this template is visible to all users who can access the linked form. Templates without this badge are visible to administrators only. Toggle it in the template editor.'],
+      },
+      {
+        heading: 'Outdated badge',
+        paragraphs: ['Appears when the linked form schema has changed since the template was last saved. The report can still run, but some configured columns may reference fields that have been renamed or removed. Open the editor to review and update the column list.'],
+      },
+    ],
+  },
+  'admin.reports.designer': {
+    key: 'admin.reports.designer',
+    title: 'Report Designer',
+    summary: 'The report designer is where you configure what a report template shows — which fields become columns, which filters are always applied, how results are grouped and sorted, and when the report is automatically delivered by email.',
+    sections: [
+      {
+        heading: 'Report name and visibility',
+        bullets: [
+          'Type a name in the top bar — this is what users see on the Reports page.',
+          'Tick Public to make the template visible to all users who can access the linked form. Leave it unticked to restrict it to administrators.',
+          'The Save button is disabled until you have given the template a name and added at least one column.',
+          'Save as New (only shown when editing) saves a copy as a brand-new template, leaving the original unchanged.',
+        ],
+      },
+      {
+        heading: 'Columns panel',
+        paragraphs: [
+          'The Columns panel on the left lists every field available from the form. Tick the fields you want to appear as table columns when the report is run. Drag rows to reorder them — the order here is the column order in the results table.',
+        ],
+      },
+      {
+        heading: 'Fixed Filters panel',
+        paragraphs: [
+          'Fixed Filters (centre panel) are conditions that are always applied every time this report is run. For example, you could fix the status to "Submitted" or the department to "Operations".',
+          'Users running the report can add extra filters on the run page, but cannot remove the fixed filters set here.',
+        ],
+      },
+      {
+        heading: 'Aggregation panel (optional)',
+        paragraphs: [
+          'Aggregation groups and summarises raw submission rows into calculated results — similar to a pivot table.',
+        ],
+        bullets: [
+          'Group By Dimensions: pick one or more fields to group by. For date fields you can choose to group by day, week, month, quarter, or year.',
+          'Measures: add calculations like Count (all rows), Sum, Avg, Min, or Max of a numeric field. Give each measure a label.',
+          'When aggregation is configured, the Columns panel above sets display labels only — the query returns grouped rows instead of raw submission data.',
+          'Leave Aggregation collapsed if you just want raw submission rows.',
+        ],
+      },
+      {
+        heading: 'Options panel',
+        bullets: [
+          'Category — groups this template with others in the same category on the Reports page. Optional.',
+          'Tags — comma-separated keywords that make the template findable via the search bar on the Reports page.',
+          'Visible to roles — restrict which user roles can see and run this template.',
+          'Description — a short note shown on the template card to help users understand what the report is for.',
+          'Default Sort — the column and direction used to sort results when the report first loads. Defaults to submission date descending.',
+          'Default Page Size — how many rows are shown per page in the results table (10, 25, 50, or 100).',
+          'Chart Type — select a bar, line, pie, doughnut, or number card chart to display alongside the results table. Set to "Table only" to show no chart.',
+        ],
+      },
+      {
+        heading: 'Chart axis mapping',
+        paragraphs: [
+          'When a chart type other than "Table only" is selected, an Axis Mapping section appears. Choose which column or measure to use on the X-axis (the category labels) and tick one or more columns or measures for the Y-axis (the data series). For Number Cards, tick the values you want displayed as large metric tiles.',
+        ],
+      },
+      {
+        heading: 'Schedules (existing templates only)',
+        paragraphs: [
+          'Schedules automatically run the report and email the results to a list of recipients on a recurring schedule.',
+        ],
+        bullets: [
+          'Click Add Schedule and enter a name, a 5-part cron expression (e.g. 0 8 * * 1 for every Monday at 8 am), and one or more comma-separated email addresses.',
+          'Toggle Enabled to pause or resume a schedule without deleting it.',
+          'Click the play button on an existing schedule to send the report immediately.',
+        ],
+      },
+      {
+        heading: 'Alerts (existing templates only)',
+        paragraphs: [
+          'Alerts evaluate the report on a cron schedule and notify you when a calculated value crosses a threshold.',
+        ],
+        bullets: [
+          'Set the Condition Field to the measure alias you want to monitor (e.g. count).',
+          'Choose an operator (>, >=, <, <=, =, ≠) and a numeric threshold.',
+          'Set the Evaluation Cron — how often the alert checks the report data (e.g. 0 * * * * for every hour).',
+          'Enter email recipients and/or a webhook URL to receive the notification.',
+          'Toggle Enabled to pause or resume without deleting.',
+        ],
+      },
+      {
+        heading: 'Schema drift warning',
+        paragraphs: [
+          'If the linked form has changed since the template was last saved, a yellow banner appears at the top. The Drift Wizard lists each affected column and suggests a replacement field. Resolve each entry or dismiss it, then re-save to clear the warning.',
+        ],
+      },
+      {
+        note: 'You must add at least one column before the Save button becomes active. The template name is also required.',
+      },
+    ],
+  },
+  'admin.datasets.list': {
+    key: 'admin.datasets.list',
+    title: 'Datasets',
+    summary: 'A dataset is a named, reusable filter that scopes which submissions a report operates on. Instead of rebuilding the same conditions in every report template, you define the filter once as a dataset and link it to as many templates as you like.',
+    sections: [
+      {
+        heading: 'Why do datasets exist?',
+        paragraphs: [
+          'Imagine you have a "Safety Inspection" form used by three different departments. You want separate reports for each department — same columns, same layout, but different data. Without datasets you would duplicate the report template three times and maintain each copy separately.',
+          'With a dataset you create three datasets (one per department, each with a filter like Department = Operations), then create one report template that references the right dataset. When the form changes you only update the template once.',
+        ],
+      },
+      {
+        heading: 'How to create a dataset',
+        bullets: [
+          'Click New Dataset.',
+          'Give it a descriptive name, e.g. "Safety — Operations team".',
+          'Select the form whose submissions this dataset will filter.',
+          'Optionally add a description to remind yourself and others what scope this dataset covers.',
+          'Leave Active ticked so that the dataset is available to report templates.',
+          'Click Create.',
+        ],
+      },
+      {
+        heading: 'Active vs Inactive',
+        paragraphs: [
+          'An Inactive dataset is hidden from the list of selectable datasets in the report designer. Deactivate a dataset to retire it without deleting it — any templates already linked to it continue to work until you re-save them without the dataset.',
+        ],
+      },
+      {
+        heading: 'Editing a dataset',
+        paragraphs: [
+          'Click Edit on any card to rename the dataset, change its linked form, update the description, or toggle the active state. Saving changes takes effect immediately for any report that references this dataset.',
+        ],
+      },
+      {
+        heading: 'Deleting a dataset',
+        paragraphs: [
+          'Clicking the trash icon opens a confirmation dialog. Deleting a dataset is permanent and cannot be undone. Any report templates that reference the deleted dataset will fall back to querying all submissions for their linked form.',
+        ],
+      },
+      {
+        note: 'Report templates link to a dataset in the report designer. A dataset only filters the submission rows — the column layout, sorting, and other options are still configured per template.',
+      },
+    ],
+  },
+
+  // ─── Users ───────────────────────────────────────────────────────────────
+  'admin.users.list': {
+    key: 'admin.users.list',
+    title: 'Users',
+    summary: 'Create and manage user accounts that can access SurveyFlow. Each user is assigned a role that controls what they can see and do across the application.',
+    sections: [
+      {
+        heading: 'User roles',
+        bullets: [
+          'Admin — full access: can manage users, forms, reports, integrations, and all system settings.',
+          'Editor — can create and edit forms and view submissions, but cannot manage users or system settings.',
+          'Viewer — read-only access to forms and submissions; cannot create or modify anything.',
+        ],
+      },
+      {
+        heading: 'How to create a user',
+        bullets: [
+          'Click New User.',
+          'Enter the user\'s email address — this is their login and cannot be changed after creation.',
+          'Optionally set a display name (shown in the app instead of the email address).',
+          'Choose a role.',
+          'Set a temporary password — the user should change it after first login.',
+          'Leave Active ticked so the user can log in immediately.',
+          'Click Create.',
+        ],
+      },
+      {
+        heading: 'Editing a user',
+        paragraphs: [
+          'Click Edit on any row to change the display name, role, or active status. The email address cannot be changed after creation. Password fields are left blank on the edit form — only fill them in if you want to reset the user\'s password.',
+        ],
+      },
+      {
+        heading: 'Deactivating vs deleting',
+        paragraphs: [
+          'Unticking Active on a user account prevents that person from logging in without removing their account history. This is the recommended way to offboard a user.',
+          'Deleting a user removes the account permanently. This action cannot be undone.',
+        ],
+      },
+      {
+        note: 'Only administrators can access this page and manage user accounts.',
+      },
+    ],
+  },
+
+  // ─── Scheduled Jobs ───────────────────────────────────────────────────────
+  'admin.jobs.list': {
+    key: 'admin.jobs.list',
+    title: 'Scheduled Jobs',
+    summary: 'Scheduled Jobs shows every background task that SurveyFlow runs automatically — primarily data sync jobs that pull records from connected integrations. You can monitor their status, trigger a run manually, adjust their schedule, and view run history.',
+    sections: [
+      {
+        heading: 'What are scheduled jobs?',
+        paragraphs: [
+          'A scheduled job is a background task that runs on a timer without any user interaction. The most common use is syncing data from an external system (such as MEX Maintenance) into SurveyFlow so that form dropdowns and data-source fields stay up to date.',
+          'The page auto-refreshes every 30 seconds so the status indicators stay current.',
+        ],
+      },
+      {
+        heading: 'Status indicators',
+        bullets: [
+          'Success (green ✓) — the last run completed without errors.',
+          'Failed (red ✗) — the last run encountered an error. Check the run history for the error message.',
+          'Running (amber ⏳) — the job is currently executing. A Stop button appears to interrupt it if needed.',
+          'Never run — the job has not been triggered yet.',
+        ],
+      },
+      {
+        heading: 'Sync modes',
+        bullets: [
+          'Delta — only fetches records that have changed since the last successful run. Faster and less resource-intensive.',
+          'Full sync — fetches every record from the source system, replacing or updating all local copies.',
+        ],
+      },
+      {
+        heading: 'Triggering a job manually',
+        paragraphs: [
+          'Click Run Now to open the trigger dialog. Choose how to run the job:',
+        ],
+        bullets: [
+          'Auto (delta) — uses the default delta mode for an incremental update.',
+          'Date Range — syncs records whose source-system date falls within the dates you specify.',
+          'Full History — retrieves all records from the source. On development and UAT environments you can also purge existing records first.',
+        ],
+      },
+      {
+        heading: 'Configuring the schedule',
+        paragraphs: [
+          'Click the cog icon on a job to open the Configure dialog. You can set a Quartz cron expression to control when the job runs automatically, switch the sync mode, enable "Skip unchanged records" to avoid re-processing records that have not changed, and enable or disable the job entirely.',
+        ],
+      },
+      {
+        heading: 'Run history',
+        paragraphs: [
+          'Click History on any job card to expand the last 20 runs. Each row shows the status, start time, duration, and how the run was triggered (manual or scheduled). For failed runs the error message is displayed in the Result column.',
+        ],
+      },
+      {
+        note: 'Disabling a job stops it from running on its schedule but does not affect data already synced. You can still trigger a disabled job manually.',
+      },
+    ],
+  },
+
+  // ─── Log Viewer ───────────────────────────────────────────────────────────
+  'admin.logs.list': {
+    key: 'admin.logs.list',
+    title: 'Log Viewer',
+    summary: 'The Log Viewer shows application log entries written by the SurveyFlow API. Use it to diagnose errors, trace a specific request, or verify that background processes are running correctly.',
+    sections: [
+      {
+        heading: 'Log levels',
+        bullets: [
+          'Fatal / Error — something went wrong and requires attention. These entries are highlighted in red.',
+          'Warning — something unexpected happened but the application continued. Highlighted in amber.',
+          'Information — routine events such as a user logging in or a job completing successfully.',
+          'Debug / Verbose — low-level diagnostic detail, normally hidden unless you are investigating a specific issue.',
+        ],
+      },
+      {
+        heading: 'Filtering logs',
+        bullets: [
+          'Level — select a specific level to narrow the list, or leave on "All levels" to see everything.',
+          'Date — choose from available log files (one per day). Each file shows its size so you can gauge how busy that day was.',
+          'Limit — controls how many entries are loaded (100, 200, 500, or 1000). Start with a lower number and increase if you need more history.',
+          'Search — type any text to filter by message content or correlation ID. Results update as you type.',
+        ],
+      },
+      {
+        heading: 'Correlation ID',
+        paragraphs: [
+          'Every HTTP request to the API generates a unique correlation ID that is attached to all log entries produced during that request. If a user reports an error, ask them for the correlation ID shown in the error response and search for it here to see the full server-side trace.',
+        ],
+      },
+      {
+        heading: 'Exceptions',
+        paragraphs: [
+          'Error and Fatal entries that include a stack trace show a clickable "Exception" expander. Click it to see the full exception details including the call stack, which is useful for pinpointing the exact line of code that failed.',
+        ],
+      },
+      {
+        note: 'Log files are stored on the server and are read-only. You cannot delete or modify entries from this page.',
+      },
+    ],
+  },
+
+  // ─── Audit Log ────────────────────────────────────────────────────────────
+  'admin.audit-log.list': {
+    key: 'admin.audit-log.list',
+    title: 'Audit Log',
+    summary: 'The Audit Log is a tamper-evident record of every significant action taken in SurveyFlow — who did what, when, and from where. Use it to investigate changes, meet compliance requirements, and trace unexpected data modifications.',
+    sections: [
+      {
+        heading: 'What gets recorded?',
+        bullets: [
+          'Created — a new record was added (form, user, report template, integration, etc.).',
+          'Updated — an existing record was changed. Click the row to see exactly which fields changed.',
+          'Deleted — a record was permanently removed.',
+          'Restored — a previously deleted record was recovered.',
+          'Login / Logout — a user authenticated or ended their session, including the IP address.',
+        ],
+      },
+      {
+        heading: 'Reading an entry',
+        bullets: [
+          'Time — when the action occurred (day/month/year hour:minute).',
+          'Actor — the email of the user who performed the action.',
+          'Action — what was done (color-coded: green = created, blue = updated, red = deleted, purple = restored).',
+          'Entity — the type of record affected (e.g. Form, User, ReportTemplate).',
+          'Name / ID — the name or identifier of the specific record.',
+          'IP Address — the network address of the client that made the request.',
+        ],
+      },
+      {
+        heading: 'Viewing change details',
+        paragraphs: [
+          'Click any row to open the detail panel. For Updated entries the Changes section shows the exact before and after values for each field that was modified, making it straightforward to understand what changed and revert it manually if needed.',
+        ],
+      },
+      {
+        heading: 'Filtering and searching',
+        bullets: [
+          'Entity Type — narrow the list to changes affecting a specific type of record.',
+          'Search — finds entries by actor email, entity name, or entity ID.',
+          'Date range — From and To pickers limit the results to a specific period.',
+        ],
+      },
+      {
+        heading: 'Exporting',
+        paragraphs: [
+          'The Export CSV button downloads all matching records (with the current filters applied) as a CSV file. The export includes all columns and the full changes JSON, suitable for offline review or compliance reporting.',
+        ],
+      },
+      {
+        note: 'Audit log entries are written automatically by the system and cannot be edited or deleted.',
+      },
+    ],
+  },
+
+  // ─── Synced Data ──────────────────────────────────────────────────────────
+  'admin.synced-data.list': {
+    key: 'admin.synced-data.list',
+    title: 'Synced Integration Data',
+    summary: 'Synced Integration Data shows every asset and record that has been pulled from a connected external system (such as MEX Maintenance). These records populate data-source fields in forms so users can pick real assets and equipment from live data rather than typing them manually.',
+    sections: [
+      {
+        heading: 'Why does this page exist?',
+        paragraphs: [
+          'When a form field is configured to use a data source (e.g. "Select an asset"), SurveyFlow needs a local copy of those records to serve fast, offline-capable lookups. The Scheduled Jobs page handles the automatic syncing; this page lets you browse, search, and diagnose the synced records.',
+        ],
+      },
+      {
+        heading: 'Browsing the tree',
+        paragraphs: [
+          'Records are displayed as a hierarchy. Parent nodes (folder icon) can be expanded to reveal child records. The indentation reflects the nesting level in the source system.',
+        ],
+        bullets: [
+          'Click the arrow on a parent row to expand or collapse its children.',
+          'Use Expand All / Collapse All to open or close all nodes at once.',
+          'Inactive records are shown faded. They are retained for history but will not appear in form dropdowns.',
+        ],
+      },
+      {
+        heading: 'Searching and filtering',
+        bullets: [
+          'Search box — searches by name, external ID, or category. The tree expands automatically to show matching records.',
+          'Source dropdown — filters the list to a specific integration source.',
+          'Active toggle — switches between all records and active-only records.',
+          'Source summary cards at the top show the total record count per source and when it was last synced. Click a card to filter by that source.',
+        ],
+      },
+      {
+        heading: 'Syncing a single asset by ID',
+        paragraphs: [
+          'If you need to bring in a specific record immediately without waiting for the next scheduled sync, enter its external ID in the "Sync Asset by ID" field and click Sync. The result shows whether the record was created, updated, or failed.',
+        ],
+      },
+      {
+        heading: 'Best-effort gap fill',
+        paragraphs: [
+          'Gap Fill attempts to retrieve records with numeric IDs that are missing from the local database by incrementally searching the source system. This runs as a background job — monitor its progress on the Scheduled Jobs page.',
+        ],
+      },
+      {
+        heading: 'Record detail',
+        paragraphs: [
+          'Click Details on any row to open the detail panel. The Overview tab shows a structured view of the record\'s fields. The Raw JSON tab shows the complete data exactly as received from the source system. A Re-sync button triggers an immediate refresh of that individual record.',
+        ],
+      },
+      {
+        note: 'Records on this page are managed by the integration sync jobs. Do not expect manual edits here — changes made in the source system will appear after the next sync run.',
+      },
+    ],
+  },
+
+  // ─── API Keys ─────────────────────────────────────────────────────────────
+  'admin.api-keys.list': {
+    key: 'admin.api-keys.list',
+    title: 'API Keys',
+    summary: 'API Keys allow external applications and scripts to access the SurveyFlow API without a user login. Each key can be scoped to specific operations and given an expiry date to limit its lifespan.',
+    sections: [
+      {
+        heading: 'When to use an API key',
+        paragraphs: [
+          'Use an API key when an automated system — such as a reporting script, a mobile app, or a third-party integration — needs to read or write data in SurveyFlow. The key identifies the caller and enforces the permissions you grant it, without tying access to a specific user account.',
+        ],
+      },
+      {
+        heading: 'Creating a key',
+        bullets: [
+          'Click New API Key.',
+          'Enter a descriptive name so you can identify the key\'s purpose later (e.g. "Nightly report export script").',
+          'Optionally enter one or more scopes as comma-separated values to restrict what the key can do. Leave blank to grant full API access.',
+          'Optionally set an expiry date. After this date the key will stop working automatically.',
+          'Click Create.',
+          '⚠ Copy the key value immediately — it is only shown once and cannot be retrieved again after you close the dialog.',
+        ],
+      },
+      {
+        heading: 'Key details in the list',
+        bullets: [
+          'Prefix — the first few characters of the key, shown for identification. The rest is never displayed.',
+          'Scopes — the operations this key is permitted to perform, or "all" if no scope restriction was set.',
+          'Status — Active (green) means the key can be used. Revoked (gray) means it has been disabled.',
+          'Last Used — the most recent date the key was used to authenticate a request. Useful for spotting unused keys.',
+          'Expires — the date after which the key stops working, or blank if it never expires.',
+        ],
+      },
+      {
+        heading: 'Revoking a key',
+        paragraphs: [
+          'Click Revoke on an active key to permanently disable it. Any system using that key will immediately lose access. Revocation cannot be undone — if access is needed again, create a new key.',
+        ],
+      },
+      {
+        note: 'Treat API keys like passwords. Do not share them in emails or commit them to source control. If a key is compromised, revoke it immediately and issue a replacement.',
+      },
+    ],
+  },
+
+  // ─── Integrations ─────────────────────────────────────────────────────────
+  'admin.integrations.list': {
+    key: 'admin.integrations.list',
+    title: 'Integrations',
+    summary: 'Integrations connect SurveyFlow to external services — currently email delivery and MEX Maintenance. Each integration can be enabled or disabled independently, and credentials are saved securely so you only need to configure them once.',
+    sections: [
+      {
+        heading: 'Email integration',
+        paragraphs: [
+          'When enabled, SurveyFlow sends system emails such as password reset links and form submission notifications through your chosen email provider.',
+        ],
+        bullets: [
+          'SMTP — connect to any mail server using host, port, username, and password. Tick TLS/STARTTLS to encrypt the connection.',
+          'SendGrid — connect using a SendGrid API key for a simpler cloud-based setup.',
+          'Sender Identity — set the From email and From name that recipients will see on all outgoing emails.',
+          'Test — enter an email address and click Send test email to verify the configuration is working before saving.',
+        ],
+      },
+      {
+        heading: 'MEX Maintenance integration',
+        paragraphs: [
+          'When enabled, SurveyFlow can push data to and pull data from your MEX Maintenance system. This allows form submissions to automatically create work orders or requests in MEX, and lets SurveyFlow data-source fields pull live lists of assets, employees, suppliers, and more.',
+        ],
+        bullets: [
+          'MEX API Base URL — the root URL of your MEX Web API instance (e.g. https://mex.yourcompany.com/api).',
+          'API Key — the XApiKey header value used to authenticate with MEX.',
+          'Test Connection — verifies that the URL and API key are correct and the MEX server is reachable.',
+          'Create Test Request — creates a test request record in MEX to confirm the full write workflow is working. In a production environment a confirmation prompt appears first, as this creates a real record.',
+        ],
+      },
+      {
+        heading: 'Saving credentials securely',
+        paragraphs: [
+          'Passwords and API keys are stored encrypted on the server. When you re-open this page, password and API key fields show "(set — enter new to change)" to indicate a value is already stored. Leave the field blank when saving to keep the existing credential; enter a new value only when you need to update it.',
+        ],
+      },
+      {
+        heading: 'Enabled / Disabled badge',
+        paragraphs: [
+          'Each tab shows a green Enabled or gray Disabled badge. The toggle at the top of the tab switches the integration on or off. Disabling an integration stops SurveyFlow from using it without deleting the credentials.',
+        ],
+      },
+      {
+        note: 'Click Save in the top right to apply all changes. Leaving the page without saving discards unsaved edits.',
+      },
+    ],
+  },
+
+  // ─── Settings ─────────────────────────────────────────────────────────────
+  'admin.settings.list': {
+    key: 'admin.settings.list',
+    title: 'Site Settings',
+    summary: 'Site Settings controls the branding and visual identity of your SurveyFlow installation — the site name, logos, favicon, and copyright footer that appear across the application and on public-facing form pages.',
+    sections: [
+      {
+        heading: 'Site name',
+        paragraphs: [
+          'The display name appears in the browser tab, the navigation bar, and any system-generated emails. Set it to your organisation name or the name you want users to see, e.g. "Acme Safety Portal".',
+        ],
+      },
+      {
+        heading: 'Logos and favicon',
+        bullets: [
+          'Favicon — the small icon shown in the browser tab. Should be a square image, typically 32×32 or 64×64 px.',
+          'Expanded logo (light) — shown in the full-width sidebar on light-mode screens.',
+          'Expanded logo (dark) — shown in the full-width sidebar on dark-mode screens. Upload a version optimised for dark backgrounds.',
+          'Collapsed icon — shown when the sidebar is collapsed to a narrow strip. Usually a square version of your logo.',
+          'Show logo on public form pages — when ticked, the expanded logo is displayed at the top of publicly accessible form pages.',
+        ],
+      },
+      {
+        heading: 'Uploading images',
+        paragraphs: [
+          'For each logo you can either paste a URL directly into the field or click Upload image to select a file from your computer. The file is uploaded to the server and the URL is filled in automatically. A preview renders immediately once a URL is set.',
+        ],
+      },
+      {
+        heading: 'Copyright footer',
+        bullets: [
+          'Show copyright — when ticked, the copyright text appears in the footer of every page.',
+          'Copyright text — the message to display, e.g. "Copyright 2026 Acme Corp. All rights reserved."',
+        ],
+      },
+      {
+        note: 'Click Save in the top right to apply all changes. Leaving the page without saving discards unsaved edits.',
+      },
+    ],
+  },
 } satisfies Record<string, HelpTopic>;
 
 export type HelpKey = keyof typeof HELP_CATALOG;
