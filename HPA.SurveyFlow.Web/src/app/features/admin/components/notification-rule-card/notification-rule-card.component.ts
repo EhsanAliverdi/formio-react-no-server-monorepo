@@ -6,6 +6,7 @@ import { FormField } from '../../../../shared/components/condition-group-editor/
 import { ConditionGroupEditorComponent } from '../../../../shared/components/condition-group-editor/condition-group-editor.component';
 import { RuleValidationBadgeComponent } from '../../../../shared/components/rule-validation-badge/rule-validation-badge.component';
 import { NotificationRuleEmailConfigComponent } from '../notification-rule-email-config/notification-rule-email-config.component';
+import { HelpTriggerComponent } from '../../../../shared/help/help-trigger.component';
 
 export type RuleCardMode = 'view' | 'edit';
 
@@ -18,6 +19,7 @@ export type RuleCardMode = 'view' | 'edit';
     ConditionGroupEditorComponent,
     RuleValidationBadgeComponent,
     NotificationRuleEmailConfigComponent,
+    HelpTriggerComponent,
   ],
   template: `
     <div class="relative border rounded-xl overflow-hidden transition-all hover:z-10"
@@ -54,8 +56,10 @@ export type RuleCardMode = 'view' | 'edit';
             placeholder="Rule name"
             class="flex-1 text-sm font-medium text-gray-900 border-0 border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent py-0.5"
           />
+          <app-help-trigger helpKey="admin.form.rule-basics" label="Help for rule name and status" />
         } @else {
           <span class="flex-1 text-sm font-medium text-gray-900 truncate">{{ draft.name || 'Unnamed rule' }}</span>
+          <app-help-trigger helpKey="admin.form.rule-basics" label="Help for rule name and status" />
         }
 
         <!-- Channel badge -->
@@ -95,7 +99,7 @@ export type RuleCardMode = 'view' | 'edit';
           <div>
             <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
-              Trigger Conditions
+              Trigger Conditions <app-help-trigger helpKey="admin.form.rule-conditions" label="Help for trigger conditions" />
             </h4>
             <app-condition-group-editor
               [group]="draft.condition_group"
@@ -109,7 +113,7 @@ export type RuleCardMode = 'view' | 'edit';
           <div class="border-t border-gray-100 pt-4">
             <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
-              Email Notification
+              Email Notification <app-help-trigger helpKey="admin.form.notification-rules" label="Help for notification rules" />
             </h4>
             <app-notification-rule-email-config
               [config]="emailConfig"

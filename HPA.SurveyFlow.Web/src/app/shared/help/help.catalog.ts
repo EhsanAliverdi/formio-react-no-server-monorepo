@@ -160,15 +160,111 @@ export const HELP_CATALOG = {
   'admin.form.card': topic('Form card', 'Configures the image and fallback icon used for this form card. Category-level layout, columns, card style, and display toggles are configured on the category.'),
   'admin.form.card-image': topic('Card image', 'Uploads a per-form card image. When present, this image is used before the fallback card icon. The upload control accepts image files and the API upload limit shown by this screen is 10 MB.'),
   'admin.form.card-icon': topic('Card icon', 'Selects the fallback icon used for the form card when no card image is present.'),
-  'admin.form.notification-rules': topic('Notification rules', 'Creates email rules evaluated when a form is submitted. Matching enabled rules can send email to configured recipients, replace placeholders in the subject and HTML body, optionally attach a submission PDF, and record a rule log.'),
-  'admin.form.integration-rules': topic('Integration rules', 'Creates conditional integration rules evaluated after submission. Matching enabled rules can dispatch MEX actions or webhooks. These rules run alongside the older outcome-based secondary submit configuration stored in the form schema.'),
-  'admin.form.rule-conditions': topic('Rule conditions', 'Builds nested condition groups for a notification or integration rule. Match ALL uses AND, Match ANY uses OR, and each condition compares a form field using an operator supported for that field type.'),
-  'admin.form.integration-channel': topic('Integration channel', 'Selects the integration executed by this rule when its conditions match. The available channels on this screen are MEX Maintenance and Webhook.'),
-  'admin.form.mex-action': topic('MEX action', 'Selects the MEX maintenance action dispatched by this integration rule. The current screen exposes Create Request.'),
-  'admin.form.webhook-method': topic('Webhook method', 'HTTP method used when SurveyFlow dispatches this webhook integration rule.'),
-  'admin.form.webhook-url': topic('Webhook URL', 'Destination URL called when this webhook integration rule matches a submission.'),
-  'admin.form.webhook-headers': topic('Webhook headers', 'Adds optional HTTP headers to the webhook request. Header values can include SurveyFlow placeholders selected with the placeholder picker.'),
-  'admin.form.webhook-body': topic('Webhook body template', 'Optional JSON body template sent with the webhook request. The template can include SurveyFlow placeholders selected with the placeholder picker.'),
+  'admin.form.notification-rules': {
+    key: 'admin.form.notification-rules',
+    title: 'Notification rules',
+    summary: 'Send email when an enabled rule matches a saved submission.',
+    sections: [
+      {
+        heading: 'Where the rules come from',
+        paragraphs: ['Notification rules are saved separately for this form. Opening Edit Form loads the rules assigned to this form. They are not created from the Form Builder components.'],
+      },
+      {
+        heading: 'How a rule runs',
+        bullets: [
+          'SurveyFlow saves the submission first.',
+          'It evaluates the enabled notification rules for this form in their configured order.',
+          'Each matching email rule sends its own email when email integration is configured.',
+          'The send attempt is recorded in the submission rule log.',
+        ],
+      },
+      {
+        heading: 'Example',
+        paragraphs: ['For a forklift inspection form, create a rule named "Notify safety team about leaks". Add the condition "Leak detected equals Yes", then send the email to the safety team. Submissions without a reported leak do not send that rule email.'],
+      },
+      {
+        note: 'An empty condition group matches every submission. Use this deliberately for an email that should always be sent.',
+      },
+    ],
+  },
+  'admin.form.integration-rules': {
+    key: 'admin.form.integration-rules',
+    title: 'Integration rules',
+    summary: 'Run MEX or webhook integrations when an enabled rule matches a saved submission.',
+    sections: [
+      {
+        heading: 'Where the rules come from',
+        paragraphs: ['Integration rules are saved separately for this form and loaded when Edit Form opens. They run in addition to the older outcome-based integration settings in Submission Flow.'],
+      },
+      {
+        heading: 'How a rule runs',
+        bullets: [
+          'SurveyFlow saves the submission first.',
+          'Enabled rules for this form are evaluated in their configured order.',
+          'Each matching rule is dispatched in the background so the primary form submission can return without waiting for the external system.',
+          'MEX and webhook attempts are recorded in the submission rule log.',
+        ],
+      },
+      {
+        heading: 'Example',
+        paragraphs: ['For a maintenance request form, create a rule named "Create MEX request for damage". Add the condition "Damage reported equals Yes", select MEX Maintenance, and keep the Create Request action. Only matching submissions dispatch that MEX request.'],
+      },
+      {
+        note: 'An empty condition group matches every submission. Use this deliberately for an integration that should always run.',
+      },
+    ],
+  },
+  'admin.form.rule-basics': topic('Rule name and status', 'The rule name identifies the rule in Edit Form and submission rule logs. Only enabled rules are evaluated when a submission is saved. Use a name that explains the business event, such as "Notify safety team about leaks".'),
+  'admin.form.rule-validation': topic('Rule validation', 'Shows editor issues such as an empty condition group, a condition without a selected field, or a condition that references a field no longer present in the form. Click the issue badge to see the current list.'),
+  'admin.form.rule-conditions': {
+    key: 'admin.form.rule-conditions',
+    title: 'Trigger conditions',
+    summary: 'Decide which submitted answers make a notification or integration rule run.',
+    sections: [
+      {
+        heading: 'Conditions',
+        paragraphs: ['A condition compares one submitted form field with a value. Select the field, choose an operator, and enter or select the comparison value. Number fields also expose numeric comparison operators.'],
+        bullets: [
+          'equals: the submitted answer matches the configured value.',
+          'does not equal: the answer is missing or does not match the configured value.',
+          'contains: text contains the configured text, or an array contains the configured value.',
+          'is empty / is not empty: checks whether an answer is missing or blank.',
+          'greater than / less than variants: compare numeric answers.',
+        ],
+      },
+      {
+        heading: 'ALL and ANY',
+        paragraphs: ['Match ALL (AND) means every item inside the group must match. Match ANY (OR) means at least one item inside the group must match.'],
+      },
+      {
+        heading: 'Example',
+        paragraphs: ['To notify only for urgent forklift issues, choose Match ALL and add "Asset type equals Forklift" plus "Severity equals Critical". Both answers must match.'],
+      },
+    ],
+  },
+  'admin.form.rule-add-condition': topic('Add condition', 'Adds one answer comparison to the current group. Example: add "Leak detected equals Yes". A rule can contain several conditions, and the surrounding Match ALL or Match ANY selector determines how they are combined.'),
+  'admin.form.rule-add-group': topic('Add group', 'Adds a nested Match ANY (OR) group. Use a group when part of the rule needs its own logic. Example: require "Asset type equals Forklift" AND group together either "Leak detected equals Yes" OR "Damage reported equals Yes". Groups can be nested up to the depth exposed by this editor.'),
+  'admin.form.notification-overlap': topic('Notification overlap warning', 'Appears when enabled email rules share a recipient. This warning does not block sending: if multiple rules match one submission, that recipient can receive one email from each matching rule. Adjust the conditions when those duplicate emails are not intended.'),
+  'admin.form.integration-channel': {
+    key: 'admin.form.integration-channel',
+    title: 'Integration channel',
+    summary: 'Choose the external action executed when this rule matches.',
+    sections: [
+      {
+        heading: 'MEX Maintenance',
+        paragraphs: ['Dispatches a MEX maintenance action. The current editor exposes Create Request and allows selected MEX payload fields to be overridden.'],
+      },
+      {
+        heading: 'Webhook',
+        paragraphs: ['Sends an HTTP request to the configured URL. You can choose GET, POST, PUT, or PATCH, add headers, and build an optional JSON body using placeholders.'],
+      },
+    ],
+  },
+  'admin.form.mex-action': topic('MEX action', 'Selects the MEX maintenance action dispatched by this integration rule. The current screen exposes Create Request. Example: when "Damage reported equals Yes", dispatch Create Request and map the submitted damage notes into Job description.'),
+  'admin.form.webhook-method': topic('Webhook method', 'HTTP method used when SurveyFlow calls the webhook URL. GET sends no request body. POST, PUT, and PATCH send the configured JSON body when it is not empty.'),
+  'admin.form.webhook-url': topic('Webhook URL', 'Destination called when this webhook rule matches. Example: https://maintenance.example.com/api/incidents. The rule is skipped when no URL is configured.'),
+  'admin.form.webhook-headers': topic('Webhook headers', 'Adds optional HTTP headers to the webhook request. Header values can include SurveyFlow placeholders. Example: add X-Submission-Id with value {{submission_id}} so the receiving system can correlate the request.'),
+  'admin.form.webhook-body': topic('Webhook body template', 'Optional JSON body sent by POST, PUT, or PATCH webhook requests. Insert placeholders to include submission details. Example: { "submissionId": "{{submission_id}}", "asset": "{{field:asset}}" }. GET requests do not send this body.'),
   'admin.form.submission-flow': topic('Submission flow', 'Configures behavior separately for success, warning, and error outcomes. SurveyFlow derives the outcome from configured abnormal answers, then shows the outcome message and applies the selected follow-up behavior.'),
   'admin.form.outcomes': topic('Submission outcomes', 'Success means no warning or error answers were found. Warning means at least one warning answer and no error answers were found. Error means at least one error answer was found.'),
   'admin.form.outcome-message': topic('Outcome message', 'Shown after submission for the selected outcome. Messages can use SurveyFlow placeholders such as {{outcome}}, {{submission_id}}, {{form_name}}, {{user_email}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, and {{warning_answers}}.'),
@@ -177,12 +273,38 @@ export const HELP_CATALOG = {
   'admin.form.redirect-url': topic('Redirect URL', 'Destination used when After message is set to Redirect to URL for this outcome.'),
   'admin.form.follow-up-form': topic('Follow-up form', 'Form opened when After message is set to Open follow-up form. The follow-up submission can be linked to the original submission.'),
   'admin.form.secondary-submit': topic('Outcome integration', 'When enabled, SurveyFlow dispatches the configured secondary integration action for this outcome after saving the submission. The current screen exposes the MEX Create Request action.'),
-  'admin.form.payload-mapping': topic('Payload mapping', 'Overrides selected fields in the integration payload. Fields left as Default use the integration defaults. A mapping can use a form field, static value, template, or warning and error answers.'),
+  'admin.form.payload-mapping': {
+    key: 'admin.form.payload-mapping',
+    title: 'MEX payload mapping',
+    summary: 'Override only the MEX Create Request fields that this form needs to control.',
+    sections: [
+      {
+        heading: 'How defaults work',
+        paragraphs: ['Rows left as Default keep the built-in MEX create-request defaults. Configure a row only when this form should replace that default. SurveyFlow converts configured values to the expected MEX type and trims known length-limited strings.'],
+      },
+      {
+        heading: 'Available sources',
+        bullets: [
+          'Form field: use one submitted answer.',
+          'Static value: always send the same configured value.',
+          'Template: combine placeholders and text.',
+          'Warning/error answers: include abnormal answers detected during submission.',
+        ],
+      },
+      {
+        heading: 'Example',
+        paragraphs: ['Map Job description from a template such as "Forklift issue: {{field:damage_notes}}". Leave Requested date/time as Default so SurveyFlow uses the submission time.'],
+      },
+      {
+        note: 'MEX validates some values against its own records. For example, Asset must match a real AssetNumber and Job type name must match an existing MEX job type.',
+      },
+    ],
+  },
   'admin.form.outcome-email': topic('Outcome email notification', 'Sends an email for this outcome when enabled and email integration is configured. Recipients, subject, HTML body, and optional PDF attachment are stored in the form schema.'),
-  'admin.form.email-recipients': topic('Email recipients', 'Enter one or more recipient addresses. The form runtime separates addresses using commas, semicolons, or new lines before sending.'),
-  'admin.form.email-subject': topic('Email subject', 'Subject line for the outcome email. SurveyFlow replaces supported placeholders before sending.'),
-  'admin.form.email-body': topic('Email body', 'HTML body for the outcome email. SurveyFlow replaces supported placeholders before sending.'),
-  'admin.form.email-pdf': topic('Attach submission PDF', 'Generates a PDF of the submitted answers and attaches it to the outcome email when enabled.'),
+  'admin.form.email-recipients': topic('Email recipients', 'Enter one or more recipient addresses. SurveyFlow separates addresses using commas, semicolons, or new lines, removes blank entries, and sends each matching rule email to its distinct recipients. Example: safety@example.com, supervisor@example.com.'),
+  'admin.form.email-subject': topic('Email subject', 'Subject line for the email. SurveyFlow replaces supported placeholders before sending. Example: "Critical issue in {{form_name}} submission {{submission_id}}".'),
+  'admin.form.email-body': topic('Email body', 'HTML body for the email. SurveyFlow replaces supported placeholders before sending. Use the placeholder picker for submission details and individual form fields such as {{field:asset}}.'),
+  'admin.form.email-pdf': topic('Attach submission PDF', 'Generates a PDF of the submitted answers and attaches it to the email when enabled. If PDF generation fails, SurveyFlow logs the failure and continues the email attempt without the attachment.'),
   'admin.form.builder': topic('Form builder', 'Edits the Form.io-compatible schema stored with the SurveyFlow form. The schema contains the components rendered to people filling the form.'),
   'admin.form.type': topic('Form type', 'Single page keeps components in one form. Multi-step wizard groups components into panel steps. When switching to wizard mode, SurveyFlow creates an initial panel if the schema does not already contain one.'),
   'admin.form.versions': topic('Version history', 'SurveyFlow snapshots the current form JSON before JSON changes are saved. Preview shows a stored snapshot. Restore snapshots the current JSON again before replacing it with the selected version.'),

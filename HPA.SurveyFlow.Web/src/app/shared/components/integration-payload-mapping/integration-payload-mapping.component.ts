@@ -86,10 +86,12 @@ export const ACTION_SCHEMAS: Record<string, { label: string; help: string; field
           </div>
           <p class="mt-1 text-xs text-gray-500">{{ configuredCount() }} custom field override{{ configuredCount() === 1 ? '' : 's' }}.</p>
         </div>
-        <button type="button" (click)="open.set(true)"
-          class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50">
-          Configure payload
-        </button>
+        <div class="ta-btn-group">
+          <button type="button" (click)="open.set(true)" class="ta-btn-group-action">
+            Configure payload
+          </button>
+          <app-help-trigger helpKey="admin.form.payload-mapping" label="Help for configuring the MEX payload" [grouped]="true" />
+        </div>
       </div>
     </div>
 

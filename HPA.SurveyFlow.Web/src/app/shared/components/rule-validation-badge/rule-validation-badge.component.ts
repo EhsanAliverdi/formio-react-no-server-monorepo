@@ -1,6 +1,7 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConditionGroup, ConditionLeaf, isConditionGroup } from '../../../core/models';
+import { HelpTriggerComponent } from '../../help/help-trigger.component';
 
 export interface RuleValidationIssue {
   type: 'missing_field' | 'empty_condition';
@@ -11,9 +12,10 @@ export interface RuleValidationIssue {
 @Component({
   selector: 'app-rule-validation-badge',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, HelpTriggerComponent],
   template: `
     @if (issues.length > 0) {
+      <div class="flex items-center gap-1">
       <details class="relative inline-block">
         <summary class="inline-flex cursor-pointer list-none items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
           <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -35,6 +37,8 @@ export interface RuleValidationIssue {
           <div class="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
         </div>
       </details>
+      <app-help-trigger helpKey="admin.form.rule-validation" label="Help for rule validation" />
+      </div>
     } @else {
       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -42,6 +46,7 @@ export interface RuleValidationIssue {
         </svg>
         Valid
       </span>
+      <app-help-trigger helpKey="admin.form.rule-validation" label="Help for rule validation" />
     }
   `
 })
