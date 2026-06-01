@@ -11,6 +11,8 @@ public class Category
     // Category-level image / icon (shown as the category header image, not per-form card image)
     public string? ImageUrl { get; set; }
     public bool ShowCategoryImage { get; set; } = true;
+    public bool ShowCategoryTitle { get; set; } = true;
+    public bool ShowCategoryDescription { get; set; } = true;
     public string? IconKey { get; set; }
 
     // Layout

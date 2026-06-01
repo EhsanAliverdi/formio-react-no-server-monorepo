@@ -19,7 +19,7 @@ import { Form } from '../../../core/models';
       <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Forms</h1>
-          <p class="text-sm text-gray-500 mt-0.5">Create and manage survey forms.</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Create and manage survey forms.</p>
         </div>
         <div class="flex items-center gap-2">
           <input #importFileInput type="file" accept="application/json,.json" class="hidden" (change)="importForm($event)" />
@@ -56,7 +56,7 @@ import { Form } from '../../../core/models';
           type="text"
           [(ngModel)]="searchQuery"
           placeholder="Search forms..."
-          class="w-full max-w-sm rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          class="ta-admin-control w-full max-w-sm px-4 py-2 text-sm"
         />
       </div>
 
@@ -67,26 +67,26 @@ import { Form } from '../../../core/models';
 
       <!-- Table -->
       <div *ngIf="!loading()" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
-        <table class="min-w-[640px] w-full divide-y divide-gray-100">
+        <table class="min-w-[640px] w-full divide-y divide-gray-100 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 <span class="flex items-center gap-1">
                   Visibility
                   <app-help-trigger helpKey="admin.forms.visibility" label="Help for form visibility" />
                 </span>
               </th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 <span class="flex items-center gap-1">
                   Anonymous
                   <app-help-trigger helpKey="admin.forms.anonymous" label="Help for anonymous submissions" />
                 </span>
               </th>
-              <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
+          <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
             <tr *ngIf="filteredForms().length === 0">
               <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
                 {{ searchQuery ? 'No forms match your search.' : 'No forms yet. Create your first form.' }}
@@ -94,8 +94,8 @@ import { Form } from '../../../core/models';
             </tr>
             <ng-container *ngFor="let form of filteredForms()">
               <!-- Main form row -->
-              <tr class="hover:bg-gray-50 transition">
-                <td class="px-6 py-4 text-sm font-medium text-gray-900">
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/60 transition">
+                <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                   <div class="flex items-center gap-2">
                     @if (formThumbnailUrl(form); as thumb) {
                       <img [src]="thumb" [alt]="form.name" class="w-8 h-8 rounded object-contain flex-shrink-0 border border-gray-200 bg-gray-50 p-0.5"/>
@@ -118,7 +118,7 @@ import { Form } from '../../../core/models';
                 </td>
                 <td class="px-6 py-4">
                   <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-gray-700 dark:text-gray-200"
                     [class.bg-green-100]="form.visibility === 'public'"
                     [class.text-green-800]="form.visibility === 'public'"
                     [class.bg-yellow-100]="form.visibility === 'restricted'"
@@ -129,13 +129,13 @@ import { Form } from '../../../core/models';
                     {{ form.visibility }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500">
+                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                   {{ form.allow_anonymous_submit ? 'Yes' : 'No' }}
                 </td>
                 <td class="px-6 py-4 text-right flex items-center justify-end gap-2">
                   <a
                     [routerLink]="['/admin/forms', form.id, 'view']"
-                    class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
                   >
                     View
                   </a>
@@ -164,8 +164,8 @@ import { Form } from '../../../core/models';
               <!-- Expanded sub-forms inline rows -->
               @if (isExpanded(form.id)) {
                 @for (child of childForms(form.id); track child.id) {
-                  <tr class="bg-purple-50 border-l-4 border-purple-300">
-                    <td class="pl-10 pr-6 py-3 text-sm text-gray-700">
+                  <tr class="bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-300 dark:border-purple-700">
+                    <td class="pl-10 pr-6 py-3 text-sm text-gray-700 dark:text-gray-200">
                       <div class="flex items-center gap-2">
                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700">sub</span>
                         @if (formThumbnailUrl(child); as thumb) {
@@ -175,11 +175,11 @@ import { Form } from '../../../core/models';
                       </div>
                     </td>
                     <td class="px-6 py-3">
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                         {{ child.visibility }}
                       </span>
                     </td>
-                    <td class="px-6 py-3 text-sm text-gray-500">{{ child.allow_anonymous_submit ? 'Yes' : 'No' }}</td>
+                    <td class="px-6 py-3 text-sm text-gray-500 dark:text-gray-300">{{ child.allow_anonymous_submit ? 'Yes' : 'No' }}</td>
                     <td class="px-6 py-3 text-right flex items-center justify-end gap-2">
                       <a
                         [routerLink]="['/admin/forms', child.id, 'edit']"

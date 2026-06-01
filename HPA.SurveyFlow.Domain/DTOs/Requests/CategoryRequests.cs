@@ -8,6 +8,8 @@ public class CreateCategoryRequest
     public string Visibility { get; set; } = "public";
     public string? ImageUrl { get; set; }
     public bool ShowCategoryImage { get; set; } = true;
+    public bool ShowCategoryTitle { get; set; } = true;
+    public bool ShowCategoryDescription { get; set; } = true;
     public string? IconKey { get; set; }
     public string LayoutMode { get; set; } = "card";
     public int PageSize { get; set; } = 12;
@@ -26,6 +28,8 @@ public class UpdateCategoryRequest
     public string? Visibility { get; set; }
     public string? ImageUrl { get; set; }
     public bool? ShowCategoryImage { get; set; }
+    public bool? ShowCategoryTitle { get; set; }
+    public bool? ShowCategoryDescription { get; set; }
     public string? IconKey { get; set; }
     public string? LayoutMode { get; set; }
     public int? PageSize { get; set; }

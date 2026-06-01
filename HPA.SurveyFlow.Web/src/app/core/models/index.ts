@@ -112,6 +112,8 @@ export interface Category {
   visibility: 'public' | 'restricted';
   image_url?: string | null;
   show_category_image: boolean;
+  show_category_title: boolean;
+  show_category_description: boolean;
   icon_key?: string | null;
   layout_mode: 'card' | 'list';
   page_size: number;

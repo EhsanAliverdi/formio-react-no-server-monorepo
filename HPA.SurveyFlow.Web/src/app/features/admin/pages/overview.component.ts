@@ -11,7 +11,7 @@ import { AdminStats, ActivityItem, ReportTemplate } from '../../../core/models';
   imports: [CommonModule],
   template: `
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Dashboard</h1>
 
       <!-- Error -->
       <div *ngIf="error()" class="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -25,25 +25,25 @@ import { AdminStats, ActivityItem, ReportTemplate } from '../../../core/models';
 
       <!-- Stats grid -->
       <div *ngIf="!loadingStats() && stats()" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Total Forms</p>
-          <p class="text-3xl font-bold text-indigo-600">{{ stats()!.totalForms }}</p>
+        <div class="ta-card rounded-xl p-5">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total Forms</p>
+          <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ stats()!.totalForms }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Total Submissions</p>
-          <p class="text-3xl font-bold text-indigo-600">{{ stats()!.totalSubmissions }}</p>
+        <div class="ta-card rounded-xl p-5">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total Submissions</p>
+          <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ stats()!.totalSubmissions }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Submitted Forms</p>
-          <p class="text-3xl font-bold text-indigo-600">{{ stats()!.submittedForms }}</p>
+        <div class="ta-card rounded-xl p-5">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Submitted Forms</p>
+          <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ stats()!.submittedForms }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Today</p>
-          <p class="text-3xl font-bold text-green-600">{{ stats()!.submissionsToday }}</p>
+        <div class="ta-card rounded-xl p-5">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Today</p>
+          <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ stats()!.submissionsToday }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Last 7 Days</p>
-          <p class="text-3xl font-bold text-blue-600">{{ stats()!.submissionsLast7Days }}</p>
+        <div class="ta-card rounded-xl p-5">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Last 7 Days</p>
+          <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ stats()!.submissionsLast7Days }}</p>
         </div>
       </div>
 
@@ -95,8 +95,8 @@ import { AdminStats, ActivityItem, ReportTemplate } from '../../../core/models';
 
       <!-- Activity feed -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-        <div class="px-6 py-4 border-b border-gray-100">
-          <h2 class="text-base font-semibold text-gray-800">Recent Activity</h2>
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 class="text-base font-semibold text-gray-800 dark:text-white">Recent Activity</h2>
         </div>
 
         <div *ngIf="loadingActivity()" class="flex justify-center items-center py-10">
@@ -108,7 +108,7 @@ import { AdminStats, ActivityItem, ReportTemplate } from '../../../core/models';
           No recent activity.
         </div>
 
-        <ul *ngIf="!loadingActivity() && activity().length > 0" class="divide-y divide-gray-50">
+        <ul *ngIf="!loadingActivity() && activity().length > 0" class="divide-y divide-gray-50 dark:divide-gray-700">
           <li *ngFor="let item of activity()" class="px-6 py-4 flex gap-4">
             <!-- Avatar -->
             <div class="flex-shrink-0">
@@ -120,15 +120,15 @@ import { AdminStats, ActivityItem, ReportTemplate } from '../../../core/models';
               />
               <div
                 *ngIf="!item.actor?.avatar_url"
-                class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-sm font-semibold"
+                class="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm font-semibold"
               >
                 {{ actorInitial(item) }}
               </div>
             </div>
             <!-- Content -->
             <div class="flex-1 min-w-0">
-              <p class="text-sm text-gray-800 font-medium truncate">{{ item.title }}</p>
-              <p class="text-xs text-gray-500 mt-0.5 truncate">{{ item.summary }}</p>
+              <p class="text-sm text-gray-800 dark:text-gray-100 font-medium truncate">{{ item.title }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{{ item.summary }}</p>
               <p class="text-xs text-gray-400 mt-0.5">{{ item.occurred_at | date:'short' }}</p>
             </div>
           </li>

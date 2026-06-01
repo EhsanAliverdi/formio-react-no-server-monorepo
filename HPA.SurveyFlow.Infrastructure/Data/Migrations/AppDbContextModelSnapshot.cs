@@ -226,6 +226,18 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("show_category_image");
 
+                    b.Property<bool>("ShowCategoryDescription")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("show_category_description");
+
+                    b.Property<bool>("ShowCategoryTitle")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("show_category_title");
+
                     b.Property<bool>("ShowDescription")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")

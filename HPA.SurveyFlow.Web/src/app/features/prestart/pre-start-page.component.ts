@@ -109,13 +109,35 @@ interface CategoryCard {
           } @else if (cards().length === 0) {
             <div class="text-center py-24 text-gray-400 text-lg">No forms available in this category.</div>
 
-          } @else if (layoutMode() === 'list') {
+          } @else {
+            @if (showCategoryHeader()) {
+              <section class="mb-8 flex flex-col items-center text-center">
+                @if (categoryHeaderImageUrl()) {
+                  <img [src]="categoryHeaderImageUrl()" [alt]="categoryTitle()"
+                    class="mb-4 h-24 w-24 rounded-2xl border border-gray-200 bg-white object-cover shadow-sm dark:border-gray-700 dark:bg-gray-800" />
+                } @else if (categoryHeaderIconUrl()) {
+                  <div class="mb-4 flex h-24 w-24 items-center justify-center rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <img [src]="categoryHeaderIconUrl()" [alt]="categoryTitle()" class="h-14 w-14 object-contain" />
+                  </div>
+                }
+                @if (categoryEntity()?.show_category_title !== false) {
+                  <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ categoryTitle() }}</h1>
+                }
+                @if (categoryEntity()?.show_category_description !== false && categoryEntity()?.description) {
+                  <p class="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                    {{ categoryEntity()?.description }}
+                  </p>
+                }
+              </section>
+            }
+
+            @if (layoutMode() === 'list') {
             <!-- ── List view — titles only ── -->
             <div class="flex flex-col divide-y divide-gray-100 max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
               @for (card of pagedCards(); track card.id) {
                 <a [routerLink]="['/form-public', card.id]"
-                  class="flex items-center justify-between px-5 py-3.5 hover:bg-blue-50 transition group">
-                  <span class="text-sm font-medium text-gray-900 group-hover:text-blue-700 transition">{{ card.name }}</span>
+                  class="flex items-center justify-between px-5 py-3.5 hover:bg-blue-50 dark:hover:bg-gray-700 transition group">
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition">{{ card.name }}</span>
                   <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 shrink-0 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>
@@ -123,7 +145,7 @@ interface CategoryCard {
               }
             </div>
 
-          } @else {
+            } @else {
             <!-- ── Card view ── -->
             <div class="grid gap-6" [class]="gridColsClass()">
               @for (card of pagedCards(); track card.id) {
@@ -142,6 +164,7 @@ interface CategoryCard {
                 </a>
               }
             </div>
+            }
           }
 
           <!-- ── Pagination ── -->
@@ -167,7 +190,11 @@ interface CategoryCard {
                     [class.border-gray-300]="p !== currentPage()"
                     [class.bg-white]="p !== currentPage()"
                     [class.text-gray-700]="p !== currentPage()"
-                    [class.hover:bg-gray-50]="p !== currentPage()">
+                    [class.hover:bg-gray-50]="p !== currentPage()"
+                    [class.dark:bg-gray-800]="p !== currentPage()"
+                    [class.dark:border-gray-600]="p !== currentPage()"
+                    [class.dark:text-gray-200]="p !== currentPage()"
+                    [class.dark:hover:bg-gray-700]="p !== currentPage()">
                     {{ p }}
                   </button>
                 }
@@ -224,6 +251,28 @@ export class PreStartPageComponent implements OnInit {
     const cat = this.categoryEntity();
     if (cat?.name) return cat.name;
     return this.categorySlug().replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  });
+
+  showCategoryHeader = computed(() => {
+    const cat = this.categoryEntity();
+    return !!cat && (
+      (cat.show_category_image && !!(cat.image_url || cat.icon_key))
+      || cat.show_category_title !== false
+      || (cat.show_category_description !== false && !!cat.description)
+    );
+  });
+
+  categoryHeaderImageUrl = computed(() => {
+    const cat = this.categoryEntity();
+    return cat?.show_category_image ? cat.image_url?.trim() || null : null;
+  });
+
+  categoryHeaderIconUrl = computed(() => {
+    const cat = this.categoryEntity();
+    const iconKey = cat?.show_category_image ? cat.icon_key?.trim() : null;
+    if (!iconKey?.includes(':')) return null;
+    const [pack, name] = iconKey.split(':', 2);
+    return this.iconService.getSvgUrl(pack, name);
   });
 
   cards = computed<CategoryCard[]>(() => {

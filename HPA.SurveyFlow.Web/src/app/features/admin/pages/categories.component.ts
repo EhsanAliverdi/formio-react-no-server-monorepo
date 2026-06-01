@@ -17,6 +17,8 @@ interface CategoryFormModel {
   visibility: 'public' | 'restricted';
   image_url: string;
   show_category_image: boolean;
+  show_category_title: boolean;
+  show_category_description: boolean;
   icon_key: string;
   layout_mode: 'card' | 'list';
   page_size: number;
@@ -35,6 +37,8 @@ const emptyForm = (): CategoryFormModel => ({
   visibility: 'public',
   image_url: '',
   show_category_image: true,
+  show_category_title: true,
+  show_category_description: true,
   icon_key: '',
   layout_mode: 'card',
   page_size: 12,
@@ -270,6 +274,18 @@ const emptyForm = (): CategoryFormModel => ({
             </span>
           </label>
 
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="form.show_category_title"
+              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+            <span class="text-sm text-gray-700">Show category name in the public page header</span>
+          </label>
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="form.show_category_description"
+              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+            <span class="text-sm text-gray-700">Show category description in the public page header</span>
+          </label>
+
           <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">
               Icon key <span class="text-gray-400 font-normal">(fallback metadata)</span>
@@ -466,6 +482,8 @@ export class CategoriesComponent implements OnInit {
       visibility: cat.visibility,
       image_url: cat.image_url ?? '',
       show_category_image: cat.show_category_image ?? true,
+      show_category_title: cat.show_category_title ?? true,
+      show_category_description: cat.show_category_description ?? true,
       icon_key: cat.icon_key ?? '',
       layout_mode: cat.layout_mode ?? 'card',
       page_size: cat.page_size ?? 12,
@@ -503,6 +521,8 @@ export class CategoriesComponent implements OnInit {
       visibility: this.form.visibility,
       image_url: this.form.image_url.trim() || null,
       show_category_image: this.form.show_category_image,
+      show_category_title: this.form.show_category_title,
+      show_category_description: this.form.show_category_description,
       icon_key: this.form.icon_key.trim() || null,
       layout_mode: this.form.layout_mode,
       page_size: Number(this.form.page_size),
