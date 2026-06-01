@@ -23,15 +23,15 @@ import { Form } from '../../../core/models';
         </div>
         <div class="flex items-center gap-2">
           <input #importFileInput type="file" accept="application/json,.json" class="hidden" (change)="importForm($event)" />
-          <div class="flex items-center gap-1">
+          <div class="inline-flex">
             <button
               type="button"
               (click)="importFileInput.click()"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition"
+              class="inline-flex items-center gap-2 rounded-l-lg border border-r-0 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
               Import JSON
             </button>
-            <app-help-trigger helpKey="admin.forms.import-json" label="Help for importing form JSON" />
+            <app-help-trigger helpKey="admin.forms.import-json" label="Help for importing form JSON" [grouped]="true" />
           </div>
           <a
             routerLink="/admin/forms/new"
