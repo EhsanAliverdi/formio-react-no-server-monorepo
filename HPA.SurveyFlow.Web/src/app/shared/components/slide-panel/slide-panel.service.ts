@@ -1,4 +1,4 @@
-import { Injectable, signal, TemplateRef, Type } from '@angular/core';
+import { computed, Injectable, signal, TemplateRef, Type } from '@angular/core';
 
 export interface SlidePanelConfig {
   title: string;
@@ -9,6 +9,7 @@ export interface SlidePanelConfig {
 }
 
 export interface SlidePanelState {
+  id: number;
   config: SlidePanelConfig;
   template: TemplateRef<unknown> | null;
   component: Type<unknown> | null;
@@ -18,12 +19,18 @@ export interface SlidePanelState {
 
 @Injectable({ providedIn: 'root' })
 export class SlidePanelService {
-  readonly state = signal<SlidePanelState | null>(null);
-  private previouslyFocusedElement: HTMLElement | null = null;
+  private readonly panelStack = signal<SlidePanelState[]>([]);
+  readonly panels = this.panelStack.asReadonly();
+  readonly state = computed(() => {
+    const panels = this.panels();
+    return panels.length > 0 ? panels[panels.length - 1] : null;
+  });
+
+  private nextId = 1;
+  private previouslyFocusedElements = new Map<number, HTMLElement | null>();
 
   open<T>(template: TemplateRef<T>, config: SlidePanelConfig, context?: T): void {
-    this.captureFocus();
-    this.state.set({
+    this.push({
       config,
       template: template as TemplateRef<unknown>,
       component: null,
@@ -36,19 +43,27 @@ export class SlidePanelService {
     config: SlidePanelConfig,
     componentInputs?: Record<string, unknown>,
   ): void {
-    this.captureFocus();
-    this.state.set({ config, template: null, component, componentInputs });
+    this.push({ config, template: null, component, componentInputs });
   }
 
-  close(): void {
-    this.state.set(null);
-    this.previouslyFocusedElement?.focus();
-    this.previouslyFocusedElement = null;
+  close(id?: number): void {
+    const panels = this.panels();
+    const top = panels[panels.length - 1];
+    if (!top || (id !== undefined && top.id !== id)) return;
+
+    this.panelStack.set(panels.slice(0, -1));
+
+    const previouslyFocusedElement = this.previouslyFocusedElements.get(top.id);
+    this.previouslyFocusedElements.delete(top.id);
+    queueMicrotask(() => previouslyFocusedElement?.focus());
   }
 
-  private captureFocus(): void {
-    this.previouslyFocusedElement = document.activeElement instanceof HTMLElement
+  private push(state: Omit<SlidePanelState, 'id'>): void {
+    const id = this.nextId++;
+    const previouslyFocusedElement = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
+    this.previouslyFocusedElements.set(id, previouslyFocusedElement);
+    this.panelStack.update(panels => [...panels, { id, ...state }]);
   }
 }

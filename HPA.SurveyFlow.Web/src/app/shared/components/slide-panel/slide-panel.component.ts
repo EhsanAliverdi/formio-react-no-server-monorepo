@@ -28,23 +28,26 @@ import { SlidePanelService } from './slide-panel.service';
     ]),
   ],
   template: `
-    @if (svc.state(); as s) {
+    @for (s of svc.panels(); track s.id; let index = $index; let isTop = $last) {
       <!-- Backdrop -->
       <div
         @fadeIn
-        class="fixed inset-0 z-[900] bg-black/40 backdrop-blur-sm"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm"
+        [style.z-index]="900 + index * 2"
         aria-hidden="true"
-        (click)="svc.close()">
+        (click)="svc.close(s.id)">
       </div>
 
       <!-- Panel -->
       <aside
         @slideIn
         role="dialog"
-        aria-modal="true"
+        [attr.aria-modal]="isTop ? 'true' : null"
+        [attr.aria-hidden]="isTop ? null : 'true'"
         [attr.aria-label]="s.config.title"
-        class="fixed inset-y-0 right-0 z-[901] flex flex-col bg-white shadow-2xl
+        class="fixed inset-y-0 right-0 flex flex-col bg-white shadow-2xl
                w-full sm:w-[480px] lg:w-[580px] xl:w-[680px] 2xl:w-[760px]"
+        [style.z-index]="901 + index * 2"
         [class]="s.config.width ?? ''">
 
         <!-- Header -->
@@ -59,7 +62,7 @@ import { SlidePanelService } from './slide-panel.service';
             type="button"
             class="ml-auto shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
             aria-label="Close panel"
-            (click)="svc.close()">
+            (click)="svc.close(s.id)">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
