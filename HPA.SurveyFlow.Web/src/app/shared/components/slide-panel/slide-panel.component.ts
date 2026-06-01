@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { SlidePanelService } from './slide-panel.service';
@@ -33,7 +33,8 @@ import { SlidePanelService } from './slide-panel.service';
       <div
         @fadeIn
         class="fixed inset-0 z-[900] bg-black/40 backdrop-blur-sm"
-        aria-hidden="true">
+        aria-hidden="true"
+        (click)="svc.close()">
       </div>
 
       <!-- Panel -->
@@ -70,6 +71,9 @@ import { SlidePanelService } from './slide-panel.service';
           @if (s.template) {
             <ng-container *ngTemplateOutlet="s.template; context: s.context ?? {}"></ng-container>
           }
+          @if (s.component) {
+            <ng-container *ngComponentOutlet="s.component; inputs: s.componentInputs ?? {}"></ng-container>
+          }
         </div>
       </aside>
     }
@@ -77,4 +81,9 @@ import { SlidePanelService } from './slide-panel.service';
 })
 export class SlidePanelComponent {
   svc = inject(SlidePanelService);
+
+  @HostListener('document:keydown.escape')
+  closeOnEscape(): void {
+    if (this.svc.state()) this.svc.close();
+  }
 }

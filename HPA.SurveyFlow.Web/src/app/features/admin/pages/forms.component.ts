@@ -6,12 +6,13 @@ import { FormService } from '../../../core/services/form.service';
 import { IconService } from '../../../core/services/icon.service';
 import { ToastrService } from 'ngx-toastr';
 import { ConfirmDialogService } from '../../../shared/components/confirm-dialog/confirm-dialog.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { Form } from '../../../core/models';
 
 @Component({
   selector: 'app-admin-forms',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, HelpTriggerComponent],
   template: `
     <div>
       <!-- Header -->
@@ -22,13 +23,16 @@ import { Form } from '../../../core/models';
         </div>
         <div class="flex items-center gap-2">
           <input #importFileInput type="file" accept="application/json,.json" class="hidden" (change)="importForm($event)" />
-          <button
-            type="button"
-            (click)="importFileInput.click()"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition"
-          >
-            Import JSON
-          </button>
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              (click)="importFileInput.click()"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition"
+            >
+              Import JSON
+            </button>
+            <app-help-trigger helpKey="admin.forms.import-json" label="Help for importing form JSON" />
+          </div>
           <a
             routerLink="/admin/forms/new"
             class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition"
@@ -67,8 +71,18 @@ import { Form } from '../../../core/models';
           <thead class="bg-gray-50">
             <tr>
               <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Visibility</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Anonymous</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <span class="flex items-center gap-1">
+                  Visibility
+                  <app-help-trigger helpKey="admin.forms.visibility" label="Help for form visibility" />
+                </span>
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <span class="flex items-center gap-1">
+                  Anonymous
+                  <app-help-trigger helpKey="admin.forms.anonymous" label="Help for anonymous submissions" />
+                </span>
+              </th>
               <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
