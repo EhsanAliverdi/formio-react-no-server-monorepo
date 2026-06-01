@@ -14,6 +14,7 @@ import { debounceTime, switchMap } from 'rxjs/operators';
 import { SubmissionService } from '../../../core/services/submission.service';
 import { FormService } from '../../../core/services/form.service';
 import { ConfirmDialogService } from '../../../shared/components/confirm-dialog/confirm-dialog.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { AdminSubmission, Form } from '../../../core/models';
 
 const PAGE_SIZE = 25;
@@ -21,11 +22,14 @@ const PAGE_SIZE = 25;
 @Component({
   selector: 'app-admin-submissions',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div>
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Submissions</h1>
+        <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900">
+          Submissions
+          <app-help-trigger helpKey="admin.submissions.list" label="Help for submissions" />
+        </h1>
         <p class="text-sm text-gray-500 mt-0.5">Browse and search all form submissions.</p>
       </div>
 
@@ -36,6 +40,7 @@ const PAGE_SIZE = 25;
             {{ loading() ? 'Loading…' : total() + ' submission(s)' }}
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <app-help-trigger helpKey="admin.submissions.filters" label="Help for submission filters" />
             <input type="date" [(ngModel)]="fromDateModel" aria-label="From date"
               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
             <input type="date" [(ngModel)]="toDateModel" aria-label="To date"
@@ -47,12 +52,15 @@ const PAGE_SIZE = 25;
                 <option [value]="f.id">{{ f.name }}</option>
               }
             </select>
-            <input type="search" (input)="onQInput($event)" placeholder="Search…"
-              class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-            <button type="button" (click)="loadSubmissions()"
-              class="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 transition">
-              Refresh
-            </button>
+            <div class="flex items-center gap-1">
+              <input type="search" (input)="onQInput($event)" placeholder="Search…"
+                class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+              <app-help-trigger helpKey="admin.submissions.search" label="Help for searching submissions" />
+            </div>
+            <div class="ta-btn-group">
+              <button type="button" (click)="loadSubmissions()" class="ta-btn-group-action">Refresh</button>
+              <app-help-trigger helpKey="admin.submissions.refresh" label="Help for refreshing submissions" [grouped]="true" />
+            </div>
           </div>
         </div>
 
@@ -65,13 +73,13 @@ const PAGE_SIZE = 25;
           <table class="min-w-[640px] w-full text-sm">
             <thead>
               <tr class="bg-gray-50">
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">#</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Form</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Abnormal</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Integration</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Submitted</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Submitted By</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Actions</th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1"># <app-help-trigger helpKey="admin.submissions.id" label="Help for submission numbers" /></span></th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Form <app-help-trigger helpKey="admin.submissions.form" label="Help for submitted forms" /></span></th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Abnormal <app-help-trigger helpKey="admin.submissions.abnormal" label="Help for abnormal answers" /></span></th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Integration <app-help-trigger helpKey="admin.submissions.integration" label="Help for integration status" /></span></th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Submitted <app-help-trigger helpKey="admin.submissions.submitted" label="Help for submitted time" /></span></th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Submitted By <app-help-trigger helpKey="admin.submissions.submitted-by" label="Help for submitted by" /></span></th>
+                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Actions <app-help-trigger helpKey="admin.submissions.actions" label="Help for submission actions" /></span></th>
               </tr>
             </thead>
             <tbody>
@@ -207,8 +215,9 @@ const PAGE_SIZE = 25;
 
         <!-- Pagination -->
         <div class="mt-4 flex items-center justify-between">
-          <div class="text-sm text-gray-600">
+          <div class="flex items-center gap-1 text-sm text-gray-600">
             Showing {{ paginationFrom() }}–{{ paginationTo() }} of {{ total() }}
+            <app-help-trigger helpKey="admin.submissions.pagination" label="Help for submission pagination" />
           </div>
           <div class="flex items-center gap-2">
             <button type="button" (click)="prevPage()" [disabled]="page() <= 1 || loading()"
