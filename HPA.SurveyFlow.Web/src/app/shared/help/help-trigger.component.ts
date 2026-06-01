@@ -9,7 +9,7 @@ import { HelpService } from './help.service';
       type="button"
       [class]="grouped()
         ? 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-r-lg border border-gray-300 bg-white text-indigo-500 transition hover:bg-gray-50 hover:text-indigo-700 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500'
-        : 'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1'"
+        : 'inline-flex h-5 w-5 shrink-0 items-center justify-center text-indigo-500 transition hover:text-indigo-700 focus:outline-none'"
       [attr.aria-label]="label()"
       (click)="openHelp($event)">
       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
