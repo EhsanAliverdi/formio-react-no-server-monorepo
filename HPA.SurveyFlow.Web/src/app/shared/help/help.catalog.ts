@@ -305,7 +305,54 @@ export const HELP_CATALOG = {
   'admin.form.email-subject': topic('Email subject', 'Subject line for the email. SurveyFlow replaces supported placeholders before sending. Example: "Critical issue in {{form_name}} submission {{submission_id}}".'),
   'admin.form.email-body': topic('Email body', 'HTML body for the email. SurveyFlow replaces supported placeholders before sending. Use the placeholder picker for submission details and individual form fields such as {{field:asset}}.'),
   'admin.form.email-pdf': topic('Attach submission PDF', 'Generates a PDF of the submitted answers and attaches it to the email when enabled. If PDF generation fails, SurveyFlow logs the failure and continues the email attempt without the attachment.'),
-  'admin.form.builder': topic('Form builder', 'Edits the Form.io-compatible schema stored with the SurveyFlow form. The schema contains the components rendered to people filling the form.'),
+  'admin.form.builder': {
+    key: 'admin.form.builder',
+    title: 'Form builder',
+    summary: 'Uses the Form.io builder with SurveyFlow-specific features added for abnormal answers, synchronized data-source fields, and multi-step page editing.',
+    sections: [
+      {
+        heading: 'Standard Form.io editing',
+        paragraphs: ['Drag components from the sidebar into the canvas, then open a component to configure its label, key, validation, display rules, and other Form.io settings. SurveyFlow stores the resulting Form.io-compatible schema with this form.'],
+      },
+      {
+        heading: 'SurveyFlow abnormalities',
+        paragraphs: ['SurveyFlow adds an Abnormalities tab to the settings dialog for Form.io components. Open a question in the builder, select Abnormalities, and enable abnormalities for that question.'],
+        bullets: [
+          'Normal answers: submitted values that are accepted without a flag.',
+          'Answers that create an error: submitted values that create an error-level abnormality.',
+          'Answers that create a warning: submitted values that create a warning-level abnormality.',
+          'Any other answer: when normal answers are configured, classify unmatched answers as No flag, Error, or Warning.',
+        ],
+      },
+      {
+        heading: 'How abnormal answers work',
+        paragraphs: ['SurveyFlow saves these rules inside the Form.io component properties. When the form is submitted, the server scans enabled component rules and compares the submitted value with the configured values. Error matches take priority, then warning matches, then normal matches, then the Any other answer setting.'],
+        bullets: [
+          'Use submitted values, not display labels. For an option field, enter the option value.',
+          'Comparisons use exact configured values.',
+          'Error and warning results determine the submission outcome used by Submission Flow, notifications, integrations, and result-message placeholders.',
+          'When Show color-coded answers is enabled in General Configuration, the public form highlights configured normal answers in green, warnings in amber, and errors in red while the form is being filled in.',
+        ],
+      },
+      {
+        heading: 'Abnormality example',
+        paragraphs: ['For a radio question labelled "Is the emergency stop working?", configure option values yes, no, and unknown. In Abnormalities, add yes as a normal answer, no as an error answer, and unknown as a warning answer. A submitted no produces an error outcome; a submitted unknown produces a warning outcome.'],
+      },
+      {
+        heading: 'SurveyFlow data-source fields',
+        paragraphs: ['SurveyFlow loads enabled data sources before starting the builder. Each available source appears in the SurveyFlow sidebar group. Dragging one into the form inserts a standard Form.io select component configured to query SurveyFlow data-source options.'],
+        bullets: [
+          'The saved schema remains a standard Form.io select, not a custom component type.',
+          'The select searches SurveyFlow through the configured data-source query URL.',
+          'For synchronized MEX assets, the API returns active matching asset options by default.',
+        ],
+      },
+      {
+        heading: 'Multi-step wizard additions',
+        paragraphs: ['When Form type is Multi-step wizard, SurveyFlow adds page actions to the wizard header. Use them to rename a page, delete a page, or move a page left or right. Deleting a page also removes the components on that page, and the last remaining page cannot be deleted.'],
+      },
+    ],
+  },
   'admin.form.type': topic('Form type', 'Single page keeps components in one form. Multi-step wizard groups components into panel steps. When switching to wizard mode, SurveyFlow creates an initial panel if the schema does not already contain one.'),
   'admin.form.versions': topic('Version history', 'SurveyFlow snapshots the current form JSON before JSON changes are saved. Preview shows a stored snapshot. Restore snapshots the current JSON again before replacing it with the selected version.'),
   'admin.form.view': topic('Form preview', 'Renders the saved Form.io schema for an administrator without submitting data. Multi-step forms expose Previous and Next controls for navigating panel steps.'),
