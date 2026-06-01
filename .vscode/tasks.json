@@ -30,11 +30,28 @@
       "problemMatcher": []
     },
     {
+      "label": "Docker: Dev Rebuild (No Cache)",
+      "detail": "Full clean rebuild — discards all Docker layer cache. Use when node_modules or deps are stale.",
+      "type": "shell",
+      "command": "docker compose --env-file HPA.SurveyFlow.Docker/env/development.env -f HPA.SurveyFlow.Docker/compose/docker-compose.yml -f HPA.SurveyFlow.Docker/compose/docker-compose.development.yml build --no-cache; if ($?) { docker compose --env-file HPA.SurveyFlow.Docker/env/development.env -f HPA.SurveyFlow.Docker/compose/docker-compose.yml -f HPA.SurveyFlow.Docker/compose/docker-compose.development.yml up -d }",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
       "label": "Docker: Dev Down",
       "type": "shell",
       "command": "docker",
       "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "down"],
       "problemMatcher": []
+    },
+    {
+      "label": "Docker: Dev Down + Wipe Volumes",
+      "detail": "Removes containers AND named volumes (web_node_modules etc). Use before No-Cache rebuild when deps are broken.",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "--env-file", "HPA.SurveyFlow.Docker/env/development.env", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.yml", "-f", "HPA.SurveyFlow.Docker/compose/docker-compose.development.yml", "down", "-v"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
       "label": "Docker: UAT Config",

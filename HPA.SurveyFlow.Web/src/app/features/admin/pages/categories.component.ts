@@ -1,10 +1,11 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CategoryService } from '../../../core/services/category.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ConfirmDialogService } from '../../../shared/components/confirm-dialog/confirm-dialog.service';
+import { SlidePanelService } from '../../../shared/components/slide-panel/slide-panel.service';
 import { ToastrService } from 'ngx-toastr';
 import { Category } from '../../../core/models';
 
@@ -13,14 +14,11 @@ interface CategoryFormModel {
   name: string;
   description: string;
   visibility: 'public' | 'restricted';
-  // Category image / icon
   image_url: string;
   show_category_image: boolean;
   icon_key: string;
-  // Layout
   layout_mode: 'card' | 'list';
   page_size: number;
-  // Card-view display settings
   show_title: boolean;
   show_description: boolean;
   show_button: boolean;
@@ -162,223 +160,215 @@ const emptyForm = (): CategoryFormModel => ({
           </table>
         </div>
       }
+    </div>
 
-      <!-- Create / Edit Modal -->
-      @if (showModal()) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div class="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-xl overflow-y-auto max-h-[90vh]">
-            <div class="flex items-center justify-between border-b pb-4 mb-4">
-              <h3 class="text-lg font-semibold text-gray-900">
-                {{ editCategory() ? 'Edit Category' : 'New Category' }}
-              </h3>
-              <button type="button" (click)="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
-            </div>
+    <!-- Slide panel content template -->
+    <ng-template #categoryFormTpl>
+      @if (saveError()) {
+        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{{ saveError() }}</div>
+      }
 
-            @if (saveError()) {
-              <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{{ saveError() }}</div>
+      <div class="space-y-5">
+
+        <!-- ── Basic ── -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Slug <span class="text-red-500">*</span>
+          </label>
+          <input type="text" [(ngModel)]="form.slug" placeholder="pre-start"
+            [disabled]="!!editCategory()"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400 font-mono"/>
+          <p class="mt-1 text-xs text-gray-400">URL: <code>/category/{{ form.slug || 'slug' }}</code>. Cannot change after creation.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Name <span class="text-red-500">*</span>
+          </label>
+          <input type="text" [(ngModel)]="form.name" placeholder="Pre-Start Checks"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea [(ngModel)]="form.description" rows="2" placeholder="Optional — shown on the category page"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+        </div>
+
+        <!-- ── Visibility ── -->
+        <div class="border-t pt-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Visibility</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="cat_visibility" [checked]="form.visibility === 'public'" (change)="setVisibility('public')"
+                class="h-4 w-4 border-gray-300 text-indigo-600"/>
+              <span class="text-sm text-gray-700"><strong>Public</strong> <span class="text-gray-400 font-normal">— anyone</span></span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="cat_visibility" [checked]="form.visibility === 'restricted'" (change)="setVisibility('restricted')"
+                class="h-4 w-4 border-gray-300 text-indigo-600"/>
+              <span class="text-sm text-gray-700"><strong>Restricted</strong> <span class="text-gray-400 font-normal">— login required</span></span>
+            </label>
+          </div>
+          @if (form.visibility === 'restricted') {
+            <p class="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
+              Access controlled by the allowed roles and users set on each form.
+            </p>
+          }
+        </div>
+
+        <!-- ── Category Image / Icon ── -->
+        <div class="border-t pt-4 space-y-3">
+          <p class="text-sm font-medium text-gray-700">Category image / icon</p>
+          <p class="text-xs text-gray-400 -mt-2">This is the category-level image or icon. Each form's own card image is set on the form itself.</p>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Image URL</label>
+            <input type="url" [(ngModel)]="form.image_url" placeholder="https://…"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+            @if (form.image_url) {
+              <img [src]="form.image_url" alt="Preview" class="mt-2 h-16 rounded-lg object-cover border border-gray-200"/>
             }
+          </div>
 
-            <div class="space-y-5">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" [(ngModel)]="form.show_category_image"
+              class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+            <span class="text-sm text-gray-700">Show category image / icon on the page</span>
+          </label>
 
-              <!-- ── Basic ── -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Slug <span class="text-red-500">*</span>
-                </label>
-                <input type="text" [(ngModel)]="form.slug" placeholder="pre-start"
-                  [disabled]="!!editCategory()"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400 font-mono"/>
-                <p class="mt-1 text-xs text-gray-400">URL: <code>/category/{{ form.slug || 'slug' }}</code>. Cannot change after creation.</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Name <span class="text-red-500">*</span>
-                </label>
-                <input type="text" [(ngModel)]="form.name" placeholder="Pre-Start Checks"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea [(ngModel)]="form.description" rows="2" placeholder="Optional — shown on the category page"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
-              </div>
-
-              <!-- ── Visibility ── -->
-              <div class="border-t pt-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Visibility</label>
-                <div class="flex gap-4">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="cat_visibility" [checked]="form.visibility === 'public'" (change)="setVisibility('public')"
-                      class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700"><strong>Public</strong> <span class="text-gray-400 font-normal">— anyone</span></span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="cat_visibility" [checked]="form.visibility === 'restricted'" (change)="setVisibility('restricted')"
-                      class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700"><strong>Restricted</strong> <span class="text-gray-400 font-normal">— login required</span></span>
-                  </label>
-                </div>
-                @if (form.visibility === 'restricted') {
-                  <p class="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
-                    Access controlled by the allowed roles and users set on each form.
-                  </p>
-                }
-              </div>
-
-              <!-- ── Category Image / Icon ── -->
-              <div class="border-t pt-4 space-y-3">
-                <p class="text-sm font-medium text-gray-700">Category image / icon</p>
-                <p class="text-xs text-gray-400 -mt-2">This is the category-level image or icon. Each form's own card image is set on the form itself.</p>
-
-                <div>
-                  <label class="block text-xs font-medium text-gray-600 mb-1">Image URL</label>
-                  <input type="url" [(ngModel)]="form.image_url" placeholder="https://…"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                  @if (form.image_url) {
-                    <img [src]="form.image_url" alt="Preview" class="mt-2 h-16 rounded-lg object-cover border border-gray-200"/>
-                  }
-                </div>
-
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" [(ngModel)]="form.show_category_image"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  <span class="text-sm text-gray-700">Show category image / icon on the page</span>
-                </label>
-
-                <div>
-                  <label class="block text-xs font-medium text-gray-600 mb-1">Icon key <span class="text-gray-400 font-normal">(used when no image)</span></label>
-                  <input type="text" [(ngModel)]="form.icon_key" placeholder="fa:FaTruck"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                </div>
-              </div>
-
-              <!-- ── Layout ── -->
-              <div class="border-t pt-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Layout</label>
-                <div class="flex gap-4">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="cat_layout_mode" [checked]="form.layout_mode === 'card'" (change)="setLayoutMode('card')"
-                      class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700"><strong>Card view</strong></span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="cat_layout_mode" [checked]="form.layout_mode === 'list'" (change)="setLayoutMode('list')"
-                      class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700"><strong>List view</strong></span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- ── Pagination (both views) ── -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Items per page <span class="text-gray-400 font-normal text-xs">({{ form.page_size }})</span>
-                </label>
-                <input type="range" [(ngModel)]="form.page_size" min="4" max="48" step="4"
-                  class="w-full max-w-xs accent-indigo-600"/>
-                <div class="flex justify-between text-xs text-gray-400 max-w-xs mt-0.5">
-                  <span>4</span><span>12</span><span>24</span><span>48</span>
-                </div>
-              </div>
-
-              <!-- ── Card view settings ── -->
-              @if (form.layout_mode === 'card') {
-                <div class="border-t pt-4 space-y-3">
-                  <p class="text-sm font-medium text-gray-700">Card display</p>
-
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" [(ngModel)]="form.show_title"
-                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700">Show form title on card</span>
-                  </label>
-
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" [(ngModel)]="form.show_description"
-                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700">Show description on card</span>
-                  </label>
-
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" [(ngModel)]="form.show_button"
-                      class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                    <span class="text-sm text-gray-700">Show button</span>
-                  </label>
-                  @if (form.show_button) {
-                    <div class="pl-6">
-                      <label class="block text-xs font-medium text-gray-600 mb-1">Button label</label>
-                      <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
-                        class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                    </div>
-                  }
-
-                  <div class="pt-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Columns <span class="text-gray-400 font-normal text-xs">({{ form.columns }})</span>
-                    </label>
-                    <input type="range" [(ngModel)]="form.columns" min="1" max="4" step="1"
-                      class="w-full max-w-xs accent-indigo-600"/>
-                    <div class="flex justify-between text-xs text-gray-400 max-w-xs mt-0.5">
-                      <span>1</span><span>2</span><span>3</span><span>4</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Card style</label>
-                    <div class="flex gap-4">
-                      <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="cat_card_style" [checked]="form.card_style === 'overlay'" (change)="setCardStyle('overlay')"
-                          class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                        <span class="text-sm text-gray-700"><strong>Overlay</strong> <span class="text-gray-400 font-normal">— hover to reveal</span></span>
-                      </label>
-                      <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="cat_card_style" [checked]="form.card_style === 'compact'" (change)="setCardStyle('compact')"
-                          class="h-4 w-4 border-gray-300 text-indigo-600"/>
-                        <span class="text-sm text-gray-700"><strong>Compact</strong> <span class="text-gray-400 font-normal">— always visible</span></span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-
-            <div class="mt-6 flex items-center justify-end gap-3 border-t pt-4">
-              <button type="button" (click)="closeModal()"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition">
-                Cancel
-              </button>
-              <button type="button" (click)="save()" [disabled]="saving()"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition">
-                @if (saving()) {
-                  <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                  </svg>
-                  Saving…
-                } @else {
-                  {{ editCategory() ? 'Save Changes' : 'Create Category' }}
-                }
-              </button>
-            </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Icon key <span class="text-gray-400 font-normal">(used when no image)</span></label>
+            <input type="text" [(ngModel)]="form.icon_key" placeholder="fa:FaTruck"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
           </div>
         </div>
-      }
-    </div>
+
+        <!-- ── Layout ── -->
+        <div class="border-t pt-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Layout</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="cat_layout_mode" [checked]="form.layout_mode === 'card'" (change)="setLayoutMode('card')"
+                class="h-4 w-4 border-gray-300 text-indigo-600"/>
+              <span class="text-sm text-gray-700"><strong>Card view</strong></span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="cat_layout_mode" [checked]="form.layout_mode === 'list'" (change)="setLayoutMode('list')"
+                class="h-4 w-4 border-gray-300 text-indigo-600"/>
+              <span class="text-sm text-gray-700"><strong>List view</strong></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- ── Pagination ── -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Items per page <span class="text-gray-400 font-normal text-xs">({{ form.page_size }})</span>
+          </label>
+          <input type="range" [(ngModel)]="form.page_size" min="4" max="48" step="4"
+            class="w-full max-w-xs accent-indigo-600"/>
+          <div class="flex justify-between text-xs text-gray-400 max-w-xs mt-0.5">
+            <span>4</span><span>12</span><span>24</span><span>48</span>
+          </div>
+        </div>
+
+        <!-- ── Card view settings ── -->
+        @if (form.layout_mode === 'card') {
+          <div class="border-t pt-4 space-y-3">
+            <p class="text-sm font-medium text-gray-700">Card display</p>
+
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="form.show_title"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+              <span class="text-sm text-gray-700">Show form title on card</span>
+            </label>
+
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="form.show_description"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+              <span class="text-sm text-gray-700">Show description on card</span>
+            </label>
+
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="form.show_button"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
+              <span class="text-sm text-gray-700">Show button</span>
+            </label>
+            @if (form.show_button) {
+              <div class="pl-6">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Button label</label>
+                <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
+                  class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+              </div>
+            }
+
+            <div class="pt-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Columns <span class="text-gray-400 font-normal text-xs">({{ form.columns }})</span>
+              </label>
+              <input type="range" [(ngModel)]="form.columns" min="1" max="4" step="1"
+                class="w-full max-w-xs accent-indigo-600"/>
+              <div class="flex justify-between text-xs text-gray-400 max-w-xs mt-0.5">
+                <span>1</span><span>2</span><span>3</span><span>4</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Card style</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="cat_card_style" [checked]="form.card_style === 'overlay'" (change)="setCardStyle('overlay')"
+                    class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                  <span class="text-sm text-gray-700"><strong>Overlay</strong> <span class="text-gray-400 font-normal">— hover to reveal</span></span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="cat_card_style" [checked]="form.card_style === 'compact'" (change)="setCardStyle('compact')"
+                    class="h-4 w-4 border-gray-300 text-indigo-600"/>
+                  <span class="text-sm text-gray-700"><strong>Compact</strong> <span class="text-gray-400 font-normal">— always visible</span></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Footer actions -->
+      <div class="mt-8 flex items-center justify-end gap-3 border-t pt-5">
+        <button type="button" (click)="closePanel()"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition">
+          Cancel
+        </button>
+        <button type="button" (click)="save()" [disabled]="saving()"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition">
+          @if (saving()) {
+            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            Saving…
+          } @else {
+            {{ editCategory() ? 'Save Changes' : 'Create Category' }}
+          }
+        </button>
+      </div>
+    </ng-template>
   `,
 })
 export class CategoriesComponent implements OnInit {
   private categoryService = inject(CategoryService);
   private authService = inject(AuthService);
   private confirmDialog = inject(ConfirmDialogService);
+  private slidePanel = inject(SlidePanelService);
   private toastr = inject(ToastrService);
+
+  @ViewChild('categoryFormTpl') categoryFormTpl!: TemplateRef<unknown>;
 
   categories = signal<Category[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
   saving = signal(false);
   saveError = signal<string | null>(null);
-  showModal = signal(false);
   editCategory = signal<Category | null>(null);
 
   isAdmin = computed(() => this.authService.currentUser()?.role === 'admin');
@@ -403,7 +393,7 @@ export class CategoriesComponent implements OnInit {
     this.editCategory.set(null);
     this.form = emptyForm();
     this.saveError.set(null);
-    this.showModal.set(true);
+    this.slidePanel.open(this.categoryFormTpl, { title: 'New Category' });
   }
 
   openEdit(cat: Category): void {
@@ -426,11 +416,14 @@ export class CategoriesComponent implements OnInit {
       card_style: cat.card_style ?? 'overlay',
     };
     this.saveError.set(null);
-    this.showModal.set(true);
+    this.slidePanel.open(this.categoryFormTpl, {
+      title: 'Edit Category',
+      subtitle: cat.name,
+    });
   }
 
-  closeModal(): void {
-    this.showModal.set(false);
+  closePanel(): void {
+    this.slidePanel.close();
     this.editCategory.set(null);
     this.saveError.set(null);
   }
@@ -441,8 +434,6 @@ export class CategoriesComponent implements OnInit {
 
     this.saving.set(true);
     this.saveError.set(null);
-
-    console.log('[Category save] layout_mode =', this.form.layout_mode, '| visibility =', this.form.visibility);
 
     const payload = {
       slug: this.form.slug.trim(),
@@ -471,7 +462,7 @@ export class CategoriesComponent implements OnInit {
       next: () => {
         this.saving.set(false);
         this.toastr.success(editing ? 'Category updated.' : 'Category created.');
-        this.closeModal();
+        this.closePanel();
         this.load();
       },
       error: (err) => {

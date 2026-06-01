@@ -4,12 +4,13 @@ import { SettingsService } from './core/services/settings.service';
 import { HealthService } from './core/services/health.service';
 import { ApiService } from './core/services/api.service';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
+import { SlidePanelComponent } from './shared/components/slide-panel/slide-panel.component';
 import { Formio } from 'formiojs';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, ConfirmDialogComponent],
+  imports: [RouterOutlet, ConfirmDialogComponent, SlidePanelComponent],
   template: `
     @if (backendDown()) {
       <div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -49,6 +50,7 @@ import { Formio } from 'formiojs';
     } @else if (ready()) {
       <router-outlet />
       <app-confirm-dialog />
+      <app-slide-panel />
     }
   `,
 })
