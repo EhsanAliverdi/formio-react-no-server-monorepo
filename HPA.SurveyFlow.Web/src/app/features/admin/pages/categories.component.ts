@@ -6,6 +6,7 @@ import { CategoryService } from '../../../core/services/category.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ConfirmDialogService } from '../../../shared/components/confirm-dialog/confirm-dialog.service';
 import { SlidePanelService } from '../../../shared/components/slide-panel/slide-panel.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { ToastrService } from 'ngx-toastr';
 import { Category } from '../../../core/models';
 
@@ -48,23 +49,28 @@ const emptyForm = (): CategoryFormModel => ({
 @Component({
   selector: 'app-admin-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, HelpTriggerComponent],
   template: `
     <div>
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Categories</h1>
+          <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900">
+            Categories
+            <app-help-trigger helpKey="admin.categories.list" label="Help for categories" />
+          </h1>
           <p class="text-sm text-gray-500 mt-0.5">Manage shared form categories and their access settings.</p>
         </div>
         @if (canEdit()) {
-          <button type="button" (click)="openCreate()"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            New Category
-          </button>
+          <div class="ta-btn-group">
+            <button type="button" (click)="openCreate()" class="ta-btn-group-action">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              New Category
+            </button>
+            <app-help-trigger helpKey="admin.categories.create" label="Help for creating a category" [grouped]="true" />
+          </div>
         }
       </div>
 
@@ -81,12 +87,22 @@ const emptyForm = (): CategoryFormModel => ({
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Name / Slug</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Visibility</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Forms</th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">Public URL</th>
+                <th class="px-5 py-3 text-left font-medium text-gray-500">
+                  <span class="flex items-center gap-1">Name / Slug <app-help-trigger helpKey="admin.categories.slug" label="Help for category slugs" /></span>
+                </th>
+                <th class="px-5 py-3 text-left font-medium text-gray-500">
+                  <span class="flex items-center gap-1">Visibility <app-help-trigger helpKey="admin.categories.visibility" label="Help for category visibility" /></span>
+                </th>
+                <th class="px-5 py-3 text-left font-medium text-gray-500">
+                  <span class="flex items-center gap-1">Forms <app-help-trigger helpKey="admin.categories.forms" label="Help for assigned forms" /></span>
+                </th>
+                <th class="px-5 py-3 text-left font-medium text-gray-500">
+                  <span class="flex items-center gap-1">Public URL <app-help-trigger helpKey="admin.categories.public-url" label="Help for category public URLs" /></span>
+                </th>
                 @if (canEdit()) {
-                  <th class="px-5 py-3 text-left font-medium text-gray-500">Actions</th>
+                  <th class="px-5 py-3 text-left font-medium text-gray-500">
+                    <span class="flex items-center gap-1">Actions <app-help-trigger helpKey="admin.categories.actions" label="Help for category actions" /></span>
+                  </th>
                 }
               </tr>
             </thead>
@@ -172,8 +188,9 @@ const emptyForm = (): CategoryFormModel => ({
 
         <!-- ── Basic ── -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
             Slug <span class="text-red-500">*</span>
+            <app-help-trigger helpKey="admin.categories.slug" label="Help for category slug" />
           </label>
           <input type="text" [(ngModel)]="form.slug" placeholder="pre-start"
             [disabled]="!!editCategory()"
@@ -182,22 +199,29 @@ const emptyForm = (): CategoryFormModel => ({
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
             Name <span class="text-red-500">*</span>
+            <app-help-trigger helpKey="admin.categories.name" label="Help for category name" />
           </label>
           <input type="text" [(ngModel)]="form.name" placeholder="Pre-Start Checks"
             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea [(ngModel)]="form.description" rows="2" placeholder="Optional — shown on the category page"
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+            Description
+            <app-help-trigger helpKey="admin.categories.description" label="Help for category description" />
+          </label>
+          <textarea [(ngModel)]="form.description" rows="2" placeholder="Optional category metadata"
             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
         </div>
 
         <!-- ── Visibility ── -->
         <div class="border-t pt-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Visibility</label>
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
+            Visibility
+            <app-help-trigger helpKey="admin.categories.visibility" label="Help for category visibility" />
+          </label>
           <div class="flex gap-4">
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="cat_visibility" [checked]="form.visibility === 'public'" (change)="setVisibility('public')"
@@ -219,11 +243,17 @@ const emptyForm = (): CategoryFormModel => ({
 
         <!-- ── Category Image / Icon ── -->
         <div class="border-t pt-4 space-y-3">
-          <p class="text-sm font-medium text-gray-700">Category image / icon</p>
-          <p class="text-xs text-gray-400 -mt-2">This is the category-level image or icon. Each form's own card image is set on the form itself.</p>
+          <p class="flex items-center gap-1 text-sm font-medium text-gray-700">
+            Category image / icon
+            <app-help-trigger helpKey="admin.categories.image-icon" label="Help for category image and icon" />
+          </p>
+          <p class="text-xs text-gray-400 -mt-2">Stored category-level metadata. Each form's own card image is set on the form itself.</p>
 
           <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Image URL</label>
+            <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
+              Image URL
+              <app-help-trigger helpKey="admin.categories.image-icon" label="Help for category image URL" />
+            </label>
             <input type="url" [(ngModel)]="form.image_url" placeholder="https://…"
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
             @if (form.image_url) {
@@ -234,11 +264,17 @@ const emptyForm = (): CategoryFormModel => ({
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" [(ngModel)]="form.show_category_image"
               class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-            <span class="text-sm text-gray-700">Show category image / icon on the page</span>
+            <span class="flex items-center gap-1 text-sm text-gray-700">
+              Enable category image / icon display metadata
+              <app-help-trigger helpKey="admin.categories.image-icon" label="Help for showing category image and icon" />
+            </span>
           </label>
 
           <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Icon key <span class="text-gray-400 font-normal">(used when no image)</span></label>
+            <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
+              Icon key <span class="text-gray-400 font-normal">(fallback metadata)</span>
+              <app-help-trigger helpKey="admin.categories.image-icon" label="Help for category icon key" />
+            </label>
             <input type="text" [(ngModel)]="form.icon_key" placeholder="fa:FaTruck"
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
           </div>
@@ -246,7 +282,10 @@ const emptyForm = (): CategoryFormModel => ({
 
         <!-- ── Layout ── -->
         <div class="border-t pt-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Layout</label>
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
+            Layout
+            <app-help-trigger helpKey="admin.categories.layout" label="Help for category layout" />
+          </label>
           <div class="flex gap-4">
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="cat_layout_mode" [checked]="form.layout_mode === 'card'" (change)="setLayoutMode('card')"
@@ -263,8 +302,9 @@ const emptyForm = (): CategoryFormModel => ({
 
         <!-- ── Pagination ── -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
             Items per page <span class="text-gray-400 font-normal text-xs">({{ form.page_size }})</span>
+            <app-help-trigger helpKey="admin.categories.page-size" label="Help for items per page" />
           </label>
           <input type="range" [(ngModel)]="form.page_size" min="4" max="48" step="4"
             class="w-full max-w-xs accent-indigo-600"/>
@@ -276,36 +316,52 @@ const emptyForm = (): CategoryFormModel => ({
         <!-- ── Card view settings ── -->
         @if (form.layout_mode === 'card') {
           <div class="border-t pt-4 space-y-3">
-            <p class="text-sm font-medium text-gray-700">Card display</p>
+            <p class="flex items-center gap-1 text-sm font-medium text-gray-700">
+              Card display
+              <app-help-trigger helpKey="admin.categories.card-display" label="Help for card display" />
+            </p>
 
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" [(ngModel)]="form.show_title"
                 class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-              <span class="text-sm text-gray-700">Show form title on card</span>
+              <span class="flex items-center gap-1 text-sm text-gray-700">
+                Show form title on card
+                <app-help-trigger helpKey="admin.categories.card-display" label="Help for showing form titles on cards" />
+              </span>
             </label>
 
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" [(ngModel)]="form.show_description"
                 class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-              <span class="text-sm text-gray-700">Show description on card</span>
+              <span class="flex items-center gap-1 text-sm text-gray-700">
+                Show description on card
+                <app-help-trigger helpKey="admin.categories.card-display" label="Help for showing descriptions on cards" />
+              </span>
             </label>
 
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" [(ngModel)]="form.show_button"
                 class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-              <span class="text-sm text-gray-700">Show button</span>
+              <span class="flex items-center gap-1 text-sm text-gray-700">
+                Show button
+                <app-help-trigger helpKey="admin.categories.card-display" label="Help for showing buttons on cards" />
+              </span>
             </label>
             @if (form.show_button) {
               <div class="pl-6">
-                <label class="block text-xs font-medium text-gray-600 mb-1">Button label</label>
+                <label class="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
+                  Button label
+                  <app-help-trigger helpKey="admin.categories.button-label" label="Help for card button label" />
+                </label>
                 <input type="text" [(ngModel)]="form.button_text" placeholder="Start"
                   class="w-full max-w-xs rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
               </div>
             }
 
             <div class="pt-1">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
                 Columns <span class="text-gray-400 font-normal text-xs">({{ form.columns }})</span>
+                <app-help-trigger helpKey="admin.categories.columns" label="Help for card columns" />
               </label>
               <input type="range" [(ngModel)]="form.columns" min="1" max="4" step="1"
                 class="w-full max-w-xs accent-indigo-600"/>
@@ -315,7 +371,10 @@ const emptyForm = (): CategoryFormModel => ({
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Card style</label>
+              <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
+                Card style
+                <app-help-trigger helpKey="admin.categories.card-style" label="Help for card style" />
+              </label>
               <div class="flex gap-4">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="cat_card_style" [checked]="form.card_style === 'overlay'" (change)="setCardStyle('overlay')"
