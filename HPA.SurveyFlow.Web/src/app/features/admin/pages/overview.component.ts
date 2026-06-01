@@ -94,7 +94,7 @@ import { AdminStats, ActivityItem, ReportTemplate } from '../../../core/models';
       </div>
 
       <!-- Activity feed -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
         <div class="px-6 py-4 border-b border-gray-100">
           <h2 class="text-base font-semibold text-gray-800">Recent Activity</h2>
         </div>

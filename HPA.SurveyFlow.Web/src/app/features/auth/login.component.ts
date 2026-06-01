@@ -65,7 +65,7 @@ import { SettingsService } from '../../core/services/settings.service';
                   required
                   autocomplete="email"
                   placeholder="info@example.com"
-                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent pl-4 pr-4 text-sm text-gray-800 dark:text-white/90 placeholder-gray-400 dark:placeholder-gray-500 shadow-theme-xs outline-none transition focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:focus:border-brand-800 disabled:bg-gray-50 dark:disabled:bg-gray-700"
+                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent pl-4 pr-4 text-sm text-gray-800 dark:text-white/90 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-500/10 dark:focus:border-brand-800 disabled:bg-gray-50 dark:disabled:bg-gray-700"
                   [class.border-red-400]="emailTouched && !email"
                   (blur)="emailTouched = true"
                   [disabled]="loading()"
@@ -90,7 +90,7 @@ import { SettingsService } from '../../core/services/settings.service';
                   required
                   autocomplete="current-password"
                   placeholder="Enter your password"
-                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent pl-4 pr-11 text-sm text-gray-800 dark:text-white/90 placeholder-gray-400 dark:placeholder-gray-500 shadow-theme-xs outline-none transition focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:focus:border-brand-800 disabled:bg-gray-50 dark:disabled:bg-gray-700"
+                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent pl-4 pr-11 text-sm text-gray-800 dark:text-white/90 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-500/10 dark:focus:border-brand-800 disabled:bg-gray-50 dark:disabled:bg-gray-700"
                   [class.border-red-400]="passwordTouched && !password"
                   (blur)="passwordTouched = true"
                   [disabled]="loading()"
@@ -125,7 +125,7 @@ import { SettingsService } from '../../core/services/settings.service';
             <button
               type="submit"
               [disabled]="loading()"
-              class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:opacity-60 disabled:cursor-not-allowed"
+              class="ta-btn ta-btn-primary w-full py-3"
             >
               @if (loading()) {
                 <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

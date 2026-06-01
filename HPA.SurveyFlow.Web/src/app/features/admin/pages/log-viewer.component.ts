@@ -7,12 +7,12 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
 const LEVELS = ['', 'Verbose', 'Debug', 'Information', 'Warning', 'Error', 'Fatal'];
 
 const LEVEL_STYLE: Record<string, string> = {
-  Fatal:       'bg-purple-100 text-purple-900',
-  Error:       'bg-red-100 text-red-800',
-  Warning:     'bg-amber-100 text-amber-800',
-  Information: 'bg-blue-100 text-blue-800',
-  Debug:       'bg-gray-100 text-gray-600',
-  Verbose:     'bg-gray-50 text-gray-500',
+  Fatal:       'bg-purple-100 text-purple-900 dark:bg-purple-900/30 dark:text-purple-400',
+  Error:       'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  Warning:     'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+  Information: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  Debug:       'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  Verbose:     'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
 };
 
 const ROW_STYLE: Record<string, string> = {

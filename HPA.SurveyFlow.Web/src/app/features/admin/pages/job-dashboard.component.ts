@@ -50,7 +50,7 @@ function formatDuration(ms: number | null): string {
           <p class="text-sm text-gray-500 mt-0.5">Background jobs • auto-refreshes every 30s</p>
         </div>
         <button type="button" (click)="refresh()"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition">
+          class="ta-btn ta-btn-secondary">
           ↺ Refresh
         </button>
       </div>
@@ -66,7 +66,7 @@ function formatDuration(ms: number | null): string {
       } @else {
         <div class="space-y-4">
           @for (job of jobs(); track job.job_key) {
-            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
 
               <!-- Job header row -->
               <div class="flex items-center gap-4 px-5 py-4">
@@ -78,7 +78,7 @@ function formatDuration(ms: number | null): string {
                 <!-- Name + description -->
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-semibold text-gray-900">{{ job.display_name }}</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ job.display_name }}</span>
                     <span class="text-xs text-gray-400 font-mono bg-gray-100 rounded px-1.5 py-0.5">{{ job.job_key }}</span>
                     @if (lastRunBadge(job); as badge) {
                       <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -88,7 +88,7 @@ function formatDuration(ms: number | null): string {
                     }
                   </div>
                   @if (job.description) {
-                    <p class="text-xs text-gray-500 mt-0.5">{{ job.description }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ job.description }}</p>
                   }
                 </div>
 
@@ -121,7 +121,7 @@ function formatDuration(ms: number | null): string {
                   </button>
                   <!-- Configure -->
                   <button type="button" (click)="openConfigModal(job)"
-                    class="px-2.5 py-1 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+                    class="ta-btn ta-btn-secondary px-2.5 py-1 text-xs">
                     ⚙ Configure
                   </button>
                   <!-- Stop (only when running) -->
@@ -129,7 +129,7 @@ function formatDuration(ms: number | null): string {
                     <button type="button"
                       (click)="interruptJob(job)"
                       [disabled]="interrupting() === job.job_key"
-                      class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition">
+                      class="ta-btn px-2.5 py-1 text-xs bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30 disabled:opacity-50">
                       @if (interrupting() === job.job_key) {
                         <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
                         Stopping…
@@ -142,7 +142,7 @@ function formatDuration(ms: number | null): string {
                   <button type="button"
                     (click)="openTriggerModal(job)"
                     [disabled]="triggering() === job.job_key || job.last_run?.status === 'running'"
-                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 transition">
+                    class="ta-btn px-2.5 py-1 text-xs bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/30 dark:hover:bg-brand-500/20 disabled:opacity-50">
                     @if (triggering() === job.job_key) {
                       <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
                       Running…
@@ -152,7 +152,7 @@ function formatDuration(ms: number | null): string {
                   </button>
                   <!-- History -->
                   <button type="button" (click)="toggleExpanded(job.job_key)"
-                    class="px-2.5 py-1 text-xs rounded-lg border border-gray-200 hover:bg-gray-50 transition">
+                    class="ta-btn ta-btn-secondary px-2.5 py-1 text-xs">
                     {{ expandedKey() === job.job_key ? '▲ Hide' : '▼ History' }}
                   </button>
                 </div>
@@ -161,11 +161,11 @@ function formatDuration(ms: number | null): string {
               <!-- Config summary strip -->
               <div class="px-5 pb-3 flex items-center gap-3">
                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                  [class]="job.sync_mode === 'full' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'">
+                  [class]="job.sync_mode === 'full' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'">
                   {{ job.sync_mode === 'full' ? 'Full sync every run' : 'Delta (since last run)' }}
                 </span>
                 @if (job.only_update_changed) {
-                  <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                  <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
                     Skip unchanged records
                   </span>
                 }
@@ -173,7 +173,7 @@ function formatDuration(ms: number | null): string {
 
               <!-- Run history -->
               @if (expandedKey() === job.job_key) {
-                <div class="border-t border-gray-100">
+                <div class="border-t border-gray-100 dark:border-gray-700">
                   @if (runsLoading()) {
                     <div class="px-5 py-4 text-sm text-gray-500">Loading runs…</div>
                   } @else if (expandedRuns().length === 0) {
@@ -191,14 +191,14 @@ function formatDuration(ms: number | null): string {
                       </thead>
                       <tbody>
                         @for (run of expandedRuns(); track run.id) {
-                          <tr class="border-t border-gray-50">
+                          <tr class="border-t border-gray-50 dark:border-gray-700">
                             <td class="px-5 py-2">
                               @if (run.status === 'success') {
-                                <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">✓ Success</span>
+                                <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">✓ Success</span>
                               } @else if (run.status === 'failed') {
-                                <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">✗ Failed</span>
+                                <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400">✗ Failed</span>
                               } @else {
-                                <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                                   <svg class="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
                                   Running
                                 </span>
@@ -208,7 +208,7 @@ function formatDuration(ms: number | null): string {
                             <td class="px-5 py-2 text-gray-600">{{ formatDuration(durationMs(run)) }}</td>
                             <td class="px-5 py-2">
                               <span class="rounded-full px-2 py-0.5"
-                                [class]="run.trigger_type === 'manual' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'">
+                                [class]="run.trigger_type === 'manual' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'">
                                 {{ run.trigger_type }}{{ run.triggered_by_email ? ' (' + run.triggered_by_email + ')' : '' }}
                               </span>
                             </td>
@@ -236,7 +236,7 @@ function formatDuration(ms: number | null): string {
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div class="w-full max-w-lg bg-white rounded-xl shadow-xl">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 class="text-lg font-semibold text-gray-900">Configure: {{ configModalJob()!.display_name }}</h2>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Configure: {{ configModalJob()!.display_name }}</h2>
               <button type="button" (click)="configModalJob.set(null)" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
             </div>
             <div class="px-6 py-5 space-y-5">
@@ -260,15 +260,15 @@ function formatDuration(ms: number | null): string {
                     [class]="configSyncMode === 'delta'
                       ? 'rounded-lg border-2 border-indigo-500 bg-indigo-50 p-3 text-left'
                       : 'rounded-lg border border-gray-200 p-3 text-left hover:bg-gray-50'">
-                    <div class="text-sm font-semibold text-gray-900">Delta (recommended)</div>
-                    <div class="text-xs text-gray-500 mt-0.5">Each scheduled run fetches only data since the last run. Efficient and fast.</div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">Delta (recommended)</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Each scheduled run fetches only data since the last run. Efficient and fast.</div>
                   </button>
                   <button type="button" (click)="configSyncMode = 'full'"
                     [class]="configSyncMode === 'full'
                       ? 'rounded-lg border-2 border-amber-500 bg-amber-50 p-3 text-left'
                       : 'rounded-lg border border-gray-200 p-3 text-left hover:bg-gray-50'">
-                    <div class="text-sm font-semibold text-gray-900">Full</div>
-                    <div class="text-xs text-gray-500 mt-0.5">Every scheduled run fetches all data from the beginning. Slower but always complete.</div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">Full</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Every scheduled run fetches all data from the beginning. Slower but always complete.</div>
                   </button>
                 </div>
               </div>
@@ -280,7 +280,7 @@ function formatDuration(ms: number | null): string {
                     class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600"/>
                   <div>
                     <div class="text-sm font-semibold text-gray-800">Skip unchanged records</div>
-                    <div class="text-xs text-gray-500 mt-0.5">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       Only update records where the source system's <code class="bg-gray-100 px-1 rounded">modifiedAt</code> timestamp
                       is newer than our last sync. Requires the API to return a modification timestamp.
                       Reduces database writes significantly for large datasets.
@@ -588,8 +588,8 @@ export class JobDashboardComponent implements OnInit, OnDestroy {
   lastRunBadge(job: ScheduledJob): { label: string; cls: string } | null {
     const r = job.last_run;
     if (!r) return null;
-    if (r.status === 'success') return { label: '✓ Last run OK', cls: 'bg-green-100 text-green-800' };
-    if (r.status === 'failed') return { label: '✗ Last run failed', cls: 'bg-red-100 text-red-800' };
+    if (r.status === 'success') return { label: '✓ Last run OK', cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' };
+    if (r.status === 'failed') return { label: '✗ Last run failed', cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' };
     if (r.status === 'running') return { label: '⏳ Running', cls: 'bg-blue-100 text-blue-800' };
     return null;
   }

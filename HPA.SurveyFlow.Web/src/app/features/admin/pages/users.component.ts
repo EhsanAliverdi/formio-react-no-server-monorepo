@@ -24,7 +24,7 @@ interface UserFormModel {
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">Users <app-help-trigger helpKey="admin.users.list" label="Users help" /></h1>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">Users <app-help-trigger helpKey="admin.users.list" label="Users help" /></h1>
           <p class="text-sm text-gray-500 mt-0.5">Manage user accounts and role assignments.</p>
         </div>
         @if (isAdmin()) {
@@ -57,10 +57,10 @@ interface UserFormModel {
 
       <!-- Table -->
       @if (!loading()) {
-        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <table class="min-w-[640px] w-full text-sm">
             <thead>
-              <tr class="bg-gray-50">
+              <tr class="bg-gray-50 dark:bg-gray-700">
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Name / Email</th>
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Role</th>
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Status</th>
@@ -87,13 +87,8 @@ interface UserFormModel {
                     </td>
                     <td class="px-5 py-4">
                       <span
-                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-                        [class.bg-red-100]="u.role === 'admin'"
-                        [class.text-red-800]="u.role === 'admin'"
-                        [class.bg-blue-100]="u.role === 'editor'"
-                        [class.text-blue-800]="u.role === 'editor'"
-                        [class.bg-gray-100]="u.role !== 'admin' && u.role !== 'editor'"
-                        [class.text-gray-800]="u.role !== 'admin' && u.role !== 'editor'"
+                        class="ta-badge"
+                        [class]="u.role === 'admin' ? 'ta-badge-danger' : u.role === 'editor' ? 'ta-badge-info' : 'ta-badge-neutral'"
                       >
                         {{ u.role }}
                       </span>

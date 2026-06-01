@@ -26,7 +26,7 @@ const PAGE_SIZE = 25;
   template: `
     <div>
       <div class="mb-6">
-        <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900">
+        <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900 dark:text-white">
           Submissions
           <app-help-trigger helpKey="admin.submissions.list" label="Help for submissions" />
         </h1>
@@ -74,10 +74,10 @@ const PAGE_SIZE = 25;
         }
 
         <!-- Table -->
-        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <table class="min-w-[640px] w-full text-sm">
             <thead>
-              <tr class="bg-gray-50">
+              <tr class="bg-gray-50 dark:bg-gray-700">
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">#</th>
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Form <app-help-trigger helpKey="admin.submissions.form" label="Help for submitted forms" /></span></th>
                 <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Abnormal <app-help-trigger helpKey="admin.submissions.abnormal" label="Help for abnormal answers" /></span></th>

@@ -61,7 +61,7 @@ function panelTitle(p: Panel, i: number): string {
           </svg>
           Back
         </button>
-        <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900">
+        <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900 dark:text-white">
           {{ loading() ? 'Submission' : (detail() ? 'Submission #' + detail()!.id + ' — ' + detail()!.form_name : 'Submission') }}
           <app-help-trigger helpKey="admin.submission.detail" label="Help for submission detail" />
         </h1>
@@ -105,7 +105,7 @@ function panelTitle(p: Panel, i: number): string {
         <div class="space-y-5">
 
           <!-- Meta card -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <div class="flex items-center gap-1 text-xs text-gray-500 mb-0.5">Submitted <app-help-trigger helpKey="admin.submission.metadata" label="Help for submission metadata" /></div>
@@ -159,7 +159,7 @@ function panelTitle(p: Panel, i: number): string {
           }
 
           <!-- Integration / Secondary Submit card -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <div class="flex items-center justify-between mb-3">
               <h2 class="flex items-center gap-1 text-sm font-semibold text-gray-700">
                 Integration Submit
@@ -238,7 +238,7 @@ function panelTitle(p: Panel, i: number): string {
 
           <!-- Rule Activity card -->
           @if ((detail()!.rule_logs?.length ?? 0) > 0) {
-            <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <h2 class="flex items-center gap-1 text-sm font-semibold text-gray-700 mb-4">
                 Rule Activity
                 <app-help-trigger helpKey="admin.submission.rule-activity" label="Help for rule activity" />
@@ -329,7 +329,7 @@ function panelTitle(p: Panel, i: number): string {
 
           <!-- Form answers card -->
           @if (detail()!.form) {
-            <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <h2 class="flex items-center gap-1 text-sm font-semibold text-gray-700 mb-4">
                 {{ editMode() ? 'Edit Answers' : 'Submitted Answers' }}
                 <app-help-trigger [helpKey]="editMode() ? 'admin.submission.edit' : 'admin.submission.answers'" label="Help for submission answers" />

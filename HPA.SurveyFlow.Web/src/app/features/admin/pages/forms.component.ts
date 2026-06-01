@@ -18,7 +18,7 @@ import { Form } from '../../../core/models';
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Forms</h1>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Forms</h1>
           <p class="text-sm text-gray-500 mt-0.5">Create and manage survey forms.</p>
         </div>
         <div class="flex items-center gap-2">
@@ -66,9 +66,9 @@ import { Form } from '../../../core/models';
       </div>
 
       <!-- Table -->
-      <div *ngIf="!loading()" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+      <div *ngIf="!loading()" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
         <table class="min-w-[640px] w-full divide-y divide-gray-100">
-          <thead class="bg-gray-50">
+          <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">

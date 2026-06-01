@@ -36,7 +36,7 @@ interface CategoryCard {
   standalone: true,
   imports: [CommonModule, RouterLink, FormCardComponent],
   template: `
-    <div class="min-h-screen flex flex-col relative overflow-hidden" style="background-color: #f0f4f8;">
+    <div class="min-h-screen flex flex-col relative overflow-hidden bg-[#f0f4f8] dark:bg-gray-900">
 
       <!-- Dot mesh patches — scattered -->
       <svg class="pointer-events-none absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" style="opacity:1;">
@@ -101,7 +101,7 @@ interface CategoryCard {
                   This category requires you to be logged in to view its contents.
                 </p>
                 <a [routerLink]="['/login']"
-                  class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition">
+                  class="ta-btn ta-btn-primary px-5 py-2.5">
                   Sign in to continue
                 </a>
               </div>
@@ -111,7 +111,7 @@ interface CategoryCard {
 
           } @else if (layoutMode() === 'list') {
             <!-- ── List view — titles only ── -->
-            <div class="flex flex-col divide-y divide-gray-100 max-w-3xl mx-auto bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="flex flex-col divide-y divide-gray-100 max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
               @for (card of pagedCards(); track card.id) {
                 <a [routerLink]="['/form-public', card.id]"
                   class="flex items-center justify-between px-5 py-3.5 hover:bg-blue-50 transition group">
@@ -148,7 +148,7 @@ interface CategoryCard {
           @if (totalPages() > 1) {
             <div class="mt-8 flex items-center justify-center gap-2">
               <button type="button" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                class="ta-btn ta-btn-secondary disabled:opacity-40">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -174,7 +174,7 @@ interface CategoryCard {
               }
 
               <button type="button" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                class="ta-btn ta-btn-secondary disabled:opacity-40">
                 Next
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

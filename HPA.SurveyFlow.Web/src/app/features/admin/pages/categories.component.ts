@@ -55,7 +55,7 @@ const emptyForm = (): CategoryFormModel => ({
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900">
+          <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900 dark:text-white">
             Categories
             <app-help-trigger helpKey="admin.categories.list" label="Help for categories" />
           </h1>
@@ -83,9 +83,9 @@ const emptyForm = (): CategoryFormModel => ({
           <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
       } @else {
-        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <table class="min-w-full text-sm">
-            <thead class="bg-gray-50">
+            <thead class="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th class="px-5 py-3 text-left font-medium text-gray-500">
                   <span class="flex items-center gap-1">Name / Slug <app-help-trigger helpKey="admin.categories.slug" label="Help for category slugs" /></span>

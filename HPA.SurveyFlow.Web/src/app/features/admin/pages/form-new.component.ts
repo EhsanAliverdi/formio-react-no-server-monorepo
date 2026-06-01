@@ -114,7 +114,7 @@ function ensureWizardHasPage(schema: any): any {
           </svg>
           Back
         </button>
-        <h1 class="text-2xl font-bold text-gray-900">New Form</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">New Form</h1>
       </div>
 
       @if (saveError()) {
@@ -122,9 +122,9 @@ function ensureWizardHasPage(schema: any): any {
       }
 
       <!-- ── 1. General Configuration (always open) ─────────────────────── -->
-      <div class="mb-4 bg-white rounded-xl border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-100">
-          <h2 class="flex items-center gap-1 text-base font-semibold text-gray-900">General Configuration <app-help-trigger helpKey="admin.form.general" label="Help for general form configuration" /></h2>
+      <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">General Configuration <app-help-trigger helpKey="admin.form.general" label="Help for general form configuration" /></h2>
         </div>
         <div class="px-6 py-5 space-y-4">
 
@@ -265,10 +265,10 @@ function ensureWizardHasPage(schema: any): any {
       </div>
 
       <!-- ── 2. Submission Flow (collapsible) ────────────────────────────── -->
-      <div class="mb-4 bg-white rounded-xl border border-gray-200">
+      <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
         <button type="button" (click)="sectionOpen['flow'] = !sectionOpen['flow']"
           class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-          <span class="flex items-center gap-1 text-base font-semibold text-gray-900">Submission Flow <app-help-trigger helpKey="admin.form.submission-flow" label="Help for submission flow" /></span>
+          <span class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">Submission Flow <app-help-trigger helpKey="admin.form.submission-flow" label="Help for submission flow" /></span>
           <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['flow']"
             fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -437,10 +437,10 @@ function ensureWizardHasPage(schema: any): any {
       </div>
 
       <!-- ── 3. Form Builder (collapsible) ───────────────────────────────── -->
-      <div class="mb-4 bg-white rounded-xl border border-gray-200">
+      <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
         <button type="button" (click)="sectionOpen['builder'] = !sectionOpen['builder']"
           class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-          <span class="flex items-center gap-1 text-base font-semibold text-gray-900">Form Builder <app-help-trigger helpKey="admin.form.builder" label="Help for form builder" /></span>
+          <span class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">Form Builder <app-help-trigger helpKey="admin.form.builder" label="Help for form builder" /></span>
           <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['builder']"
             fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
