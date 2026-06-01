@@ -9,6 +9,7 @@ import { ConditionGroupEditorComponent } from '../../../../shared/components/con
 import { RuleValidationBadgeComponent } from '../../../../shared/components/rule-validation-badge/rule-validation-badge.component';
 import { IntegrationRuleMexConfigComponent } from '../../../../shared/components/integration-rule-mex-config/integration-rule-mex-config.component';
 import { IntegrationRuleWebhookConfigComponent } from '../../../../shared/components/integration-rule-webhook-config/integration-rule-webhook-config.component';
+import { HelpTriggerComponent } from '../../../../shared/help/help-trigger.component';
 
 @Component({
   selector: 'app-integration-rule-card',
@@ -20,6 +21,7 @@ import { IntegrationRuleWebhookConfigComponent } from '../../../../shared/compon
     RuleValidationBadgeComponent,
     IntegrationRuleMexConfigComponent,
     IntegrationRuleWebhookConfigComponent,
+    HelpTriggerComponent,
   ],
   template: `
     <div class="relative border rounded-xl overflow-hidden transition-all hover:z-10"
@@ -106,7 +108,7 @@ import { IntegrationRuleWebhookConfigComponent } from '../../../../shared/compon
           <div class="border-t border-gray-100 pt-4">
             <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">2</span>
-              Integration Channel
+              Integration Channel <app-help-trigger helpKey="admin.form.integration-channel" label="Help for integration channel" />
             </h4>
 
             <!-- Channel selector -->

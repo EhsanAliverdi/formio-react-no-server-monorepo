@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConditionGroup, ConditionLeaf, ConditionOperator, isConditionGroup } from '../../../core/models';
+import { HelpTriggerComponent } from '../../help/help-trigger.component';
 
 export interface FormField {
   key: string;
@@ -25,12 +26,12 @@ const CONDITION_OPERATORS: { value: ConditionOperator; label: string; forTypes?:
 @Component({
   selector: 'app-condition-group-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div class="space-y-2">
       <!-- Group header -->
       <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-500">Match</span>
+        <span class="flex items-center gap-1 text-sm text-gray-500">Match <app-help-trigger helpKey="admin.form.rule-conditions" label="Help for rule conditions" /></span>
         <select
           [ngModel]="group.operator"
           (ngModelChange)="setOperator($event)"

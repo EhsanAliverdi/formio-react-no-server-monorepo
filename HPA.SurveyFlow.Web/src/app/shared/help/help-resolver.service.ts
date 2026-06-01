@@ -5,7 +5,8 @@ import { HelpTopic } from './help.models';
 @Injectable({ providedIn: 'root' })
 export class HelpResolverService {
   resolve(key: string): HelpTopic {
-    return HELP_CATALOG[key as keyof typeof HELP_CATALOG] ?? {
+    const topic = HELP_CATALOG[key as keyof typeof HELP_CATALOG];
+    return topic ? { ...topic, key } : {
       key,
       title: 'Help unavailable',
       sections: [

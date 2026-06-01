@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { PlaceholderPickerComponent } from '../placeholder-picker/placeholder-picker.component';
 import { PlaceholderDef, PlaceholderCategory } from '../../../core/models';
 import { buildPlaceholderCategories, PlaceholderFormField } from '../../../core/utils/placeholder-categories';
+import { HelpTriggerComponent } from '../../help/help-trigger.component';
 
 type MappingSource = 'default' | 'field' | 'static' | 'template' | 'abnormal_answers';
 type ActionField = {
@@ -74,15 +75,14 @@ export const ACTION_SCHEMAS: Record<string, { label: string; help: string; field
 @Component({
   selector: 'app-integration-payload-mapping',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlaceholderPickerComponent],
+  imports: [CommonModule, FormsModule, PlaceholderPickerComponent, HelpTriggerComponent],
   template: `
     <div class="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div class="flex items-center gap-2 text-xs font-semibold text-gray-700">
             Payload mapping
-            <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-              [attr.title]="schema().help">?</span>
+            <app-help-trigger helpKey="admin.form.payload-mapping" label="Help for payload mapping" />
           </div>
           <p class="mt-1 text-xs text-gray-500">{{ configuredCount() }} custom field override{{ configuredCount() === 1 ? '' : 's' }}.</p>
         </div>
@@ -149,10 +149,9 @@ export const ACTION_SCHEMAS: Record<string, { label: string; help: string; field
             {{ field.label }}
             @if (field.required) { <span class="text-red-500 text-xs">required</span> }
             @if (field.recommended && !field.required) { <span class="text-blue-500 text-xs">recommended</span> }
-            <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-              [attr.title]="field.help">?</span>
           </div>
           <div class="mt-1 font-mono text-xs text-gray-500">{{ field.key }}</div>
+          <p class="mt-1 text-xs leading-5 text-gray-500">{{ field.help }}</p>
           <div class="mt-1 text-xs text-gray-400">
             {{ field.type }}@if (field.maxLength) {<span> · max {{ field.maxLength }}</span>}
           </div>

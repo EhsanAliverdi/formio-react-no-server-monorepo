@@ -20,6 +20,7 @@ import { Form } from '../../../core/models';
 import { patchSchemaUrls } from '../../../core/utils/schema-patch';
 import { buildFormDefinitionPdfBody, FormPdfOptions } from '../../../core/utils/form-definition-pdf';
 import { PdfTemplateService } from '../../../core/services/pdf-template.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 
 type Panel = { key: string; title: string; label: string; breadcrumb: string; components: any[] };
 
@@ -38,7 +39,7 @@ function panelTitle(p: Panel, i: number): string {
 @Component({
   selector: 'app-admin-form-view',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div>
       <div class="flex items-center gap-3 mb-6">
@@ -51,18 +52,18 @@ function panelTitle(p: Panel, i: number): string {
         </button>
         <h1 class="text-2xl font-bold text-gray-900 flex-1">
           @if (form()) { {{ form()!.name }} } @else { View Form }
+          <app-help-trigger helpKey="admin.form.view" label="Help for form preview" />
         </h1>
         @if (!loading() && form()) {
-          <button
-            type="button"
-            (click)="showPdfDialog.set(true)"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-            </svg>
-            Export PDF
-          </button>
+          <div class="ta-btn-group">
+            <button type="button" (click)="showPdfDialog.set(true)" class="ta-btn-group-action">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+              Export PDF
+            </button>
+            <app-help-trigger helpKey="admin.form.export-pdf" label="Help for PDF export" [grouped]="true" />
+          </div>
         }
       </div>
 
@@ -128,35 +129,35 @@ function panelTitle(p: Panel, i: number): string {
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="showPdfDialog.set(false)">
         <div class="absolute inset-0 bg-black/40"></div>
         <div class="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6" (click)="$event.stopPropagation()">
-          <h2 class="text-base font-semibold text-gray-900 mb-1">Export Form as PDF</h2>
+          <h2 class="flex items-center gap-1 text-base font-semibold text-gray-900 mb-1">Export Form as PDF <app-help-trigger helpKey="admin.form.export-pdf" label="Help for PDF export" /></h2>
           <p class="text-xs text-gray-500 mb-4">Choose what to include in the export.</p>
 
           <div class="flex flex-col gap-3 mb-5">
             <label class="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" [(ngModel)]="pdfOptions.showAbnormalities" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
               <div>
-                <div class="text-sm font-medium text-gray-800">Abnormality rules</div>
+                <div class="flex items-center gap-1 text-sm font-medium text-gray-800">Abnormality rules <app-help-trigger helpKey="admin.form.pdf-abnormalities" label="Help for PDF abnormality rules" /></div>
                 <div class="text-xs text-gray-500">Colour-code options: normal (green), warning (amber), error (red)</div>
               </div>
             </label>
             <label class="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" [(ngModel)]="pdfOptions.showConditions" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
               <div>
-                <div class="text-sm font-medium text-gray-800">Conditional logic</div>
+                <div class="flex items-center gap-1 text-sm font-medium text-gray-800">Conditional logic <app-help-trigger helpKey="admin.form.pdf-conditions" label="Help for PDF conditional logic" /></div>
                 <div class="text-xs text-gray-500">Show the condition under which each question is displayed</div>
               </div>
             </label>
             <label class="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" [(ngModel)]="pdfOptions.showValidation" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
               <div>
-                <div class="text-sm font-medium text-gray-800">Validation rules</div>
+                <div class="flex items-center gap-1 text-sm font-medium text-gray-800">Validation rules <app-help-trigger helpKey="admin.form.pdf-validation" label="Help for PDF validation rules" /></div>
                 <div class="text-xs text-gray-500">Required, min/max length, patterns, etc.</div>
               </div>
             </label>
             <label class="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" [(ngModel)]="pdfOptions.showKeys" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
               <div>
-                <div class="text-sm font-medium text-gray-800">Field keys</div>
+                <div class="flex items-center gap-1 text-sm font-medium text-gray-800">Field keys <app-help-trigger helpKey="admin.form.pdf-keys" label="Help for PDF field keys" /></div>
                 <div class="text-xs text-gray-500">Show the internal field key next to each label</div>
               </div>
             </label>
@@ -164,7 +165,7 @@ function panelTitle(p: Panel, i: number): string {
               <label class="flex items-start gap-3 cursor-pointer">
                 <input type="checkbox" [(ngModel)]="pdfOptions.groupBySteps" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
                 <div>
-                  <div class="text-sm font-medium text-gray-800">Group by wizard steps</div>
+                  <div class="flex items-center gap-1 text-sm font-medium text-gray-800">Group by wizard steps <app-help-trigger helpKey="admin.form.pdf-steps" label="Help for PDF wizard steps" /></div>
                   <div class="text-xs text-gray-500">Add a section header for each step/panel</div>
                 </div>
               </label>

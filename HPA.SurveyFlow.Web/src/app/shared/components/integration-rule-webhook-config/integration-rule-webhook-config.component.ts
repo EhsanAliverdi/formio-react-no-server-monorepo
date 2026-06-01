@@ -4,18 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { IntegrationRuleWebhookConfig, WebhookHeader, PlaceholderDef } from '../../../core/models';
 import { PlaceholderPickerComponent } from '../placeholder-picker/placeholder-picker.component';
 import { buildPlaceholderCategories, PlaceholderFormField } from '../../../core/utils/placeholder-categories';
+import { HelpTriggerComponent } from '../../help/help-trigger.component';
 
 @Component({
   selector: 'app-integration-rule-webhook-config',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlaceholderPickerComponent],
+  imports: [CommonModule, FormsModule, PlaceholderPickerComponent, HelpTriggerComponent],
   template: `
     <div class="space-y-5">
 
       <!-- URL + Method -->
       <div class="flex gap-3">
         <div class="w-28 shrink-0">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Method</label>
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Method <app-help-trigger helpKey="admin.form.webhook-method" label="Help for webhook method" /></label>
           <select [ngModel]="config.method" (ngModelChange)="update({ method: $event })"
             class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500">
             <option value="POST">POST</option>
@@ -25,7 +26,7 @@ import { buildPlaceholderCategories, PlaceholderFormField } from '../../../core/
           </select>
         </div>
         <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">URL</label>
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">URL <app-help-trigger helpKey="admin.form.webhook-url" label="Help for webhook URL" /></label>
           <input type="url" [ngModel]="config.url" (ngModelChange)="update({ url: $event })"
             placeholder="https://your-system.example.com/webhook"
             class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
@@ -35,7 +36,7 @@ import { buildPlaceholderCategories, PlaceholderFormField } from '../../../core/
       <!-- Custom Headers -->
       <div>
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-medium text-gray-700">Custom Headers</label>
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700">Custom Headers <app-help-trigger helpKey="admin.form.webhook-headers" label="Help for webhook headers" /></label>
           <button type="button" (click)="addHeader()"
             class="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Add header</button>
         </div>
@@ -77,8 +78,8 @@ import { buildPlaceholderCategories, PlaceholderFormField } from '../../../core/
       <!-- Body Template -->
       <div>
         <div class="flex items-center justify-between mb-1">
-          <label class="block text-sm font-medium text-gray-700">
-            Body Template
+          <label class="flex items-center gap-1 text-sm font-medium text-gray-700">
+            Body Template <app-help-trigger helpKey="admin.form.webhook-body" label="Help for webhook body template" />
             <span class="text-gray-400 font-normal ml-1">(JSON — leave empty for no body)</span>
           </label>
           <app-placeholder-picker
