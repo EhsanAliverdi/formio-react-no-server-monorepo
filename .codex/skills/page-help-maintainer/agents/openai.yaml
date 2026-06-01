@@ -1,0 +1,4 @@
+interface:
+  display_name: "Page Help Maintainer"
+  short_description: "Create and maintain evidence-backed page help"
+  default_prompt: "Use $page-help-maintainer to add or update centralized help for this page and verify it against the business logic."
