@@ -16,14 +16,14 @@ import { AuditLog } from '../../../core/models';
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">Audit Log <app-help-trigger helpKey="admin.audit-log.list" label="Audit log help" /></h1>
           <p class="text-sm text-gray-500 mt-1">Track all system activity and changes</p>
         </div>
-        <a [href]="exportUrl()" class="btn btn-sm btn-outline">Export CSV</a>
+        <a [href]="exportUrl()" class="ta-btn ta-btn-secondary px-3 py-1.5">Export CSV</a>
       </div>
 
       <!-- Filters -->
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="ta-admin-surface p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Entity Type</label>
-          <select class="w-full input input-sm" [(ngModel)]="filterEntityType" (change)="load()">
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Entity Type</label>
+          <select class="ta-admin-control w-full px-3 py-1.5 text-sm" [(ngModel)]="filterEntityType" (change)="load()">
             <option value="">All types</option>
             @for (t of entityTypes(); track t) {
               <option [value]="t">{{ t }}</option>
@@ -31,51 +31,51 @@ import { AuditLog } from '../../../core/models';
           </select>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Search</label>
-          <input class="w-full input input-sm" placeholder="Email, entity, ID…"
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Search</label>
+          <input class="ta-admin-control w-full px-3 py-1.5 text-sm" placeholder="Email, entity, ID…"
                  [(ngModel)]="filterSearch" (keyup.enter)="load()" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">From</label>
-          <input type="date" class="w-full input input-sm" [(ngModel)]="filterDateFrom" (change)="load()" />
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">From</label>
+          <input type="date" class="ta-admin-control w-full px-3 py-1.5 text-sm" [(ngModel)]="filterDateFrom" (change)="load()" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
-          <input type="date" class="w-full input input-sm" [(ngModel)]="filterDateTo" (change)="load()" />
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">To</label>
+          <input type="date" class="ta-admin-control w-full px-3 py-1.5 text-sm" [(ngModel)]="filterDateTo" (change)="load()" />
         </div>
       </div>
 
       <!-- Table -->
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
+      <div class="ta-table-shell">
         @if (loading()) {
           <div class="p-8 text-center text-gray-500">Loading…</div>
         } @else if (items().length === 0) {
           <div class="p-8 text-center text-gray-500">No audit records found.</div>
         } @else {
-          <table class="min-w-[640px] w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <table class="ta-table min-w-[640px]">
+            <thead class="ta-table-head border-b border-gray-200 dark:border-gray-600">
               <tr>
-                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Time</th>
-                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Actor</th>
-                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Action</th>
-                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Entity</th>
-                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Name / ID</th>
-                <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">IP</th>
+                <th scope="col" class="ta-table-th px-4">Time</th>
+                <th scope="col" class="ta-table-th px-4">Actor</th>
+                <th scope="col" class="ta-table-th px-4">Action</th>
+                <th scope="col" class="ta-table-th px-4">Entity</th>
+                <th scope="col" class="ta-table-th px-4">Name / ID</th>
+                <th scope="col" class="ta-table-th px-4">IP</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
               @for (item of items(); track item.id) {
-                <tr class="hover:bg-gray-50 cursor-pointer" (click)="selectItem(item)">
+                <tr class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/60" (click)="selectItem(item)">
                   <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ item.occurred_at | date:'dd/MM/yy HH:mm' }}</td>
-                  <td class="px-4 py-3 text-gray-700">{{ item.actor_email }}</td>
+                  <td class="px-4 py-3 text-gray-700 dark:text-gray-200">{{ item.actor_email }}</td>
                   <td class="px-4 py-3">
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
                           [class]="actionBadgeClass(item.action)">
                       {{ item.action }}
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-gray-600">{{ item.entity_type }}</td>
-                  <td class="px-4 py-3 text-gray-700">{{ item.entity_name || item.entity_id }}</td>
+                  <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ item.entity_type }}</td>
+                  <td class="px-4 py-3 text-gray-700 dark:text-gray-200">{{ item.entity_name || item.entity_id }}</td>
                   <td class="px-4 py-3 text-gray-500 text-xs">{{ item.ip_address || '—' }}</td>
                 </tr>
               }
@@ -83,11 +83,11 @@ import { AuditLog } from '../../../core/models';
           </table>
 
           <!-- Pagination -->
-          <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200 text-sm text-gray-500">
+          <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
             <span>Showing {{ offset() + 1 }}–{{ offset() + items().length }} of {{ total() }}</span>
             <div class="flex gap-2">
-              <button class="btn btn-xs btn-ghost" [disabled]="offset() === 0" (click)="prevPage()">← Prev</button>
-              <button class="btn btn-xs btn-ghost" [disabled]="offset() + items().length >= total()" (click)="nextPage()">Next →</button>
+              <button class="ta-btn ta-btn-ghost px-2 py-1 text-xs" [disabled]="offset() === 0" (click)="prevPage()">← Prev</button>
+              <button class="ta-btn ta-btn-ghost px-2 py-1 text-xs" [disabled]="offset() + items().length >= total()" (click)="nextPage()">Next →</button>
             </div>
           </div>
         }
@@ -97,7 +97,7 @@ import { AuditLog } from '../../../core/models';
     <!-- Detail modal -->
     @if (selectedItem()) {
       <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" (click)="selectedItem.set(null)">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-auto p-6" (click)="$event.stopPropagation()">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-auto p-6 text-gray-700 dark:bg-gray-800 dark:text-gray-200" (click)="$event.stopPropagation()">
           <div class="flex justify-between items-start mb-4">
             <h2 class="text-lg font-semibold">Audit Detail</h2>
             <button class="text-gray-500 hover:text-gray-600" (click)="selectedItem.set(null)">✕</button>
@@ -114,7 +114,7 @@ import { AuditLog } from '../../../core/models';
           @if (selectedItem()!.changes_json) {
             <div class="mt-4">
               <p class="text-xs font-medium text-gray-500 mb-1">Changes</p>
-              <pre class="bg-gray-50 rounded p-3 text-xs overflow-auto max-h-64">{{ formatJson(selectedItem()!.changes_json!) }}</pre>
+              <pre class="bg-gray-50 rounded p-3 text-xs overflow-auto max-h-64 dark:bg-gray-900">{{ formatJson(selectedItem()!.changes_json!) }}</pre>
             </div>
           }
         </div>

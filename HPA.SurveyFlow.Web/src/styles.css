@@ -109,6 +109,41 @@
   .ta-admin-control {
     @apply rounded-lg border border-gray-300 bg-white text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500;
   }
+  .ta-table-shell {
+    @apply overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800;
+  }
+  .ta-table {
+    @apply w-full text-sm;
+  }
+  .ta-table-head {
+    @apply bg-gray-50 dark:bg-gray-700;
+  }
+  .ta-table-th {
+    @apply px-5 py-3 text-left font-medium text-gray-500 dark:text-gray-300;
+  }
+  .ta-table-row {
+    @apply border-t border-gray-100 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/60;
+  }
+  .ta-table-cell {
+    @apply px-5 py-4 text-gray-700 dark:text-gray-200;
+  }
+  .ta-pagination {
+    @apply text-sm text-gray-600 dark:text-gray-300;
+  }
+  .ta-slide-panel label,
+  .ta-slide-panel p,
+  .ta-slide-panel span.text-gray-700,
+  .ta-slide-panel span.text-gray-600 {
+    @apply dark:text-gray-300;
+  }
+  .ta-slide-panel input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  .ta-slide-panel textarea,
+  .ta-slide-panel select {
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500;
+  }
+  .ta-slide-panel .border-t {
+    @apply dark:border-gray-700;
+  }
   .ta-alert-error {
     @apply rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400;
   }

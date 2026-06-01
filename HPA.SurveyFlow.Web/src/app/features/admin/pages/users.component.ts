@@ -43,7 +43,7 @@ interface UserFormModel {
 
       <!-- Error -->
       @if (error()) {
-        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div class="ta-alert-error mb-4">
           {{ error() }}
         </div>
       }
@@ -57,15 +57,15 @@ interface UserFormModel {
 
       <!-- Table -->
       @if (!loading()) {
-        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <table class="min-w-[640px] w-full text-sm">
+        <div class="ta-table-shell">
+          <table class="ta-table min-w-[640px]">
             <thead>
-              <tr class="bg-gray-50 dark:bg-gray-700">
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Name / Email</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Role</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Status</th>
+              <tr class="ta-table-head">
+                <th scope="col" class="ta-table-th">Name / Email</th>
+                <th scope="col" class="ta-table-th">Role</th>
+                <th scope="col" class="ta-table-th">Status</th>
                 @if (isAdmin()) {
-                  <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">Actions</th>
+                  <th scope="col" class="ta-table-th">Actions</th>
                 }
               </tr>
             </thead>
@@ -78,9 +78,9 @@ interface UserFormModel {
                 </tr>
               } @else {
                 @for (u of users(); track u.id) {
-                  <tr class="border-t border-gray-100 hover:bg-gray-50 transition">
+                  <tr class="ta-table-row">
                     <td class="px-5 py-4">
-                      <div class="font-medium text-gray-900">{{ u.display_name || (u.first_name && u.last_name ? u.first_name + ' ' + u.last_name : u.email) }}</div>
+                      <div class="font-medium text-gray-900 dark:text-white">{{ u.display_name || (u.first_name && u.last_name ? u.first_name + ' ' + u.last_name : u.email) }}</div>
                       @if (u.display_name || u.first_name) {
                         <div class="text-xs text-gray-500">{{ u.email }}</div>
                       }
@@ -95,9 +95,9 @@ interface UserFormModel {
                     </td>
                     <td class="px-5 py-4">
                       @if (u.is_active) {
-                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Active</span>
+                        <span class="ta-badge ta-badge-success">Active</span>
                       } @else {
-                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">Inactive</span>
+                        <span class="ta-badge ta-badge-neutral">Inactive</span>
                       }
                     </td>
                     @if (isAdmin()) {
@@ -115,7 +115,7 @@ interface UserFormModel {
                             <button
                               type="button"
                               (click)="deleteConfirm.set(null)"
-                              class="rounded border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50 transition"
+                              class="rounded border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50 transition dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
                             >
                               Cancel
                             </button>
@@ -125,7 +125,7 @@ interface UserFormModel {
                             <button
                               type="button"
                               (click)="openEditModal(u)"
-                              class="rounded border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition"
+                              class="rounded border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
                             >
                               Edit
                             </button>
@@ -151,15 +151,15 @@ interface UserFormModel {
       <!-- Add / Edit Modal -->
       @if (showModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div class="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <div class="flex items-center justify-between border-b pb-4 mb-4">
-              <h3 class="text-lg font-semibold text-gray-900">
+          <div class="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+            <div class="flex items-center justify-between border-b pb-4 mb-4 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                 {{ editUser() ? 'Edit User' : 'Add User' }}
               </h3>
               <button
                 type="button"
                 (click)="closeModal()"
-                class="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                class="text-gray-500 hover:text-gray-700 text-xl leading-none dark:hover:text-gray-200"
               >
                 ✕
               </button>
@@ -167,7 +167,7 @@ interface UserFormModel {
 
             <!-- Save error -->
             @if (saveError()) {
-              <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              <div class="ta-alert-error mb-4">
                 {{ saveError() }}
               </div>
             }
@@ -175,7 +175,7 @@ interface UserFormModel {
             <div class="space-y-4">
               <!-- Email (only editable on create) -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label class="ta-field-label">
                   Email <span class="text-red-500">*</span>
                 </label>
                 <input
@@ -183,27 +183,27 @@ interface UserFormModel {
                   [(ngModel)]="form.email"
                   [disabled]="!!editUser()"
                   placeholder="user@example.com"
-                  class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  class="ta-field"
                 />
               </div>
 
               <!-- Display name -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                <label class="ta-field-label">Display Name</label>
                 <input
                   type="text"
                   [(ngModel)]="form.display_name"
                   placeholder="Full name"
-                  class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  class="ta-field"
                 />
               </div>
 
               <!-- Role -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <label class="ta-field-label">Role</label>
                 <select
                   [(ngModel)]="form.role"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  class="ta-field"
                 >
                   @for (role of availableRoles(); track role) {
                     <option [value]="role">{{ role | titlecase }}</option>
@@ -214,14 +214,14 @@ interface UserFormModel {
               <!-- Password (add only) -->
               @if (!editUser()) {
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <label class="ta-field-label">
                     Password <span class="text-red-500">*</span>
                   </label>
                   <input
                     type="password"
                     [(ngModel)]="form.password"
                     placeholder="Minimum 8 characters"
-                    class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="ta-field"
                   />
                 </div>
               }
@@ -234,7 +234,7 @@ interface UserFormModel {
                   [(ngModel)]="form.is_active"
                   class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <label for="isActive" class="text-sm font-medium text-gray-700">Active</label>
+                <label for="isActive" class="text-sm font-medium text-gray-700 dark:text-gray-300">Active</label>
               </div>
             </div>
 
@@ -242,7 +242,7 @@ interface UserFormModel {
               <button
                 type="button"
                 (click)="closeModal()"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition"
+                class="ta-btn ta-btn-secondary"
               >
                 Cancel
               </button>

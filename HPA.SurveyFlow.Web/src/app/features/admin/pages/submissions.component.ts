@@ -36,7 +36,7 @@ const PAGE_SIZE = 25;
       <div class="w-full">
         <!-- Filter bar -->
         <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
-          <div class="text-sm text-gray-600">
+          <div class="ta-pagination">
             {{ loading() ? 'Loading…' : total() + ' submission(s)' }}
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -51,7 +51,7 @@ const PAGE_SIZE = 25;
               <app-help-trigger helpKey="admin.submissions.date-to" label="Help for to date filter" [inputGrouped]="true" />
             </div>
             <select [(ngModel)]="formFilterModel" aria-label="Filter by form"
-              class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              class="ta-admin-control px-3 py-1.5 text-sm">
               <option value="">All forms</option>
               @for (f of forms(); track f.id) {
                 <option [value]="f.id">{{ f.name }}</option>
@@ -70,21 +70,21 @@ const PAGE_SIZE = 25;
         </div>
 
         @if (error()) {
-          <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+          <div class="ta-alert-error mb-4">{{ error() }}</div>
         }
 
         <!-- Table -->
-        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <table class="min-w-[640px] w-full text-sm">
+        <div class="ta-table-shell">
+          <table class="ta-table min-w-[640px]">
             <thead>
-              <tr class="bg-gray-50 dark:bg-gray-700">
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500">#</th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Form <app-help-trigger helpKey="admin.submissions.form" label="Help for submitted forms" /></span></th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Abnormal <app-help-trigger helpKey="admin.submissions.abnormal" label="Help for abnormal answers" /></span></th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Integration <app-help-trigger helpKey="admin.submissions.integration" label="Help for integration status" /></span></th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Submitted <app-help-trigger helpKey="admin.submissions.submitted" label="Help for submitted time" /></span></th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Submitted By <app-help-trigger helpKey="admin.submissions.submitted-by" label="Help for submitted by" /></span></th>
-                <th scope="col" class="px-5 py-3 text-left font-medium text-gray-500"><span class="flex items-center gap-1">Actions <app-help-trigger helpKey="admin.submissions.actions" label="Help for submission actions" /></span></th>
+              <tr class="ta-table-head">
+                <th scope="col" class="ta-table-th">#</th>
+                <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Form <app-help-trigger helpKey="admin.submissions.form" label="Help for submitted forms" /></span></th>
+                <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Abnormal <app-help-trigger helpKey="admin.submissions.abnormal" label="Help for abnormal answers" /></span></th>
+                <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Integration <app-help-trigger helpKey="admin.submissions.integration" label="Help for integration status" /></span></th>
+                <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Submitted <app-help-trigger helpKey="admin.submissions.submitted" label="Help for submitted time" /></span></th>
+                <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Submitted By <app-help-trigger helpKey="admin.submissions.submitted-by" label="Help for submitted by" /></span></th>
+                <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Actions <app-help-trigger helpKey="admin.submissions.actions" label="Help for submission actions" /></span></th>
               </tr>
             </thead>
             <tbody>
@@ -96,12 +96,12 @@ const PAGE_SIZE = 25;
                 </tr>
               } @else {
                 @for (r of rows(); track r.id) {
-                  <tr class="border-t border-gray-100 hover:bg-gray-50 transition">
+                  <tr class="ta-table-row">
                     <td class="px-5 py-4 text-gray-500 text-xs">
                       <div class="flex items-center gap-2">
                         @if ((r.child_submissions?.length ?? 0) > 0) {
                           <button type="button"
-                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                             (click)="toggleChildren(r.id); $event.stopPropagation()">
                             {{ childrenExpanded().has(r.id) ? '-' : '+' }}
                           </button>
@@ -111,7 +111,7 @@ const PAGE_SIZE = 25;
                         <span>#{{ r.id }}</span>
                       </div>
                     </td>
-                    <td class="px-5 py-4 font-medium text-gray-800">{{ r.form_name }}</td>
+                    <td class="px-5 py-4 font-medium text-gray-800 dark:text-gray-100">{{ r.form_name }}</td>
                     <td class="px-5 py-4">
                       <div class="flex flex-wrap gap-1">
                         @if (r.error_count > 0) {
@@ -146,8 +146,8 @@ const PAGE_SIZE = 25;
                         <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">✗ Failed</span>
                       }
                     </td>
-                    <td class="px-5 py-4 text-gray-700">{{ formatDate(r.submitted_at) }}</td>
-                    <td class="px-5 py-4 text-gray-700">{{ r.user_email ?? 'Anonymous' }}</td>
+                    <td class="px-5 py-4 text-gray-700 dark:text-gray-200">{{ formatDate(r.submitted_at) }}</td>
+                    <td class="px-5 py-4 text-gray-700 dark:text-gray-200">{{ r.user_email ?? 'Anonymous' }}</td>
                     <td class="px-5 py-4" (click)="$event.stopPropagation()">
                       <button type="button"
                         class="rounded bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700 transition"
@@ -163,11 +163,11 @@ const PAGE_SIZE = 25;
                   </tr>
                   @if (childrenExpanded().has(r.id)) {
                   @for (child of r.child_submissions ?? []; track child.id) {
-                    <tr class="border-t border-gray-100 bg-indigo-50/30 hover:bg-indigo-50 transition">
+                    <tr class="border-t border-gray-100 bg-indigo-50/30 hover:bg-indigo-50 transition dark:border-gray-700 dark:bg-indigo-950/20 dark:hover:bg-indigo-950/40">
                       <td class="px-5 py-3 pl-10 text-gray-500 text-xs">#{{ child.id }}</td>
                       <td class="px-5 py-3">
                         <div class="text-xs font-semibold uppercase tracking-wide text-indigo-600">Sub form</div>
-                        <div class="font-medium text-gray-800">{{ child.form_name }}</div>
+                        <div class="font-medium text-gray-800 dark:text-gray-100">{{ child.form_name }}</div>
                       </td>
                       <td class="px-5 py-3">
                         <div class="flex flex-wrap gap-1">
@@ -200,8 +200,8 @@ const PAGE_SIZE = 25;
                           <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Failed</span>
                         }
                       </td>
-                      <td class="px-5 py-3 text-gray-700">{{ formatDate(child.submitted_at) }}</td>
-                      <td class="px-5 py-3 text-gray-700">{{ child.user_email ?? 'Anonymous' }}</td>
+                      <td class="px-5 py-3 text-gray-700 dark:text-gray-200">{{ formatDate(child.submitted_at) }}</td>
+                      <td class="px-5 py-3 text-gray-700 dark:text-gray-200">{{ child.user_email ?? 'Anonymous' }}</td>
                       <td class="px-5 py-3" (click)="$event.stopPropagation()">
                         <button type="button"
                           class="rounded bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700 transition"
@@ -220,16 +220,16 @@ const PAGE_SIZE = 25;
 
         <!-- Pagination -->
         <div class="mt-4 flex items-center justify-between">
-          <div class="flex items-center gap-1 text-sm text-gray-600">
+          <div class="ta-pagination flex items-center gap-1">
             Showing {{ paginationFrom() }}–{{ paginationTo() }} of {{ total() }}
             <app-help-trigger helpKey="admin.submissions.pagination" label="Help for submission pagination" />
           </div>
           <div class="flex items-center gap-2">
             <button type="button" (click)="prevPage()" [disabled]="page() <= 1 || loading()"
-              class="rounded border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-gray-50 transition">Prev</button>
-            <span class="text-sm text-gray-600">Page {{ page() }} / {{ totalPages() }}</span>
+              class="ta-btn ta-btn-secondary px-3 py-1.5">Prev</button>
+            <span class="ta-pagination">Page {{ page() }} / {{ totalPages() }}</span>
             <button type="button" (click)="nextPage()" [disabled]="page() >= totalPages() || loading()"
-              class="rounded border px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-gray-50 transition">Next</button>
+              class="ta-btn ta-btn-secondary px-3 py-1.5">Next</button>
           </div>
         </div>
       </div>

@@ -45,22 +45,22 @@ import { SlidePanelService } from './slide-panel.service';
         [attr.aria-modal]="isTop ? 'true' : null"
         [attr.aria-hidden]="isTop ? null : 'true'"
         [attr.aria-label]="s.config.title"
-        class="fixed inset-y-0 right-0 flex flex-col bg-white shadow-2xl
+        class="ta-slide-panel fixed inset-y-0 right-0 flex flex-col bg-white text-gray-900 shadow-2xl dark:bg-gray-800 dark:text-gray-100
                w-full sm:w-[480px] lg:w-[580px] xl:w-[680px] 2xl:w-[760px]"
         [style.z-index]="901 + index * 2"
         [class]="s.config.width ?? ''">
 
         <!-- Header -->
-        <div class="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4 shrink-0">
+        <div class="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4 shrink-0 dark:border-gray-700">
           <div class="min-w-0">
-            <h2 class="truncate text-base font-semibold text-gray-900">{{ s.config.title }}</h2>
+            <h2 class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ s.config.title }}</h2>
             @if (s.config.subtitle) {
               <p class="mt-0.5 truncate text-sm text-gray-500">{{ s.config.subtitle }}</p>
             }
           </div>
           <button
             type="button"
-            class="ml-auto shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+            class="ml-auto shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition dark:hover:bg-gray-700 dark:hover:text-gray-200"
             aria-label="Close panel"
             (click)="svc.close(s.id)">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

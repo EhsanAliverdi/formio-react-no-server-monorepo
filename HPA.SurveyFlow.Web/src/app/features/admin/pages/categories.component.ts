@@ -87,24 +87,24 @@ const emptyForm = (): CategoryFormModel => ({
           <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
       } @else {
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-700">
+        <div class="ta-table-shell">
+          <table class="ta-table min-w-full">
+            <thead class="ta-table-head">
               <tr>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">
+                <th class="ta-table-th">
                   <span class="flex items-center gap-1">Name / Slug <app-help-trigger helpKey="admin.categories.slug" label="Help for category slugs" /></span>
                 </th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">
+                <th class="ta-table-th">
                   <span class="flex items-center gap-1">Visibility <app-help-trigger helpKey="admin.categories.visibility" label="Help for category visibility" /></span>
                 </th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">
+                <th class="ta-table-th">
                   <span class="flex items-center gap-1">Forms <app-help-trigger helpKey="admin.categories.forms" label="Help for assigned forms" /></span>
                 </th>
-                <th class="px-5 py-3 text-left font-medium text-gray-500">
+                <th class="ta-table-th">
                   <span class="flex items-center gap-1">Public URL <app-help-trigger helpKey="admin.categories.public-url" label="Help for category public URLs" /></span>
                 </th>
                 @if (canEdit()) {
-                  <th class="px-5 py-3 text-left font-medium text-gray-500">
+                  <th class="ta-table-th">
                     <span class="flex items-center gap-1">Actions <app-help-trigger helpKey="admin.categories.actions" label="Help for category actions" /></span>
                   </th>
                 }
@@ -119,9 +119,9 @@ const emptyForm = (): CategoryFormModel => ({
                 </tr>
               } @else {
                 @for (cat of categories(); track cat.slug) {
-                  <tr class="border-t border-gray-100 hover:bg-gray-50 transition">
+                  <tr class="ta-table-row">
                     <td class="px-5 py-4">
-                      <div class="font-medium text-gray-900">{{ cat.name }}</div>
+                      <div class="font-medium text-gray-900 dark:text-white">{{ cat.name }}</div>
                       <div class="text-xs text-gray-400 font-mono mt-0.5">{{ cat.slug }}</div>
                     </td>
                     <td class="px-5 py-4">
@@ -161,7 +161,7 @@ const emptyForm = (): CategoryFormModel => ({
                       <td class="px-5 py-4">
                         <div class="flex items-center gap-2">
                           <button type="button" (click)="openEdit(cat)"
-                            class="rounded border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition">
+                            class="rounded border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
                             Edit
                           </button>
                           @if (isAdmin()) {
@@ -413,7 +413,7 @@ const emptyForm = (): CategoryFormModel => ({
       <!-- Footer actions -->
       <div class="mt-8 flex items-center justify-end gap-3 border-t pt-5">
         <button type="button" (click)="closePanel()"
-          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition">
+          class="ta-btn ta-btn-secondary">
           Cancel
         </button>
         <button type="button" (click)="save()" [disabled]="saving()"
