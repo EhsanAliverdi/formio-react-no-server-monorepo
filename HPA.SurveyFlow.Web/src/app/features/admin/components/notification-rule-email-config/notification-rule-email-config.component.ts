@@ -3,18 +3,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificationRuleEmailConfig, PlaceholderCategory, PlaceholderDef } from '../../../../core/models';
 import { EmailBodyBuilderComponent, EmailBodyBuilderValue } from '../../../../shared/components/email-body-builder/email-body-builder.component';
+import { HelpTriggerComponent } from '../../../../shared/help/help-trigger.component';
 
 @Component({
   selector: 'app-notification-rule-email-config',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmailBodyBuilderComponent],
+  imports: [CommonModule, FormsModule, EmailBodyBuilderComponent, HelpTriggerComponent],
   template: `
     <div class="space-y-4">
 
       <!-- Recipients -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">
-          Recipients
+          <span class="flex items-center gap-1">Recipients <app-help-trigger helpKey="admin.form.email-recipients" label="Help for email recipients" /></span>
           <span class="text-gray-400 font-normal ml-1">(comma or newline separated)</span>
         </label>
         <textarea
@@ -44,7 +45,7 @@ import { EmailBodyBuilderComponent, EmailBodyBuilderValue } from '../../../../sh
           (ngModelChange)="update({ attach_pdf: $event })"
           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
         />
-        <span class="text-sm text-gray-700">Attach submission PDF</span>
+        <span class="flex items-center gap-1 text-sm text-gray-700">Attach submission PDF <app-help-trigger helpKey="admin.form.email-pdf" label="Help for email PDF attachment" /></span>
       </label>
 
     </div>

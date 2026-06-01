@@ -11,11 +11,12 @@ import { NotificationRuleCardComponent } from '../notification-rule-card/notific
 import { OverlapWarningPanelComponent } from '../overlap-warning-panel/overlap-warning-panel.component';
 import { buildPlaceholderCategories } from '../../../../core/utils/placeholder-categories';
 import { extractFormioFields } from '../../../../core/utils/formio-fields';
+import { HelpTriggerComponent } from '../../../../shared/help/help-trigger.component';
 
 @Component({
   selector: 'app-notification-rules-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, NotificationRuleCardComponent, OverlapWarningPanelComponent],
+  imports: [CommonModule, FormsModule, NotificationRuleCardComponent, OverlapWarningPanelComponent, HelpTriggerComponent],
   template: `
     <div class="space-y-4">
 
@@ -25,16 +26,15 @@ import { extractFormioFields } from '../../../../core/utils/formio-fields';
           <h3 class="text-base font-semibold text-gray-900">Notification Rules</h3>
           <p class="text-sm text-gray-500 mt-0.5">Define conditions that trigger email notifications when a form is submitted.</p>
         </div>
-        <button
-          type="button"
-          (click)="addRule()"
-          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Add Rule
-        </button>
+        <div class="ta-btn-group">
+          <button type="button" (click)="addRule()" class="ta-btn-group-action">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Rule
+          </button>
+          <app-help-trigger helpKey="admin.form.notification-rules" label="Help for adding notification rules" [grouped]="true" />
+        </div>
       </div>
 
       <!-- Loading -->

@@ -7,18 +7,19 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../../core/services/settings.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { UploadService } from '../../../core/services/upload.service';
 import { SiteSettings } from '../../../core/models';
 
 @Component({
   selector: 'app-admin-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h1 class="text-xl font-semibold text-gray-800 dark:text-white">Site settings</h1>
+          <h1 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">Site settings <app-help-trigger helpKey="admin.settings.list" label="Site settings help" /></h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure site name, logos, and footer display.</p>
         </div>
         <button

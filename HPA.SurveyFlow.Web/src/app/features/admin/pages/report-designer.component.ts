@@ -24,11 +24,12 @@ import {
 import { ReportColumnPickerComponent } from '../../../shared/components/report-column-picker/report-column-picker.component';
 import { ReportFilterPanelComponent } from '../../../shared/components/report-filter-panel/report-filter-panel.component';
 import { ReportDriftWizardComponent } from '../../../shared/components/report-drift-wizard/report-drift-wizard.component';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 
 @Component({
   selector: 'app-report-designer',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReportColumnPickerComponent, ReportFilterPanelComponent, ReportDriftWizardComponent],
+  imports: [CommonModule, FormsModule, ReportColumnPickerComponent, ReportFilterPanelComponent, ReportDriftWizardComponent, HelpTriggerComponent],
   template: `
     <div class="flex flex-col h-full">
 
@@ -41,13 +42,16 @@ import { ReportDriftWizardComponent } from '../../../shared/components/report-dr
           </svg>
         </button>
 
-        <input
-          type="text"
-          [(ngModel)]="name"
-          placeholder="Report name…"
-          class="flex-1 min-w-0 text-lg font-semibold bg-transparent border-0 outline-none ring-0 text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600"
-          maxlength="120"
-        />
+        <div class="flex flex-1 min-w-0 items-center gap-2">
+          <input
+            type="text"
+            [(ngModel)]="name"
+            placeholder="Report name…"
+            class="flex-1 min-w-0 text-lg font-semibold bg-transparent border-0 outline-none ring-0 text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600"
+            maxlength="120"
+          />
+          <app-help-trigger helpKey="admin.reports.designer" label="Report designer help" />
+        </div>
 
         <div class="flex items-center gap-2 flex-shrink-0">
           <!-- Public toggle -->

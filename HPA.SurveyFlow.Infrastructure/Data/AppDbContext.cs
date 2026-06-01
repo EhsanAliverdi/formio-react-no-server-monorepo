@@ -480,6 +480,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(c => c.Visibility).HasColumnName("visibility").HasDefaultValue("public");
             e.Property(c => c.ImageUrl).HasColumnName("image_url");
             e.Property(c => c.ShowCategoryImage).HasColumnName("show_category_image").HasDefaultValue(true);
+            e.Property(c => c.ShowCategoryTitle).HasColumnName("show_category_title").HasDefaultValue(true);
+            e.Property(c => c.ShowCategoryDescription).HasColumnName("show_category_description").HasDefaultValue(true);
             e.Property(c => c.IconKey).HasColumnName("icon_key");
             e.Property(c => c.LayoutMode).HasColumnName("layout_mode").HasDefaultValue("card");
             e.Property(c => c.PageSize).HasColumnName("page_size").HasDefaultValue(12);

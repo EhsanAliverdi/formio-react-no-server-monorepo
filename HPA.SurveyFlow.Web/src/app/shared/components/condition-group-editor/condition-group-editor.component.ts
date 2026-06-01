@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConditionGroup, ConditionLeaf, ConditionOperator, isConditionGroup } from '../../../core/models';
+import { HelpTriggerComponent } from '../../help/help-trigger.component';
 
 export interface FormField {
   key: string;
@@ -25,12 +26,12 @@ const CONDITION_OPERATORS: { value: ConditionOperator; label: string; forTypes?:
 @Component({
   selector: 'app-condition-group-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div class="space-y-2">
       <!-- Group header -->
       <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-500">Match</span>
+        <span class="flex items-center gap-1 text-sm text-gray-500">Match <app-help-trigger helpKey="admin.form.rule-conditions" label="Help for rule conditions" /></span>
         <select
           [ngModel]="group.operator"
           (ngModelChange)="setOperator($event)"
@@ -109,6 +110,8 @@ const CONDITION_OPERATORS: { value: ConditionOperator; label: string; forTypes?:
                 }
               }
 
+              <app-help-trigger helpKey="admin.form.rule-conditions" label="Help for condition field, operator, and value" />
+
               <button type="button" (click)="removeChild($index)" class="text-gray-400 hover:text-red-500 transition-colors ml-auto" title="Remove condition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
@@ -118,18 +121,21 @@ const CONDITION_OPERATORS: { value: ConditionOperator; label: string; forTypes?:
 
         <!-- Add actions -->
         <div class="flex items-center gap-2 pt-1">
-          <button type="button" (click)="addCondition()"
-            class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add Condition
-          </button>
-          @if (depth < 3) {
-            <span class="text-gray-300">|</span>
-            <button type="button" (click)="addGroup()"
-              class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium transition-colors">
+          <div class="ta-btn-group">
+            <button type="button" (click)="addCondition()" class="ta-btn-group-action">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-              Add Group
+              Add Condition
             </button>
+            <app-help-trigger helpKey="admin.form.rule-add-condition" label="Help for adding a condition" [grouped]="true" />
+          </div>
+          @if (depth < 3) {
+            <div class="ta-btn-group">
+              <button type="button" (click)="addGroup()" class="ta-btn-group-action">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Add Group
+              </button>
+              <app-help-trigger helpKey="admin.form.rule-add-group" label="Help for adding a group" [grouped]="true" />
+            </div>
           }
         </div>
       </div>

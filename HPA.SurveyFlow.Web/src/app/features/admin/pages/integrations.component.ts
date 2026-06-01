@@ -2,6 +2,7 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IntegrationsService } from '../../../core/services/integrations.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { environment } from '../../../../environments/environment';
 
 type Tab = 'email' | 'mex';
@@ -10,12 +11,12 @@ type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok'; me
 @Component({
   selector: 'app-admin-integrations',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-xl font-semibold text-gray-800 dark:text-white">Integrations</h1>
+          <h1 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center gap-2">Integrations <app-help-trigger helpKey="admin.integrations.list" label="Integrations help" /></h1>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Connect external services to SurveyFlow.</p>
         </div>
         <button

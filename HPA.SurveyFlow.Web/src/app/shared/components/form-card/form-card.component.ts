@@ -82,7 +82,7 @@ import { CommonModule } from '@angular/common';
 
     <!-- ── Compact style (always-visible text panel below image) ── -->
     @if (cardStyle === 'compact') {
-      <div class="card-root block w-full rounded-2xl overflow-hidden shadow-md cursor-pointer select-none bg-white border border-gray-100">
+      <div class="card-root block w-full rounded-2xl overflow-hidden shadow-md cursor-pointer select-none bg-white border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
 
         <!-- Image / icon area -->
         <div class="relative overflow-hidden" style="aspect-ratio: 16/9;">
@@ -106,10 +106,10 @@ import { CommonModule } from '@angular/common';
         <!-- Text panel — always visible -->
         <div class="p-4">
           @if (showTitle && name) {
-            <div class="font-bold text-gray-900 text-base leading-snug mb-1">{{ name }}</div>
+            <div class="font-bold text-gray-900 dark:text-white text-base leading-snug mb-1">{{ name }}</div>
           }
           @if (showDescription && description) {
-            <p class="text-gray-500 text-sm leading-relaxed mb-3">{{ description }}</p>
+            <p class="text-gray-500 dark:text-gray-300 text-sm leading-relaxed mb-3">{{ description }}</p>
           }
           @if (showButton) {
             <span class="card-btn inline-flex items-center justify-center gap-2 w-full rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2.5">

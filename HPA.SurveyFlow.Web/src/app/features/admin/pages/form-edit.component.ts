@@ -17,6 +17,7 @@ import { FormVersionService } from '../../../core/services/form-version.service'
 import { CategoryService } from '../../../core/services/category.service';
 import { NotificationRulesEditorComponent } from '../components/notification-rules-editor/notification-rules-editor.component';
 import { IntegrationRulesEditorComponent } from '../components/integration-rules-editor/integration-rules-editor.component';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 
 type WizardPanel = { key: string; title: string };
 type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
@@ -148,7 +149,7 @@ function ensureWizardHasPage(schema: any): any {
 @Component({
   selector: 'app-admin-form-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent, FormCardComponent, NotificationRulesEditorComponent, IntegrationRulesEditorComponent],
+  imports: [CommonModule, FormsModule, RouterLink, FormEditorComponent, IntegrationPayloadMappingComponent, IconPickerComponent, FormCardComponent, NotificationRulesEditorComponent, IntegrationRulesEditorComponent, HelpTriggerComponent],
   template: `
     <div>
 
@@ -161,7 +162,7 @@ function ensureWizardHasPage(schema: any): any {
           </svg>
           Back
         </button>
-        <h1 class="text-2xl font-bold text-gray-900">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
           Edit Form{{ form() ? ': ' + form()!.name : '' }}
         </h1>
       </div>
@@ -181,23 +182,26 @@ function ensureWizardHasPage(schema: any): any {
         }
 
         <!-- ── 1. General Configuration (always open) ─────────────────────── -->
-        <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <div class="px-6 py-4 border-b border-gray-100">
-            <h2 class="text-base font-semibold text-gray-900">General Configuration</h2>
+            <h2 class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">General Configuration <app-help-trigger helpKey="admin.form.general" label="Help for general form configuration" /></h2>
           </div>
           <div class="px-6 py-5 space-y-4">
 
             <!-- Form Name -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Form Name <span class="text-red-500">*</span></label>
-              <input type="text" [(ngModel)]="name" placeholder="Enter form name"
-                class="w-full max-w-lg rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+              <div class="ta-input-group w-full max-w-lg">
+                <input type="text" [(ngModel)]="name" placeholder="Enter form name"
+                  class="ta-input-group-field px-4 py-2"/>
+                <app-help-trigger helpKey="admin.form.name" label="Help for form name" [inputGrouped]="true" />
+              </div>
             </div>
 
             <!-- Visibility + Anonymous -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+                <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Visibility <app-help-trigger helpKey="admin.forms.visibility" label="Help for form visibility" /></label>
                 <select [(ngModel)]="visibility"
                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                   <option value="public">Public</option>
@@ -208,14 +212,14 @@ function ensureWizardHasPage(schema: any): any {
                 <label class="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" id="allowAnon" [(ngModel)]="allowAnonymous"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  <span class="text-sm font-medium text-gray-700">Allow anonymous submissions</span>
+                  <span class="flex items-center gap-1 text-sm font-medium text-gray-700">Allow anonymous submissions <app-help-trigger helpKey="admin.forms.anonymous" label="Help for anonymous submissions" /></span>
                 </label>
               </div>
             </div>
 
             <!-- Parent form -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Parent form</label>
+              <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Parent form <app-help-trigger helpKey="admin.form.parent" label="Help for parent form" /></label>
               <select [(ngModel)]="parentFormId"
                 class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option [ngValue]="null">No parent form</option>
@@ -229,9 +233,9 @@ function ensureWizardHasPage(schema: any): any {
             <!-- Access control (shown when restricted) -->
             @if (visibility === 'restricted') {
               <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-4">
-                <p class="text-sm font-semibold text-amber-800">Access Control</p>
+                <p class="flex items-center gap-1 text-sm font-semibold text-amber-800">Access Control <app-help-trigger helpKey="admin.form.access-control" label="Help for access control" /></p>
                 <div>
-                  <p class="text-sm font-medium text-gray-700 mb-2">Allowed Roles</p>
+                  <p class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">Allowed Roles <app-help-trigger helpKey="admin.form.access-control" label="Help for allowed roles" /></p>
                   <div class="flex flex-wrap gap-4">
                     @for (role of availableRoles(); track role.value) {
                       <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -244,7 +248,7 @@ function ensureWizardHasPage(schema: any): any {
                   </div>
                 </div>
                 <div>
-                  <p class="text-sm font-medium text-gray-700 mb-2">Allowed Users</p>
+                  <p class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">Allowed Users <app-help-trigger helpKey="admin.form.access-control" label="Help for allowed users" /></p>
                   @if (usersLoading()) {
                     <p class="text-sm text-gray-500">Loading users…</p>
                   } @else {
@@ -266,7 +270,7 @@ function ensureWizardHasPage(schema: any): any {
 
             <!-- Public link -->
             <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <p class="text-sm font-medium text-gray-700 mb-1">Public Link <span class="font-normal text-gray-400">(no layout)</span></p>
+              <p class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Public Link <span class="font-normal text-gray-400">(no layout)</span><app-help-trigger helpKey="admin.form.public-link" label="Help for public link" /></p>
               <p class="text-xs text-gray-500 mb-2">Share to display the form without the site layout — suitable for embedding or direct distribution.</p>
               <div class="flex items-center gap-2">
                 <input type="text" readonly [value]="publicFormUrl()"
@@ -285,25 +289,24 @@ function ensureWizardHasPage(schema: any): any {
                 <label class="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" [(ngModel)]="appSettings.previewBeforeSubmit"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  <span class="text-sm text-gray-700">Show preview before submission</span>
+                  <span class="flex items-center gap-1 text-sm text-gray-700">Show preview before submission <app-help-trigger helpKey="admin.form.preview-before-submit" label="Help for submission preview" /></span>
                 </label>
                 <label class="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" [(ngModel)]="appSettings.allowDraftPdfBeforeSubmit"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  <span class="text-sm text-gray-700">Allow draft PDF before submit</span>
+                  <span class="flex items-center gap-1 text-sm text-gray-700">Allow draft PDF before submit <app-help-trigger helpKey="admin.form.draft-pdf" label="Help for draft PDF" /></span>
                 </label>
                 <label class="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" [(ngModel)]="appSettings.allowSubmissionPdfExport"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                  <span class="text-sm text-gray-700">Allow submission PDF export</span>
+                  <span class="flex items-center gap-1 text-sm text-gray-700">Allow submission PDF export <app-help-trigger helpKey="admin.form.submission-pdf" label="Help for submission PDF export" /></span>
                 </label>
                 <label class="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" [(ngModel)]="appSettings.showColorCodedAnswers"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
                   <span class="flex items-center gap-2 text-sm text-gray-700">
                     Show color-coded answers while filling
-                    <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                      title="When enabled, answers configured in the Abnormalities tab are highlighted for people filling the form: green for normal, amber for warning, and red for critical/error.">?</span>
+                    <app-help-trigger helpKey="admin.form.color-coded-answers" label="Help for color-coded answers" />
                   </span>
                 </label>
               </div>
@@ -311,14 +314,14 @@ function ensureWizardHasPage(schema: any): any {
 
             <!-- Public description -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Public description</label>
+              <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Public description <app-help-trigger helpKey="admin.form.public-description" label="Help for public description" /></label>
               <textarea [(ngModel)]="appSettings.publicDescription" rows="2" placeholder="Shown to users on the forms list page"
                 class="w-full max-w-lg rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
 
             <!-- Category picker -->
             <div class="border-t pt-4">
-              <p class="text-sm font-semibold text-gray-700 mb-1">Category</p>
+              <p class="flex items-center gap-1 text-sm font-semibold text-gray-700 mb-1">Category <app-help-trigger helpKey="admin.form.category" label="Help for category" /></p>
               <p class="text-xs text-gray-400 mb-3">
                 Assign this form to a category so it appears on the category page.
                 Manage categories in <a routerLink="/admin/categories" class="text-indigo-600 hover:underline">Admin → Categories</a>.
@@ -341,10 +344,10 @@ function ensureWizardHasPage(schema: any): any {
         </div>
 
         <!-- ── 2. Card (collapsible) ──────────────────────────────────────────── -->
-        <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <button type="button" (click)="sectionOpen['styles'] = !sectionOpen['styles']"
             class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-            <span class="text-base font-semibold text-gray-900">Card</span>
+            <span class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">Card <app-help-trigger helpKey="admin.form.card" label="Help for form card" /></span>
             <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['styles']"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -360,7 +363,7 @@ function ensureWizardHasPage(schema: any): any {
 
               <!-- Image -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Card Image</label>
+                <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">Card Image <app-help-trigger helpKey="admin.form.card-image" label="Help for card image" /></label>
                 @if (categoryImage) {
                   <div class="mb-3 flex items-start gap-3">
                     <img [src]="categoryImage" alt="Card image" class="h-24 w-40 rounded-lg object-cover border border-gray-200"/>
@@ -391,7 +394,7 @@ function ensureWizardHasPage(schema: any): any {
 
               <!-- Icon (used when no image) -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Card Icon <span class="text-gray-400 font-normal">(used when no image)</span></label>
+                <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">Card Icon <span class="text-gray-400 font-normal">(used when no image)</span><app-help-trigger helpKey="admin.form.card-icon" label="Help for card icon" /></label>
                 <div class="flex items-center gap-3">
                   @if (categoryIcon) {
                     <img [src]="categoryIconSvgUrl()" alt="Selected icon" class="w-10 h-10 object-contain border border-gray-200 rounded-lg p-1"/>
@@ -420,10 +423,10 @@ function ensureWizardHasPage(schema: any): any {
         }
 
         <!-- ── 3. Notification Rules (collapsible) ─────────────────────────── -->
-        <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <button type="button" (click)="sectionOpen['notif'] = !sectionOpen['notif']"
             class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-            <span class="text-base font-semibold text-gray-900">Notification Rules</span>
+            <span class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">Notification Rules <app-help-trigger helpKey="admin.form.notification-rules" label="Help for notification rules" /></span>
             <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['notif']"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -440,10 +443,10 @@ function ensureWizardHasPage(schema: any): any {
         </div>
 
         <!-- ── 4. Integration Rules (collapsible) ──────────────────────────── -->
-        <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <button type="button" (click)="sectionOpen['integration'] = !sectionOpen['integration']"
             class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-            <span class="text-base font-semibold text-gray-900">Integration Rules</span>
+            <span class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">Integration Rules <app-help-trigger helpKey="admin.form.integration-rules" label="Help for integration rules" /></span>
             <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['integration']"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -460,10 +463,10 @@ function ensureWizardHasPage(schema: any): any {
         </div>
 
         <!-- ── 5. Submission Flow (collapsible) ────────────────────────────── -->
-        <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <button type="button" (click)="sectionOpen['flow'] = !sectionOpen['flow']"
             class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-            <span class="text-base font-semibold text-gray-900">Submission Flow</span>
+            <span class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">Submission Flow <app-help-trigger helpKey="admin.form.submission-flow" label="Help for submission flow" /></span>
             <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['flow']"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -478,23 +481,24 @@ function ensureWizardHasPage(schema: any): any {
                   <section class="rounded-lg border p-4 space-y-4" [class]="outcome.panelClass">
                     <div class="flex items-start justify-between gap-3">
                       <div>
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset" [class]="outcome.badgeClass">
-                          {{ outcome.label }}
-                        </span>
+                        <div class="flex items-center gap-1">
+                          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset" [class]="outcome.badgeClass">
+                            {{ outcome.label }}
+                          </span>
+                          <app-help-trigger helpKey="admin.form.outcomes" label="Help for submission outcomes" />
+                        </div>
                         <p class="mt-2 text-xs text-gray-600">{{ outcome.description }}</p>
                       </div>
                       <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
                         <input type="checkbox" [(ngModel)]="secondarySubmitConfigs[outcome.value].enabled"
                           class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                        Integration
+                        Integration <app-help-trigger helpKey="admin.form.secondary-submit" label="Help for outcome integration" />
                       </label>
                     </div>
 
                     <div>
                       <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                        Message
-                        <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                          [attr.title]="placeholderHelp">?</span>
+                        Message <app-help-trigger helpKey="admin.form.outcome-message" label="Help for outcome message" />
                       </label>
                       <textarea [(ngModel)]="appSettings[messageSettingKey(outcome.value)]" rows="3"
                         [placeholder]="messagePlaceholder(outcome.value)"
@@ -504,7 +508,7 @@ function ensureWizardHasPage(schema: any): any {
 
                     <div class="grid grid-cols-1 gap-3">
                       <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">After message</label>
+                        <label class="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1">After message <app-help-trigger helpKey="admin.form.after-message" label="Help for action after message" /></label>
                         <select [(ngModel)]="resultActions[outcome.value].mode"
                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
                           [class]="outcome.focusClass">
@@ -514,7 +518,7 @@ function ensureWizardHasPage(schema: any): any {
                         </select>
                       </div>
                       <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Delay before action</label>
+                        <label class="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1">Delay before action <app-help-trigger helpKey="admin.form.action-delay" label="Help for action delay" /></label>
                         <div class="flex items-center gap-2">
                           <input type="number" min="0" step="1" [(ngModel)]="resultActions[outcome.value].delaySeconds"
                             class="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
@@ -526,14 +530,16 @@ function ensureWizardHasPage(schema: any): any {
 
                     <div>
                       <label class="block text-xs font-medium text-gray-700 mb-1">Redirect URL</label>
-                      <input type="url" [(ngModel)]="appSettings[redirectSettingKey(outcome.value)]"
-                        placeholder="https://example.com/thank-you"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                        [class]="outcome.focusClass"/>
+                      <div class="ta-input-group w-full" [class]="outcome.focusClass">
+                        <input type="url" [(ngModel)]="appSettings[redirectSettingKey(outcome.value)]"
+                          placeholder="https://example.com/thank-you"
+                          class="ta-input-group-field px-3 py-2"/>
+                        <app-help-trigger helpKey="admin.form.redirect-url" label="Help for redirect URL" [inputGrouped]="true" />
+                      </div>
                     </div>
 
                     <div>
-                      <label class="block text-xs font-medium text-gray-700 mb-1">Follow-up form</label>
+                      <label class="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1">Follow-up form <app-help-trigger helpKey="admin.form.follow-up-form" label="Help for follow-up form" /></label>
                       <select [(ngModel)]="appSettings.nextForms[outcome.value]"
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
                         [class]="outcome.focusClass">
@@ -546,7 +552,7 @@ function ensureWizardHasPage(schema: any): any {
 
                     @if (secondarySubmitConfigs[outcome.value].enabled) {
                       <div class="rounded-lg border border-gray-200 bg-white p-3">
-                        <div class="text-xs font-semibold text-gray-700 mb-3">Secondary submit</div>
+                        <div class="flex items-center gap-1 text-xs font-semibold text-gray-700 mb-3">Secondary submit <app-help-trigger helpKey="admin.form.secondary-submit" label="Help for secondary submit" /></div>
                         <div class="grid grid-cols-1 gap-3">
                           <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">Integration</label>
@@ -556,7 +562,7 @@ function ensureWizardHasPage(schema: any): any {
                             </select>
                           </div>
                           <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Action</label>
+                            <label class="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1">Action <app-help-trigger helpKey="admin.form.secondary-submit" label="Help for secondary submit action" /></label>
                             <select [(ngModel)]="secondarySubmitConfigs[outcome.value].action"
                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                               <option value="create_request">Create Request</option>
@@ -575,13 +581,13 @@ function ensureWizardHasPage(schema: any): any {
                     <div class="rounded-lg border border-gray-200 bg-white p-3">
                       <div class="flex items-start justify-between gap-3 mb-3">
                         <div>
-                          <div class="text-xs font-semibold text-gray-700">Email notification</div>
+                          <div class="flex items-center gap-1 text-xs font-semibold text-gray-700">Email notification <app-help-trigger helpKey="admin.form.outcome-email" label="Help for outcome email" /></div>
                           <p class="mt-1 text-xs text-gray-500">Send outcome-based emails to one or more recipients.</p>
                         </div>
                         <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
                           <input type="checkbox" [(ngModel)]="emailNotifications[outcome.value].enabled"
                             class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                          Enabled
+                          <span class="flex items-center gap-1">Enabled <app-help-trigger helpKey="admin.form.outcome-email" label="Help for enabling outcome email" /></span>
                         </label>
                       </div>
 
@@ -589,9 +595,7 @@ function ensureWizardHasPage(schema: any): any {
                         <div class="grid grid-cols-1 gap-3">
                           <div>
                             <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                              Recipients
-                              <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                                title="Separate recipients with commas, semicolons, or new lines.">?</span>
+                              Recipients <app-help-trigger helpKey="admin.form.email-recipients" label="Help for email recipients" />
                             </label>
                             <textarea [(ngModel)]="emailNotifications[outcome.value].to" rows="2"
                               placeholder="team@example.com, manager@example.com"
@@ -600,9 +604,7 @@ function ensureWizardHasPage(schema: any): any {
                           </div>
                           <div>
                             <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                              Subject
-                              <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                                [attr.title]="placeholderHelp">?</span>
+                              Subject <app-help-trigger helpKey="admin.form.email-subject" label="Help for email subject" />
                             </label>
                             <input type="text" [(ngModel)]="emailNotifications[outcome.value].subject"
                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
@@ -610,9 +612,7 @@ function ensureWizardHasPage(schema: any): any {
                           </div>
                           <div>
                             <label class="mb-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                              Body (HTML supported)
-                              <span class="cursor-help rounded-full border border-gray-300 px-1.5 text-[10px] text-gray-500"
-                                [attr.title]="placeholderHelp">?</span>
+                              Body (HTML supported) <app-help-trigger helpKey="admin.form.email-body" label="Help for email body" />
                             </label>
                             <textarea [(ngModel)]="emailNotifications[outcome.value].bodyHtml" rows="6"
                               placeholder="<p>A submission was received.</p>"
@@ -622,7 +622,7 @@ function ensureWizardHasPage(schema: any): any {
                           <label class="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox" [(ngModel)]="emailNotifications[outcome.value].attachPdf"
                               class="h-4 w-4 rounded border-gray-300 text-indigo-600"/>
-                            <span class="text-sm text-gray-700">Attach submission PDF</span>
+                            <span class="flex items-center gap-1 text-sm text-gray-700">Attach submission PDF <app-help-trigger helpKey="admin.form.email-pdf" label="Help for email PDF attachment" /></span>
                           </label>
                         </div>
                       }
@@ -635,10 +635,10 @@ function ensureWizardHasPage(schema: any): any {
         </div>
 
         <!-- ── 6. Form Builder (collapsible) ───────────────────────────────── -->
-        <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <button type="button" (click)="sectionOpen['builder'] = !sectionOpen['builder']"
             class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-            <span class="text-base font-semibold text-gray-900">Form Builder</span>
+            <span class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">Form Builder <app-help-trigger helpKey="admin.form.builder" label="Help for form builder" /></span>
             <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['builder']"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -649,7 +649,7 @@ function ensureWizardHasPage(schema: any): any {
 
               <!-- Form type toggle -->
               <div class="flex items-center gap-4">
-                <span class="text-sm font-medium text-gray-700">Form type:</span>
+                <span class="flex items-center gap-1 text-sm font-medium text-gray-700">Form type: <app-help-trigger helpKey="admin.form.type" label="Help for form type" /></span>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input type="radio" [(ngModel)]="formDisplay" value="form" (ngModelChange)="onDisplayChange($event)"
                     class="h-4 w-4 border-gray-300 text-indigo-600"/>
@@ -669,10 +669,10 @@ function ensureWizardHasPage(schema: any): any {
         </div>
 
         <!-- ── Version History (collapsible) ──────────────────────────────── -->
-        <div class="mb-4 bg-white rounded-xl border border-gray-200">
+        <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <button type="button" (click)="loadVersions(); sectionOpen['versions'] = !sectionOpen['versions']"
             class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors rounded-xl">
-            <span class="text-base font-semibold text-gray-900">Version History</span>
+            <span class="flex items-center gap-1 text-base font-semibold text-gray-900 dark:text-white">Version History <app-help-trigger helpKey="admin.form.versions" label="Help for version history" /></span>
             <svg class="w-5 h-5 text-gray-400 transition-transform" [class.rotate-180]="sectionOpen['versions']"
               fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -798,7 +798,6 @@ export class FormEditComponent implements OnInit {
   categoryImage = '';
   categoryImageFullWidth = false;
   categoryIcon = '';
-  placeholderHelp = 'Available placeholders: {{outcome}}, {{submission_id}}, {{form_name}}, {{user_email}}, {{error_count}}, {{warning_count}}, {{abnormal_questions}}, {{error_questions}}, {{warning_questions}}, {{abnormal_answers}}, {{error_answers}}, {{warning_answers}}.';
   secondarySubmitOutcomes = SECONDARY_SUBMIT_OUTCOMES;
   secondarySubmitConfigs: Record<SecondarySubmitOutcome, SecondarySubmitConfig> = normalizeSecondarySubmitConfig(null);
   resultActions: Record<SecondarySubmitOutcome, ResultActionConfig> = normalizeResultActions(null);

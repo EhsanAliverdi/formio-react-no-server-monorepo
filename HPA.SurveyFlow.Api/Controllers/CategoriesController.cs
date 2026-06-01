@@ -72,6 +72,8 @@ public class CategoriesController(AppDbContext db) : ControllerBase
             Visibility = body.Visibility == "restricted" ? "restricted" : "public",
             ImageUrl = body.ImageUrl?.Trim(),
             ShowCategoryImage = body.ShowCategoryImage,
+            ShowCategoryTitle = body.ShowCategoryTitle,
+            ShowCategoryDescription = body.ShowCategoryDescription,
             IconKey = body.IconKey?.Trim(),
             LayoutMode = body.LayoutMode is "list" ? "list" : "card",
             PageSize = Math.Clamp(body.PageSize, 1, 100),
@@ -102,6 +104,8 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         if (body.Visibility != null) category.Visibility = body.Visibility == "restricted" ? "restricted" : "public";
         if (body.ImageUrl != null) category.ImageUrl = body.ImageUrl.Trim() == "" ? null : body.ImageUrl.Trim();
         if (body.ShowCategoryImage.HasValue) category.ShowCategoryImage = body.ShowCategoryImage.Value;
+        if (body.ShowCategoryTitle.HasValue) category.ShowCategoryTitle = body.ShowCategoryTitle.Value;
+        if (body.ShowCategoryDescription.HasValue) category.ShowCategoryDescription = body.ShowCategoryDescription.Value;
         if (body.IconKey != null) category.IconKey = body.IconKey.Trim() == "" ? null : body.IconKey.Trim();
         if (body.LayoutMode != null) category.LayoutMode = body.LayoutMode is "list" ? "list" : "card";
         if (body.PageSize.HasValue) category.PageSize = Math.Clamp(body.PageSize.Value, 1, 100);
@@ -159,6 +163,8 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         visibility = c.Visibility,
         image_url = c.ImageUrl,
         show_category_image = c.ShowCategoryImage,
+        show_category_title = c.ShowCategoryTitle,
+        show_category_description = c.ShowCategoryDescription,
         icon_key = c.IconKey,
         layout_mode = c.LayoutMode,
         page_size = c.PageSize,

@@ -19,7 +19,7 @@ import { FormRendererComponent } from '../../../shared/components/formio/form-re
   imports: [CommonModule, FormRendererComponent],
   template: `
     <div class="w-full">
-      <h2 class="text-xl font-bold mb-6">My submissions</h2>
+      <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white">My submissions</h2>
 
       @if (error()) {
         <div class="rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">{{ error() }}</div>
@@ -29,7 +29,7 @@ import { FormRendererComponent } from '../../../shared/components/formio/form-re
       } @else if (items().length === 0) {
         <div class="text-gray-500">No submissions yet.</div>
       } @else {
-        <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+        <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50 text-gray-600">
               <tr>

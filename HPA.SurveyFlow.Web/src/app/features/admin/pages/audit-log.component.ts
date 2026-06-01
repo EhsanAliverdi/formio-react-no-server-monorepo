@@ -2,24 +2,25 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuditLogService } from '../../../core/services/audit-log.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { AuditLog } from '../../../core/models';
 
 @Component({
   selector: 'app-audit-log',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Audit Log</h1>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">Audit Log <app-help-trigger helpKey="admin.audit-log.list" label="Audit log help" /></h1>
           <p class="text-sm text-gray-500 mt-1">Track all system activity and changes</p>
         </div>
         <a [href]="exportUrl()" class="btn btn-sm btn-outline">Export CSV</a>
       </div>
 
       <!-- Filters -->
-      <div class="bg-white border border-gray-200 rounded-lg p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">Entity Type</label>
           <select class="w-full input input-sm" [(ngModel)]="filterEntityType" (change)="load()">
@@ -45,14 +46,14 @@ import { AuditLog } from '../../../core/models';
       </div>
 
       <!-- Table -->
-      <div class="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
         @if (loading()) {
           <div class="p-8 text-center text-gray-500">Loading…</div>
         } @else if (items().length === 0) {
           <div class="p-8 text-center text-gray-500">No audit records found.</div>
         } @else {
           <table class="min-w-[640px] w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-200">
+            <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <tr>
                 <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Time</th>
                 <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Actor</th>
@@ -178,14 +179,14 @@ export class AuditLogComponent implements OnInit {
 
   actionBadgeClass(action: string): string {
     const map: Record<string, string> = {
-      created: 'bg-green-100 text-green-700',
-      updated: 'bg-blue-100 text-blue-700',
-      deleted: 'bg-red-100 text-red-700',
-      restored: 'bg-purple-100 text-purple-700',
-      login: 'bg-gray-100 text-gray-600',
-      logout: 'bg-gray-100 text-gray-600',
+      created: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      updated: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      deleted: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+      restored: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      login: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+      logout: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
     };
-    return map[action] ?? 'bg-gray-100 text-gray-600';
+    return map[action] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
   }
 
   formatJson(raw: string): string {

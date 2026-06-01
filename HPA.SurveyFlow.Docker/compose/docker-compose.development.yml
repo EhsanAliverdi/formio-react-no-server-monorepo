@@ -44,6 +44,7 @@ services:
     container_name: hpa-surveyflow-web-dev
     build:
       target: dev
+    command: sh -c "npm install && npm run start -- --host 0.0.0.0 --port 4200"
     volumes:
       - ../../HPA.SurveyFlow.Web:/app/HPA.SurveyFlow.Web
       - web_node_modules:/app/HPA.SurveyFlow.Web/node_modules

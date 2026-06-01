@@ -9,6 +9,7 @@ import { ConditionGroupEditorComponent } from '../../../../shared/components/con
 import { RuleValidationBadgeComponent } from '../../../../shared/components/rule-validation-badge/rule-validation-badge.component';
 import { IntegrationRuleMexConfigComponent } from '../../../../shared/components/integration-rule-mex-config/integration-rule-mex-config.component';
 import { IntegrationRuleWebhookConfigComponent } from '../../../../shared/components/integration-rule-webhook-config/integration-rule-webhook-config.component';
+import { HelpTriggerComponent } from '../../../../shared/help/help-trigger.component';
 
 @Component({
   selector: 'app-integration-rule-card',
@@ -20,6 +21,7 @@ import { IntegrationRuleWebhookConfigComponent } from '../../../../shared/compon
     RuleValidationBadgeComponent,
     IntegrationRuleMexConfigComponent,
     IntegrationRuleWebhookConfigComponent,
+    HelpTriggerComponent,
   ],
   template: `
     <div class="relative border rounded-xl overflow-hidden transition-all hover:z-10"
@@ -50,8 +52,10 @@ import { IntegrationRuleWebhookConfigComponent } from '../../../../shared/compon
           <input type="text" [ngModel]="draft.name" (ngModelChange)="patchDraft({ name: $event })"
             (click)="$event.stopPropagation()" placeholder="Rule name"
             class="flex-1 text-sm font-medium text-gray-900 border-0 border-b border-gray-300 focus:border-indigo-500 focus:outline-none bg-transparent py-0.5" />
+          <app-help-trigger helpKey="admin.form.rule-basics" label="Help for rule name and status" />
         } @else {
           <span class="flex-1 text-sm font-medium text-gray-900 truncate">{{ draft.name || 'Unnamed rule' }}</span>
+          <app-help-trigger helpKey="admin.form.rule-basics" label="Help for rule name and status" />
         }
 
         <!-- Channel badge -->
@@ -93,7 +97,7 @@ import { IntegrationRuleWebhookConfigComponent } from '../../../../shared/compon
           <div>
             <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">1</span>
-              Trigger Conditions
+              Trigger Conditions <app-help-trigger helpKey="admin.form.rule-conditions" label="Help for trigger conditions" />
             </h4>
             <app-condition-group-editor
               [group]="draft.condition_group"
@@ -106,7 +110,7 @@ import { IntegrationRuleWebhookConfigComponent } from '../../../../shared/compon
           <div class="border-t border-gray-100 pt-4">
             <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">2</span>
-              Integration Channel
+              Integration Channel <app-help-trigger helpKey="admin.form.integration-channel" label="Help for integration channel" />
             </h4>
 
             <!-- Channel selector -->

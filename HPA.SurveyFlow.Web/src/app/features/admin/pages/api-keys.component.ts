@@ -2,17 +2,18 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiKeyService } from '../../../core/services/api-key.service';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { ApiKey, CreateApiKeyResponse } from '../../../core/models';
 
 @Component({
   selector: 'app-api-keys',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpTriggerComponent],
   template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">API Keys</h1>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">API Keys <app-help-trigger helpKey="admin.api-keys.list" label="API keys help" /></h1>
           <p class="text-sm text-gray-500 mt-1">Manage programmatic access to the API</p>
         </div>
         <button
@@ -26,7 +27,7 @@ import { ApiKey, CreateApiKeyResponse } from '../../../core/models';
         </button>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         @if (loading()) {
           <div class="p-8 text-center text-gray-400">Loading…</div>
         } @else if (keys().length === 0) {
@@ -51,7 +52,7 @@ import { ApiKey, CreateApiKeyResponse } from '../../../core/models';
         } @else {
           <div class="overflow-x-auto">
           <table class="min-w-[640px] w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-200">
+            <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <tr>
                 <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Name</th>
                 <th scope="col" class="text-left px-4 py-3 font-medium text-gray-600">Prefix</th>

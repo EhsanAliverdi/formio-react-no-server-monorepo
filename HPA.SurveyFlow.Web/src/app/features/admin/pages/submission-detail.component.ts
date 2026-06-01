@@ -19,6 +19,7 @@ import { buildSubmissionPdfBody } from '../../../core/utils/submission-pdf';
 import { patchSchemaUrls } from '../../../core/utils/schema-patch';
 import { Formio } from 'formiojs';
 import { take } from 'rxjs/operators';
+import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 
 type SecondarySubmitOutcome = 'success' | 'warning' | 'error';
 type SecondarySubmitAction = {
@@ -47,7 +48,7 @@ function panelTitle(p: Panel, i: number): string {
 @Component({
   selector: 'app-submission-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, HelpTriggerComponent],
   template: `
     <div>
 
@@ -60,26 +61,29 @@ function panelTitle(p: Panel, i: number): string {
           </svg>
           Back
         </button>
-        <h1 class="text-2xl font-bold text-gray-900">
+        <h1 class="flex items-center gap-1 text-2xl font-bold text-gray-900 dark:text-white">
           {{ loading() ? 'Submission' : (detail() ? 'Submission #' + detail()!.id + ' — ' + detail()!.form_name : 'Submission') }}
+          <app-help-trigger helpKey="admin.submission.detail" label="Help for submission detail" />
         </h1>
         <!-- Action buttons -->
         @if (detail()) {
           <div class="ml-auto flex items-center gap-2">
             @if (!editMode()) {
-              <button type="button" (click)="exportPdf()" [disabled]="pdfExporting()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition">
-                @if (pdfExporting()) {
-                  <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
-                  Exporting…
-                } @else {
-                  ⬇ Export PDF
-                }
-              </button>
-              <button type="button" (click)="enterEditMode()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition">
-                ✏ Edit
-              </button>
+              <div class="ta-btn-group">
+                <button type="button" (click)="exportPdf()" [disabled]="pdfExporting()" class="ta-btn-group-action">
+                  @if (pdfExporting()) {
+                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    Exporting…
+                  } @else {
+                    ⬇ Export PDF
+                  }
+                </button>
+                <app-help-trigger helpKey="admin.submission.export-pdf" label="Help for exporting submission PDF" [grouped]="true" />
+              </div>
+              <div class="ta-btn-group">
+                <button type="button" (click)="enterEditMode()" class="ta-btn-group-action">✏ Edit</button>
+                <app-help-trigger helpKey="admin.submission.edit" label="Help for editing submission answers" [grouped]="true" />
+              </div>
             } @else {
               <button type="button" (click)="exitEditMode()" [disabled]="editSaving()"
                 class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition">
@@ -101,22 +105,22 @@ function panelTitle(p: Panel, i: number): string {
         <div class="space-y-5">
 
           <!-- Meta card -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <div class="text-xs text-gray-500 mb-0.5">Submitted</div>
+                <div class="flex items-center gap-1 text-xs text-gray-500 mb-0.5">Submitted <app-help-trigger helpKey="admin.submission.metadata" label="Help for submission metadata" /></div>
                 <div class="text-gray-800 font-medium">{{ formatDate(detail()!.submitted_at) }}</div>
               </div>
               <div>
-                <div class="text-xs text-gray-500 mb-0.5">By</div>
+                <div class="flex items-center gap-1 text-xs text-gray-500 mb-0.5">By <app-help-trigger helpKey="admin.submission.metadata" label="Help for submission author" /></div>
                 <div class="text-gray-800 font-medium">{{ detail()!.user_email ?? 'Anonymous' }}</div>
               </div>
               <div>
-                <div class="text-xs text-gray-500 mb-0.5">Last updated</div>
+                <div class="flex items-center gap-1 text-xs text-gray-500 mb-0.5">Last updated <app-help-trigger helpKey="admin.submission.metadata" label="Help for submission update time" /></div>
                 <div class="text-gray-800 font-medium">{{ detail()!.updated_at ? formatDate(detail()!.updated_at) : '—' }}</div>
               </div>
               <div>
-                <div class="text-xs text-gray-500 mb-0.5">Updated by</div>
+                <div class="flex items-center gap-1 text-xs text-gray-500 mb-0.5">Updated by <app-help-trigger helpKey="admin.submission.metadata" label="Help for submission editor" /></div>
                 <div class="text-gray-800 font-medium">{{ detail()!.updated_by_email ?? '—' }}</div>
               </div>
             </div>
@@ -129,7 +133,7 @@ function panelTitle(p: Panel, i: number): string {
                 <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
                   {{ errorsOf(detail()!).length }} Error{{ errorsOf(detail()!).length !== 1 ? 's' : '' }}
                 </span>
-                <span class="text-sm font-semibold text-red-800">Abnormal answers detected</span>
+                <span class="flex items-center gap-1 text-sm font-semibold text-red-800">Abnormal answers detected <app-help-trigger helpKey="admin.submission.abnormalities" label="Help for detected abnormalities" /></span>
               </div>
               <ul class="list-disc pl-5 space-y-0.5 text-sm text-red-700">
                 @for (a of errorsOf(detail()!); track a.key) {
@@ -144,7 +148,7 @@ function panelTitle(p: Panel, i: number): string {
                 <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
                   {{ warningsOf(detail()!).length }} Warning{{ warningsOf(detail()!).length !== 1 ? 's' : '' }}
                 </span>
-                <span class="text-sm font-semibold text-amber-800">Abnormal answers detected</span>
+                <span class="flex items-center gap-1 text-sm font-semibold text-amber-800">Abnormal answers detected <app-help-trigger helpKey="admin.submission.abnormalities" label="Help for detected abnormalities" /></span>
               </div>
               <ul class="list-disc pl-5 space-y-0.5 text-sm text-amber-700">
                 @for (a of warningsOf(detail()!); track a.key) {
@@ -155,25 +159,31 @@ function panelTitle(p: Panel, i: number): string {
           }
 
           <!-- Integration / Secondary Submit card -->
-          <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <div class="flex items-center justify-between mb-3">
-              <h2 class="text-sm font-semibold text-gray-700">Integration Submit</h2>
+              <h2 class="flex items-center gap-1 text-sm font-semibold text-gray-700">
+                Integration Submit
+                <app-help-trigger helpKey="admin.submission.integration-submit" label="Help for integration submit" />
+              </h2>
             </div>
 
             @if (currentSecondarySubmitAction(); as item) {
               <div class="mb-4 flex flex-wrap gap-2">
-                <button type="button" (click)="triggerSecondarySubmit(item.outcome)"
-                  [disabled]="!item.enabled || secondarySubmittingOutcome() !== null || detail()!.secondary_submit_status === 'pending'"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 transition">
-                  @if (secondarySubmittingOutcome() === item.outcome) {
-                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
-                    Sending...
-                  } @else if (!item.enabled) {
-                    {{ item.disabledReason }}
-                  } @else {
-                    Send {{ item.label }} to {{ integrationLabel(item.integration) }}
-                  }
-                </button>
+                <div class="ta-btn-group">
+                  <button type="button" (click)="triggerSecondarySubmit(item.outcome)"
+                    [disabled]="!item.enabled || secondarySubmittingOutcome() !== null || detail()!.secondary_submit_status === 'pending'"
+                    class="ta-btn-group-action">
+                    @if (secondarySubmittingOutcome() === item.outcome) {
+                      <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                      Sending...
+                    } @else if (!item.enabled) {
+                      {{ item.disabledReason }}
+                    } @else {
+                      Send {{ item.label }} to {{ integrationLabel(item.integration) }}
+                    }
+                  </button>
+                  <app-help-trigger helpKey="admin.submission.integration-submit" label="Help for manually submitting to an integration" [grouped]="true" />
+                </div>
               </div>
             } @else {
               <button type="button" disabled
@@ -228,8 +238,11 @@ function panelTitle(p: Panel, i: number): string {
 
           <!-- Rule Activity card -->
           @if ((detail()!.rule_logs?.length ?? 0) > 0) {
-            <div class="bg-white rounded-xl border border-gray-200 p-5">
-              <h2 class="text-sm font-semibold text-gray-700 mb-4">Rule Activity</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+              <h2 class="flex items-center gap-1 text-sm font-semibold text-gray-700 mb-4">
+                Rule Activity
+                <app-help-trigger helpKey="admin.submission.rule-activity" label="Help for rule activity" />
+              </h2>
               <div class="space-y-3">
                 @for (log of detail()!.rule_logs!; track log.id) {
                   <div class="rounded-lg border p-3 text-sm"
@@ -316,9 +329,10 @@ function panelTitle(p: Panel, i: number): string {
 
           <!-- Form answers card -->
           @if (detail()!.form) {
-            <div class="bg-white rounded-xl border border-gray-200 p-5">
-              <h2 class="text-sm font-semibold text-gray-700 mb-4">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+              <h2 class="flex items-center gap-1 text-sm font-semibold text-gray-700 mb-4">
                 {{ editMode() ? 'Edit Answers' : 'Submitted Answers' }}
+                <app-help-trigger [helpKey]="editMode() ? 'admin.submission.edit' : 'admin.submission.answers'" label="Help for submission answers" />
               </h2>
 
               @if (editError()) {

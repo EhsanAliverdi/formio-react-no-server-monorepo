@@ -7,11 +7,12 @@ import { IntegrationRulesService } from '../../../../core/services/integration-r
 import { FormField } from '../../../../shared/components/condition-group-editor/condition-group-editor.component';
 import { IntegrationRuleCardComponent } from '../integration-rule-card/integration-rule-card.component';
 import { extractFormioFields } from '../../../../core/utils/formio-fields';
+import { HelpTriggerComponent } from '../../../../shared/help/help-trigger.component';
 
 @Component({
   selector: 'app-integration-rules-editor',
   standalone: true,
-  imports: [CommonModule, IntegrationRuleCardComponent],
+  imports: [CommonModule, IntegrationRuleCardComponent, HelpTriggerComponent],
   template: `
     <div class="space-y-4">
 
@@ -24,13 +25,15 @@ import { extractFormioFields } from '../../../../core/utils/formio-fields';
             Runs alongside any existing integration config in the form schema.
           </p>
         </div>
-        <button type="button" (click)="addRule()"
-          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Add Rule
-        </button>
+        <div class="ta-btn-group">
+          <button type="button" (click)="addRule()" class="ta-btn-group-action">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Rule
+          </button>
+          <app-help-trigger helpKey="admin.form.integration-rules" label="Help for adding integration rules" [grouped]="true" />
+        </div>
       </div>
 
       <!-- Loading -->

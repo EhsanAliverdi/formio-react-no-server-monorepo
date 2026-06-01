@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { PlaceholderCategory, PlaceholderDef } from '../../../core/models';
 import { RichTextEditorComponent } from '../rich-text-editor/rich-text-editor.component';
 import { PlaceholderPickerComponent } from '../placeholder-picker/placeholder-picker.component';
+import { HelpTriggerComponent } from '../../help/help-trigger.component';
 
 export interface EmailBodyBuilderValue {
   subject: string;
@@ -13,13 +14,13 @@ export interface EmailBodyBuilderValue {
 @Component({
   selector: 'app-email-body-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, RichTextEditorComponent, PlaceholderPickerComponent],
+  imports: [CommonModule, FormsModule, RichTextEditorComponent, PlaceholderPickerComponent, HelpTriggerComponent],
   template: `
     <div class="space-y-4">
 
       <!-- Subject line -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+        <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Subject <app-help-trigger helpKey="admin.form.email-subject" label="Help for email subject" /></label>
         <div class="flex items-center gap-2">
           <input
             type="text"
@@ -38,7 +39,7 @@ export interface EmailBodyBuilderValue {
 
       <!-- Body -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Body</label>
+        <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">Body <app-help-trigger helpKey="admin.form.email-body" label="Help for email body" /></label>
         <app-rich-text-editor
           #bodyEditor
           [value]="value.bodyHtml"

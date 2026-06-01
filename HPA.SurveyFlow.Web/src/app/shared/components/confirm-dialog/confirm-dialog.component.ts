@@ -39,14 +39,12 @@ import { ConfirmDialogService, ConfirmOptions } from './confirm-dialog.service';
 
           <div class="flex justify-end gap-3">
             <button type="button"
-              class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              class="ta-btn ta-btn-secondary"
               (click)="svc.cancel()">
               {{ s.cancelLabel ?? 'Cancel' }}
             </button>
             <button type="button"
-              [class]="s.variant === 'danger'
-                ? 'rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition'
-                : 'rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition'"
+              [class]="'ta-btn ' + (s.variant === 'danger' ? 'ta-btn-danger' : 'ta-btn-primary')"
               (click)="svc.confirm()">
               {{ s.confirmLabel ?? 'Confirm' }}
             </button>

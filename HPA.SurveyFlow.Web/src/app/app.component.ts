@@ -4,32 +4,33 @@ import { SettingsService } from './core/services/settings.service';
 import { HealthService } from './core/services/health.service';
 import { ApiService } from './core/services/api.service';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
+import { SlidePanelComponent } from './shared/components/slide-panel/slide-panel.component';
 import { Formio } from 'formiojs';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, ConfirmDialogComponent],
+  imports: [RouterOutlet, ConfirmDialogComponent, SlidePanelComponent],
   template: `
     @if (backendDown()) {
-      <div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
         <div class="text-center max-w-md">
           <div class="mb-6 flex justify-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-              <svg class="h-10 w-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+              <svg class="h-10 w-10 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M18.364 5.636a9 9 0 010 12.728M15.536 8.464a5 5 0 010 7.072M6.343 6.343a9 9 0 000 12.728M9.172 9.172a5 5 0 000 7.071M12 12h.01"/>
               </svg>
             </div>
           </div>
-          <h1 class="text-2xl font-bold text-gray-900 mb-3">Server Unavailable</h1>
-          <p class="text-sm text-gray-500 mb-8 leading-relaxed">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">Server Unavailable</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
             We can't connect to the server right now. Please check your network connection
             or try again in a moment.
           </p>
           <button type="button" (click)="retryHealth()"
             [disabled]="retrying()"
-            class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 transition">
+            class="ta-btn ta-btn-primary px-5 py-2.5 disabled:opacity-60">
             @if (retrying()) {
               <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -49,6 +50,7 @@ import { Formio } from 'formiojs';
     } @else if (ready()) {
       <router-outlet />
       <app-confirm-dialog />
+      <app-slide-panel />
     }
   `,
 })

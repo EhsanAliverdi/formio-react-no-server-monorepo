@@ -52,7 +52,7 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex min-h-screen flex-col relative overflow-hidden" style="background-color: #f0f4f8;">
+    <div class="flex min-h-screen flex-col relative overflow-hidden bg-[#f0f4f8] dark:bg-gray-900">
 
       <!-- Dot mesh patches — scattered -->
       <svg class="pointer-events-none absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" style="opacity:1;">
@@ -96,7 +96,7 @@ type SubmitResult = { level: 'success' | 'warning' | 'error'; message: string };
       }
 
       <main class="flex flex-1 items-start justify-center px-4 py-8">
-        <div class="w-full max-w-3xl bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div class="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
 
         @if (loading()) {
           <div class="flex justify-center py-16">
