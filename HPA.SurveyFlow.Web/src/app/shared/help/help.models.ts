@@ -3,6 +3,11 @@ export interface HelpSection {
   paragraphs?: readonly string[];
   bullets?: readonly string[];
   note?: string;
+  copyBlock?: {
+    label: string;
+    buttonLabel?: string;
+    text: string;
+  };
 }
 
 export interface HelpTopic {

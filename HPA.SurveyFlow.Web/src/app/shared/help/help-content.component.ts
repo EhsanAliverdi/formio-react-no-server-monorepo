@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { HelpTopic } from './help.models';
 
 @Component({
@@ -30,6 +30,18 @@ import { HelpTopic } from './help.models';
               {{ section.note }}
             </p>
           }
+          @if (section.copyBlock; as copyBlock) {
+            <div class="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+              <div class="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2">
+                <span class="text-xs font-semibold text-gray-700">{{ copyBlock.label }}</span>
+                <button type="button" class="ta-btn ta-btn-secondary h-8 px-3 text-xs"
+                  (click)="copy(copyBlock.text)">
+                  {{ copiedText() === copyBlock.text ? 'Copied' : (copyBlock.buttonLabel ?? 'Copy') }}
+                </button>
+              </div>
+              <pre class="max-h-80 overflow-auto whitespace-pre-wrap p-3 text-xs leading-5 text-gray-700">{{ copyBlock.text }}</pre>
+            </div>
+          }
         </section>
       }
     </div>
@@ -37,4 +49,25 @@ import { HelpTopic } from './help.models';
 })
 export class HelpContentComponent {
   topic = input.required<HelpTopic>();
+  copiedText = signal<string | null>(null);
+
+  async copy(text: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    this.copiedText.set(text);
+    setTimeout(() => {
+      if (this.copiedText() === text) this.copiedText.set(null);
+    }, 2000);
+  }
 }
