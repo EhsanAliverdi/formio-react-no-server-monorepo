@@ -137,6 +137,7 @@ builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<ScheduledReportDeliveryService>();
 builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<FieldCheckService>();
 builder.Services.AddScoped<FormVersionService>();
 builder.Services.AddScoped<AlertEvaluatorService>();
 
@@ -185,6 +186,8 @@ using (var scope = app.Services.CreateScope())
         Forms            = GetFlag(builder.Configuration, "Seed:Forms",        "SEED_FORMS",         false),
         Rules            = GetFlag(builder.Configuration, "Seed:Rules",        "SEED_RULES",         false),
         Reports          = GetFlag(builder.Configuration, "Seed:Reports",      "SEED_REPORTS",       false),
+        Dashboards       = GetFlag(builder.Configuration, "Seed:Dashboards",   "SEED_DASHBOARDS",    false),
+        Submissions      = GetFlag(builder.Configuration, "Seed:Submissions",  "SEED_SUBMISSIONS",   false),
         Datasets         = GetFlag(builder.Configuration, "Seed:Datasets",     "SEED_DATASETS",      false),
         Schedules        = GetFlag(builder.Configuration, "Seed:Schedules",    "SEED_SCHEDULES",     false),
         OverrideExisting = GetFlag(builder.Configuration, "Seed:Override",     "SEED_OVERRIDE",      false),
