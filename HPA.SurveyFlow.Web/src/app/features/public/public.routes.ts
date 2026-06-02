@@ -34,4 +34,9 @@ export const publicRoutes: Routes = [
     loadComponent: () =>
       import('./pages/no-access.component').then(m => m.NoAccessComponent),
   },
+  {
+    path: 'reporting/d/:slug',
+    loadComponent: () =>
+      import('./pages/dashboard-viewer.component').then(m => m.DashboardViewerComponent),
+  },
 ];

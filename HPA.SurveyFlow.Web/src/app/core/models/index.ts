@@ -532,6 +532,72 @@ export interface ReportExecutionResult {
   page_size: number;
 }
 
+export type DashboardVisibility = 'public' | 'restricted';
+
+export interface Dashboard {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  visibility: DashboardVisibility;
+  is_active: boolean;
+  created_by_user_id: number;
+  created_at: string;
+  updated_at: string;
+  cards: DashboardCard[];
+}
+
+export interface DashboardCard {
+  id: number;
+  dashboard_id: number;
+  report_id: number;
+  report_name: string;
+  report_chart_type: ChartTypeName;
+  report_chart_config?: ChartConfig | null;
+  title_override?: string | null;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  min_w?: number | null;
+  min_h?: number | null;
+  max_w?: number | null;
+  max_h?: number | null;
+  settings_json?: string | null;
+}
+
+export interface SaveDashboardRequest {
+  name: string;
+  slug: string;
+  description?: string | null;
+  visibility: DashboardVisibility;
+  is_active: boolean;
+}
+
+export interface SaveDashboardCardRequest {
+  report_id: number;
+  title_override?: string | null;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  min_w?: number | null;
+  min_h?: number | null;
+  max_w?: number | null;
+  max_h?: number | null;
+  settings_json?: string | null;
+}
+
+export interface SaveDashboardLayoutRequest {
+  cards: {
+    dashboard_card_id: number;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }[];
+}
+
 export interface ScheduledReport {
   id: number;
   report_template_id: number;

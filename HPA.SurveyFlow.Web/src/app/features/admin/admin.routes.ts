@@ -87,6 +87,36 @@ export const adminRoutes: Routes = [
       import('./pages/datasets.component').then(m => m.DatasetsComponent),
   },
   {
+    path: 'reporting/reports',
+    redirectTo: 'reports',
+    pathMatch: 'full',
+  },
+  {
+    path: 'reporting/datasets',
+    redirectTo: 'datasets',
+    pathMatch: 'full',
+  },
+  {
+    path: 'reporting/dashboards',
+    loadComponent: () =>
+      import('./pages/dashboard-list.component').then(m => m.DashboardListComponent),
+  },
+  {
+    path: 'reporting/dashboards/new',
+    loadComponent: () =>
+      import('./pages/dashboard-create-edit.component').then(m => m.DashboardCreateEditComponent),
+  },
+  {
+    path: 'reporting/dashboards/:id/edit',
+    loadComponent: () =>
+      import('./pages/dashboard-create-edit.component').then(m => m.DashboardCreateEditComponent),
+  },
+  {
+    path: 'reporting/dashboards/:id/designer',
+    loadComponent: () =>
+      import('./pages/dashboard-designer.component').then(m => m.DashboardDesignerComponent),
+  },
+  {
     path: 'integrations',
     loadComponent: () =>
       import('./pages/integrations.component').then(m => m.IntegrationsComponent),

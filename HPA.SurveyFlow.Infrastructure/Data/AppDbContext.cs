@@ -32,6 +32,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ReportAlert> ReportAlerts { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<SubmissionRuleLog> SubmissionRuleLogs { get; set; }
+    public DbSet<Dashboard> Dashboards { get; set; }
+    public DbSet<DashboardCard> DashboardCards { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -303,6 +305,48 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(r => r.Form).WithMany().HasForeignKey(r => r.FormId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(r => r.CreatedByUser).WithMany().HasForeignKey(r => r.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(r => r.FormId);
+        });
+
+        modelBuilder.Entity<Dashboard>(e =>
+        {
+            e.ToTable("dashboards");
+            e.HasKey(d => d.Id);
+            e.Property(d => d.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(d => d.Name).HasColumnName("name").IsRequired();
+            e.Property(d => d.Slug).HasColumnName("slug").IsRequired();
+            e.Property(d => d.Description).HasColumnName("description");
+            e.Property(d => d.Visibility).HasColumnName("visibility").HasDefaultValue("restricted");
+            e.Property(d => d.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.Property(d => d.CreatedByUserId).HasColumnName("created_by_user_id");
+            e.Property(d => d.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(d => d.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.HasIndex(d => d.Slug).IsUnique();
+            e.HasOne(d => d.CreatedByUser).WithMany().HasForeignKey(d => d.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<DashboardCard>(e =>
+        {
+            e.ToTable("dashboard_cards");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(c => c.DashboardId).HasColumnName("dashboard_id");
+            e.Property(c => c.ReportTemplateId).HasColumnName("report_template_id");
+            e.Property(c => c.TitleOverride).HasColumnName("title_override");
+            e.Property(c => c.X).HasColumnName("x");
+            e.Property(c => c.Y).HasColumnName("y");
+            e.Property(c => c.W).HasColumnName("w").HasDefaultValue(6);
+            e.Property(c => c.H).HasColumnName("h").HasDefaultValue(4);
+            e.Property(c => c.MinW).HasColumnName("min_w");
+            e.Property(c => c.MinH).HasColumnName("min_h");
+            e.Property(c => c.MaxW).HasColumnName("max_w");
+            e.Property(c => c.MaxH).HasColumnName("max_h");
+            e.Property(c => c.SettingsJson).HasColumnName("settings_json");
+            e.Property(c => c.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(c => c.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.HasOne(c => c.Dashboard).WithMany(d => d.Cards).HasForeignKey(c => c.DashboardId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(c => c.ReportTemplate).WithMany().HasForeignKey(c => c.ReportTemplateId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(c => c.DashboardId);
+            e.HasIndex(c => c.ReportTemplateId);
         });
 
         modelBuilder.Entity<RlsPolicy>(e =>

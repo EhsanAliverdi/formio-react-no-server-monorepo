@@ -1,4 +1,4 @@
-import { Component, Input, computed, inject, effect } from '@angular/core';
+import { Component, HostListener, Input, computed, inject, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { SidebarService } from '../services/sidebar.service';
@@ -75,7 +75,7 @@ export interface SidebarBranding {
       </div>
 
       <!-- Nav -->
-      <div class="flex flex-1 flex-col overflow-y-auto no-scrollbar">
+      <div class="flex flex-1 flex-col overflow-y-auto overflow-x-visible no-scrollbar">
         <nav class="mb-6" aria-label="Main navigation">
           <div class="flex flex-col gap-4">
             <div>
@@ -91,7 +91,7 @@ export interface SidebarBranding {
               </h2>
               <ul class="flex flex-col gap-1">
                 @for (item of navItems; track item.name) {
-                  <li>
+                  <li class="relative" (mouseenter)="openDesktopSubmenu(item, $event)" (mouseleave)="closeDesktopSubmenu(item)">
                     @if (item.path) {
                       <a
                         [routerLink]="item.path"
@@ -117,6 +117,58 @@ export interface SidebarBranding {
                           <span class="whitespace-nowrap">{{ item.name }}</span>
                         }
                       </a>
+                    } @else if (item.subItems) {
+                      <button
+                        type="button"
+                        class="menu-item menu-item-inactive group"
+                        [class.justify-center]="!showLabels()"
+                        [title]="!showLabels() ? item.name : ''"
+                        [attr.aria-expanded]="isMobileSubmenuOpen(item.name)"
+                        (click)="toggleMobileSubmenu(item.name)"
+                      >
+                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center menu-item-icon-inactive">
+                          <svg class="h-6 w-6" fill="none" stroke="currentColor" [attr.viewBox]="item.iconViewBox ?? '0 0 24 24'">
+                            @for (d of item.icon.split('|'); track $index) {
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" [attr.d]="d" />
+                            }
+                          </svg>
+                        </span>
+                        @if (showLabels()) {
+                          <span class="flex-1 whitespace-nowrap text-left">{{ item.name }}</span>
+                          <svg class="h-4 w-4 transition-transform lg:hidden" [class.rotate-90]="isMobileSubmenuOpen(item.name)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                          </svg>
+                        }
+                      </button>
+
+                      <!-- Desktop: flyout beside the left sidebar in both collapsed and expanded modes. -->
+                      @if (isDesktop() && isDesktopSubmenuOpen(item.name)) {
+                        <div class="fixed z-[70] w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+                             [style.left]="desktopFlyoutLeft()"
+                             [style.top.px]="desktopFlyoutTop()"
+                             (mouseenter)="keepDesktopSubmenuOpen(item.name)"
+                             (mouseleave)="closeDesktopSubmenu(item)">
+                          <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{{ item.name }}</p>
+                          <ul class="space-y-1">
+                            @for (subItem of item.subItems; track subItem.path) {
+                              <li>
+                                <a [routerLink]="subItem.path" routerLinkActive="menu-dropdown-item-active" class="menu-dropdown-item menu-dropdown-item-inactive" (click)="closeAllSubmenus()">{{ subItem.name }}</a>
+                              </li>
+                            }
+                          </ul>
+                        </div>
+                      }
+
+                      <!-- Mobile: accordion remains closed until the parent is tapped. -->
+                      @if (sidebar.isMobileOpen() && isMobileSubmenuOpen(item.name)) {
+                        <ul class="ml-9 mt-1 space-y-1 lg:hidden">
+                          @for (subItem of item.subItems; track subItem.path) {
+                            <li>
+                              <a [routerLink]="subItem.path" routerLinkActive="menu-dropdown-item-active" class="menu-dropdown-item menu-dropdown-item-inactive" (click)="closeAllSubmenus()">{{ subItem.name }}</a>
+                            </li>
+                          }
+                        </ul>
+                      }
                     }
                   </li>
                 }
@@ -162,11 +214,16 @@ export class AppSidebarComponent {
   @Input() branding?: SidebarBranding;
 
   sidebar = inject(SidebarService);
+  desktopSubmenu = signal<string | null>(null);
+  mobileSubmenu = signal<string | null>(null);
+  desktopFlyoutTop = signal(0);
+  isDesktop = signal(window.innerWidth >= 1024);
+  private desktopSubmenuCloseTimer?: ReturnType<typeof setTimeout>;
   readonly appVersion = environment.appVersion?.trim() || 'local';
   readonly appEnvironment = environment.appEnvironment?.trim() || 'development';
 
   showLabels = computed(() =>
-    this.sidebar.isExpanded() || this.sidebar.isHovered() || this.sidebar.isMobileOpen()
+    this.sidebar.isExpanded() || this.sidebar.isMobileOpen()
   );
 
   showEnvironment = computed(() => this.appEnvironment.toLowerCase() !== 'production');
@@ -178,10 +235,9 @@ export class AppSidebarComponent {
 
   sidebarClass = computed(() => {
     const expanded = this.sidebar.isExpanded();
-    const hovered = this.sidebar.isHovered();
     const mobileOpen = this.sidebar.isMobileOpen();
 
-    const width = expanded || hovered ? 'w-[290px]' : 'w-[90px]';
+    const width = expanded || mobileOpen ? 'w-[290px]' : 'w-[90px]';
     const mobileTranslate = mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0';
 
     return `fixed top-0 left-0 px-5 h-screen flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out z-50 ${width} ${mobileTranslate}`;
@@ -190,19 +246,73 @@ export class AppSidebarComponent {
   constructor() {
     effect(() => {
       const expanded = this.sidebar.isExpanded();
-      const hovered = this.sidebar.isHovered();
-      const w = expanded || hovered ? '290px' : '90px';
+      const w = expanded ? '290px' : '90px';
       document.documentElement.style.setProperty('--sidebar-width', w);
     });
   }
 
   onMouseEnter(): void {
-    if (!this.sidebar.isExpanded()) {
-      this.sidebar.setHovered(true);
-    }
+    this.sidebar.setHovered(false);
   }
 
   onMouseLeave(): void {
     this.sidebar.setHovered(false);
+  }
+
+  openDesktopSubmenu(item: NavItem, event: MouseEvent): void {
+    if (!item.subItems || !this.isDesktop()) return;
+    this.cancelDesktopSubmenuClose();
+    const target = event.currentTarget as HTMLElement | null;
+    this.desktopFlyoutTop.set(target?.getBoundingClientRect().top ?? 0);
+    this.desktopSubmenu.set(item.name);
+  }
+
+  closeDesktopSubmenu(item: NavItem): void {
+    this.cancelDesktopSubmenuClose();
+    this.desktopSubmenuCloseTimer = setTimeout(() => {
+      if (this.desktopSubmenu() === item.name) this.desktopSubmenu.set(null);
+    }, 180);
+  }
+
+  keepDesktopSubmenuOpen(name: string): void {
+    this.cancelDesktopSubmenuClose();
+    this.desktopSubmenu.set(name);
+  }
+
+  isDesktopSubmenuOpen(name: string): boolean {
+    return this.desktopSubmenu() === name;
+  }
+
+  desktopFlyoutLeft(): string {
+    return this.showLabels() ? '290px' : '90px';
+  }
+
+  toggleMobileSubmenu(name: string): void {
+    if (this.isDesktop()) return;
+    this.mobileSubmenu.update(current => current === name ? null : name);
+  }
+
+  isMobileSubmenuOpen(name: string): boolean {
+    return this.mobileSubmenu() === name;
+  }
+
+  closeAllSubmenus(): void {
+    this.cancelDesktopSubmenuClose();
+    this.desktopSubmenu.set(null);
+    this.mobileSubmenu.set(null);
+    if (this.sidebar.isMobileOpen()) this.sidebar.toggleMobileSidebar();
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.isDesktop.set(window.innerWidth >= 1024);
+    this.closeAllSubmenus();
+  }
+
+  private cancelDesktopSubmenuClose(): void {
+    if (this.desktopSubmenuCloseTimer) {
+      clearTimeout(this.desktopSubmenuCloseTimer);
+      this.desktopSubmenuCloseTimer = undefined;
+    }
   }
 }

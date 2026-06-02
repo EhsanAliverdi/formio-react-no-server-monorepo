@@ -28,6 +28,7 @@
             ],
             "styles": [
               "src/styles.css",
+              "node_modules/gridstack/dist/gridstack.min.css",
               "node_modules/filepond/dist/filepond.min.css",
               "node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css",
               "node_modules/ngx-toastr/toastr.css"
