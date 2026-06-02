@@ -449,6 +449,67 @@ export const HELP_CATALOG = {
         heading: 'Multi-step wizard additions',
         paragraphs: ['When Form type is Multi-step wizard, SurveyFlow adds page actions to the wizard header. Use them to rename a page, delete a page, or move a page left or right. Deleting a page also removes the components on that page, and the last remaining page cannot be deleted.'],
       },
+      {
+        heading: 'Duplicate-report warning (field check)',
+        paragraphs: [
+          'SurveyFlow can warn a person before they submit if the same issue has already been reported for the same asset within a time window. This uses the Form.io Custom Validation URL on the triggering field.',
+          'Open the field in the builder, go to Validation → Advanced, and paste the field-check URL into Custom Validation URL:',
+        ],
+        copyBlock: {
+          label: 'Custom Validation URL — paste this into the Form.io field validation settings',
+          text: '/api/forms/{{formId}}/field-check',
+        },
+        bullets: [
+          'field_key — the Form.io key of the field being checked (set automatically by Form.io).',
+          'field_value — the submitted value of the field (set automatically by Form.io).',
+          'trigger_value — the specific answer that should trigger the duplicate check. Example: "yes" for a "Damage reported?" field.',
+          'hours — how far back to look. Defaults to 24. Accepts 1–720.',
+          'machine_id — optional. The submitted asset/machine ID field key. When provided, the check is scoped to the same asset.',
+        ],
+        note: 'SurveyFlow returns valid: false and a human-readable message when a duplicate is found. Form.io displays this message inline on the field and blocks submission until the person confirms or changes their answer. The message lists actions already taken — MEX work orders raised, emails sent, and so on.',
+      },
+    ],
+  },
+  'admin.form.field-check': {
+    key: 'admin.form.field-check',
+    title: 'Duplicate report detection (field check)',
+    summary: 'Warns a person before they submit if the same issue has already been reported for the same asset within a configurable time window.',
+    sections: [
+      {
+        heading: 'How it works',
+        paragraphs: [
+          'When a person selects a specific answer — for example "Damage reported: Yes" — SurveyFlow checks whether an identical answer has been submitted for the same form (and optionally the same asset) within the last N hours.',
+          'If a prior report is found, SurveyFlow returns a warning message that lists how many times the issue was reported and what actions have already been taken: MEX work orders raised, email notifications sent, and external webhooks called.',
+          'Form.io displays this message inline on the field and prevents submission until the person either changes their answer or explicitly proceeds.',
+        ],
+      },
+      {
+        heading: 'Setup — Custom Validation URL',
+        paragraphs: ['Open the triggering field in the Form Builder. Go to Validation → Advanced and paste the URL below into the Custom Validation URL field. Replace the query parameters to match your form.'],
+        copyBlock: {
+          label: 'Example Custom Validation URL',
+          text: '/api/forms/{{formId}}/field-check?trigger_value=yes&hours=24&machine_id_field=asset',
+        },
+        bullets: [
+          'trigger_value (required) — the answer that activates the check. Example: yes, no, fault.',
+          'hours (optional, default 24) — how far back to search. Maximum 720 (30 days).',
+          'machine_id_field (optional) — the Form.io key of the asset/machine field. When provided, duplicate detection is scoped to the same asset.',
+        ],
+      },
+      {
+        heading: 'What the response includes',
+        bullets: [
+          'already_reported: true/false — whether a duplicate was found.',
+          'message — a plain-English summary shown to the person. Example: "This issue has been reported twice on Pump Station 3 in the last 24 hours. Actions already taken: MEX work order raised (ref: WO-4521). Do you still want to submit this report?"',
+          'summary — report count, first reported time, and last reported time.',
+          'actions_taken — list of channels triggered: MEX, email, webhook.',
+        ],
+        note: 'The check only runs when the submitted value matches trigger_value. All other answers return valid: true immediately, so the field check does not interfere with normal submissions.',
+      },
+      {
+        heading: 'Example use case',
+        paragraphs: ['A "Pre-start safety check" form has a "Is there a fault?" radio field with values yes and no. Set trigger_value=yes and machine_id_field=asset. When a technician selects Yes, SurveyFlow checks whether a fault was already reported for that asset in the last 24 hours. If it was, they see: "This fault has already been reported for Compressor Unit 7 in the last 24 hours. A MEX work order has been raised (ref: WO-8812). Do you still want to submit?" They can proceed or cancel.'],
+      },
     ],
   },
   'admin.form.type': topic('Form type', 'Single page keeps components in one form. Multi-step wizard groups components into panel steps. When switching to wizard mode, SurveyFlow creates an initial panel if the schema does not already contain one.'),
