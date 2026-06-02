@@ -15,6 +15,9 @@ public class DashboardCard
     public int? MaxW { get; set; }
     public int? MaxH { get; set; }
     public string? SettingsJson { get; set; }
+    public bool ShowTitle { get; set; } = true;
+    public bool FitContent { get; set; } = false;
+    public string? CustomCss { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

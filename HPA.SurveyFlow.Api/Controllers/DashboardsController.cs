@@ -197,10 +197,17 @@ public class DashboardsController(
         body.Page = Math.Max(1, body.Page);
         body.PageSize = Math.Clamp(body.PageSize, 1, 200);
         var rlsClause = await BuildRlsClause(card.ReportTemplate, user);
-        var result = IsAggregation(card.ReportTemplate)
-            ? await aggregationPipeline.ExecuteAsync(card.ReportTemplate, body, rlsClause)
-            : await queryEngine.ExecuteAsync(card.ReportTemplate, body, rlsClause);
-        return Ok(result);
+        try
+        {
+            var result = IsAggregation(card.ReportTemplate)
+                ? await aggregationPipeline.ExecuteAsync(card.ReportTemplate, body, rlsClause)
+                : await queryEngine.ExecuteAsync(card.ReportTemplate, body, rlsClause);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message, detail = ex.InnerException?.Message });
+        }
     }
 
     private IQueryable<Dashboard> DashboardQuery() =>
@@ -252,6 +259,9 @@ public class DashboardsController(
         card.MaxW = body.MaxW;
         card.MaxH = body.MaxH;
         card.SettingsJson = body.SettingsJson;
+        card.ShowTitle = body.ShowTitle;
+        card.FitContent = body.FitContent;
+        card.CustomCss = body.CustomCss?.Trim();
     }
 
     private static DashboardDto MapDto(Dashboard dashboard) => new()
@@ -286,6 +296,9 @@ public class DashboardsController(
         MaxW = card.MaxW,
         MaxH = card.MaxH,
         SettingsJson = card.SettingsJson,
+        ShowTitle = card.ShowTitle,
+        FitContent = card.FitContent,
+        CustomCss = card.CustomCss,
     };
 
     private static JsonElement? ParseJson(string? json)

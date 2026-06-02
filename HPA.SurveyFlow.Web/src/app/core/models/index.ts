@@ -564,6 +564,9 @@ export interface DashboardCard {
   max_w?: number | null;
   max_h?: number | null;
   settings_json?: string | null;
+  show_title: boolean;
+  fit_content: boolean;
+  custom_css?: string | null;
 }
 
 export interface SaveDashboardRequest {
@@ -586,6 +589,9 @@ export interface SaveDashboardCardRequest {
   max_w?: number | null;
   max_h?: number | null;
   settings_json?: string | null;
+  show_title?: boolean;
+  fit_content?: boolean;
+  custom_css?: string | null;
 }
 
 export interface SaveDashboardLayoutRequest {

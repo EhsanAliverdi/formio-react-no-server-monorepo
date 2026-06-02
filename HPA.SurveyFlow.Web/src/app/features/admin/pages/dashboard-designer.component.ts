@@ -28,7 +28,7 @@ import { ReportPickerPanelComponent } from '../../../shared/components/report-pi
         @if (message()) { <div class="ta-alert-success">{{ message() }}</div> }
         @if (error()) { <div class="ta-alert-error">{{ error() }}</div> }
 
-        <div class="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)_240px]">
+        <div class="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)_260px]">
           <app-report-picker-panel [reports]="reports()" (add)="addReport($event)" />
           <div class="min-w-0 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-2 dark:border-gray-700 dark:bg-gray-900/30">
             @if (dashboard()!.cards.length === 0) {
@@ -37,14 +37,47 @@ import { ReportPickerPanelComponent } from '../../../shared/components/report-pi
               <app-dashboard-grid [dashboard]="dashboard()!" mode="designer" (layoutChanged)="applyLayout($event)" (remove)="removeCard($event)" (settings)="selectCard($event)" />
             }
           </div>
-          <aside class="ta-card h-fit p-4">
+
+          <!-- Card Settings panel -->
+          <aside class="ta-card h-fit p-4 space-y-4">
             <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Card Settings</h2>
             @if (selected()) {
-              <label class="ta-field-label mt-3">Title override</label>
-              <input [(ngModel)]="titleOverride" class="ta-field" placeholder="Use report name" />
-              <button type="button" (click)="saveCardSettings()" class="ta-btn ta-btn-primary mt-3 w-full">Save Title</button>
+              <!-- Title -->
+              <div>
+                <label class="ta-field-label">Title</label>
+                <input [(ngModel)]="titleOverride" class="ta-field" placeholder="Use report name" />
+              </div>
+
+              <!-- Show title toggle -->
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" [(ngModel)]="showTitle" class="h-4 w-4 rounded border-gray-300 text-indigo-600" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Show card title</span>
+              </label>
+
+              <!-- Fit content toggle -->
+              <div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="fitContent" class="h-4 w-4 rounded border-gray-300 text-indigo-600" />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">Fit content height</span>
+                </label>
+                <p class="mt-1 text-xs text-gray-400">Card shrinks to wrap its content instead of filling the grid cell. Useful for stat or table cards.</p>
+              </div>
+
+              <!-- Custom CSS -->
+              <div>
+                <label class="ta-field-label">Custom CSS</label>
+                <textarea
+                  [(ngModel)]="customCss"
+                  class="ta-field font-mono text-xs"
+                  rows="5"
+                  placeholder="background: linear-gradient(135deg, #667eea, #764ba2); color: white;"
+                ></textarea>
+                <p class="mt-1 text-xs text-gray-400">Applied as inline style on the card wrapper. Use standard CSS properties.</p>
+              </div>
+
+              <button type="button" (click)="saveCardSettings()" class="ta-btn ta-btn-primary w-full">Save Card Settings</button>
             } @else {
-              <p class="mt-3 text-xs text-gray-400">Select Title on a card to customise it.</p>
+              <p class="text-xs text-gray-400">Click Settings on a card to customise it.</p>
             }
           </aside>
         </div>
@@ -64,7 +97,11 @@ export class DashboardDesignerComponent implements OnInit {
   saving = signal(false);
   error = signal('');
   message = signal('');
+
   titleOverride = '';
+  showTitle = true;
+  fitContent = false;
+  customCss = '';
 
   ngOnInit(): void {
     this.load();
@@ -78,7 +115,7 @@ export class DashboardDesignerComponent implements OnInit {
   addReport(report: ReportTemplate): void {
     const dashboard = this.dashboard();
     if (!dashboard) return;
-    this.dashboards.addCard(dashboard.id, { report_id: report.id, x: 0, y: 0, w: 6, h: 4 }).subscribe({
+    this.dashboards.addCard(dashboard.id, { report_id: report.id, x: 0, y: 0, w: 6, h: 4, show_title: true, fit_content: false }).subscribe({
       next: card => this.dashboard.update(value => value ? { ...value, cards: [...value.cards, card] } : value),
       error: () => this.error.set('Failed to add report card.'),
     });
@@ -91,6 +128,9 @@ export class DashboardDesignerComponent implements OnInit {
   selectCard(card: DashboardCard): void {
     this.selected.set(card);
     this.titleOverride = card.title_override ?? '';
+    this.showTitle = card.show_title !== false;
+    this.fitContent = card.fit_content === true;
+    this.customCss = card.custom_css ?? '';
   }
 
   saveLayout(): void {
@@ -108,7 +148,10 @@ export class DashboardDesignerComponent implements OnInit {
     const dashboard = this.dashboard();
     if (!dashboard) return;
     this.dashboards.deleteCard(dashboard.id, card.id).subscribe({
-      next: () => this.dashboard.update(value => value ? { ...value, cards: value.cards.filter(item => item.id !== card.id) } : value),
+      next: () => {
+        this.dashboard.update(value => value ? { ...value, cards: value.cards.filter(item => item.id !== card.id) } : value);
+        if (this.selected()?.id === card.id) this.selected.set(null);
+      },
       error: () => this.error.set('Failed to remove report card.'),
     });
   }
@@ -117,14 +160,22 @@ export class DashboardDesignerComponent implements OnInit {
     const dashboard = this.dashboard();
     const card = this.selected();
     if (!dashboard || !card) return;
-    const request: SaveDashboardCardRequest = { ...card, report_id: card.report_id, title_override: this.titleOverride };
+    this.message.set('');
+    const request: SaveDashboardCardRequest = {
+      ...card,
+      report_id: card.report_id,
+      title_override: this.titleOverride || null,
+      show_title: this.showTitle,
+      fit_content: this.fitContent,
+      custom_css: this.customCss || null,
+    };
     this.dashboards.updateCard(dashboard.id, card.id, request).subscribe({
       next: updated => {
         this.dashboard.update(value => value ? { ...value, cards: value.cards.map(item => item.id === updated.id ? updated : item) } : value);
         this.selected.set(updated);
-        this.message.set('Card title saved.');
+        this.message.set('Card settings saved.');
       },
-      error: () => this.error.set('Failed to save card title.'),
+      error: () => this.error.set('Failed to save card settings.'),
     });
   }
 }

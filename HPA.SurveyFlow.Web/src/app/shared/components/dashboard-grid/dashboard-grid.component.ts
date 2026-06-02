@@ -22,6 +22,7 @@ import { DashboardCardComponent } from '../dashboard-card/dashboard-card.compone
           [attr.gs-min-h]="card.min_h"
           [attr.gs-max-w]="card.max_w"
           [attr.gs-max-h]="card.max_h"
+          [attr.gs-size-to-content]="card.fit_content ? true : null"
         >
           <div class="grid-stack-item-content">
             <app-dashboard-card

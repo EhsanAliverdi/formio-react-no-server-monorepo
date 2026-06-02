@@ -54,6 +54,15 @@ public class SaveDashboardCardRequest
 
     [JsonPropertyName("settings_json")]
     public string? SettingsJson { get; set; }
+
+    [JsonPropertyName("show_title")]
+    public bool ShowTitle { get; set; } = true;
+
+    [JsonPropertyName("fit_content")]
+    public bool FitContent { get; set; } = false;
+
+    [JsonPropertyName("custom_css")]
+    public string? CustomCss { get; set; }
 }
 
 public class SaveDashboardLayoutRequest
