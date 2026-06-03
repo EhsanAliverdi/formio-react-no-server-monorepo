@@ -41,7 +41,6 @@
               "grapesjs",
               "grapesjs-blocks-basic",
               "grapesjs-plugin-export",
-              "grapesjs-plugin-ckeditor",
               "grapesjs-tui-image-editor",
               "grapesjs-plugin-forms",
               "grapesjs-navbar",

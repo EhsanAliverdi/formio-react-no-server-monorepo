@@ -183,7 +183,6 @@ export class PageDesignerComponent implements AfterViewInit, OnDestroy {
     const grapesjs = await import('grapesjs');
     const basicBlocks = await import('grapesjs-blocks-basic');
     const exportPlugin = await import('grapesjs-plugin-export');
-    const ckeditorPlugin = await import('grapesjs-plugin-ckeditor');
     const tuiImageEditor = await import('grapesjs-tui-image-editor');
     const formsPlugin = await import('grapesjs-plugin-forms');
     const navbarPlugin = await import('grapesjs-navbar');
@@ -213,22 +212,42 @@ export class PageDesignerComponent implements AfterViewInit, OnDestroy {
       height: '760px',
       storageManager: false,
       fromElement: false,
+      selectorManager: { componentFirst: true },
+      styleManager: {
+        sectors: [
+          {
+            name: 'Layout',
+            open: true,
+            properties: ['display', 'position', 'top', 'right', 'bottom', 'left', 'width', 'height', 'min-height', 'margin', 'padding'],
+          },
+          {
+            name: 'Typography',
+            open: true,
+            properties: ['font-family', 'font-size', 'font-weight', 'letter-spacing', 'color', 'line-height', 'text-align', 'text-decoration'],
+          },
+          {
+            name: 'Background',
+            open: true,
+            properties: ['background-color', 'background', 'background-image', 'background-repeat', 'background-position', 'background-size'],
+          },
+          {
+            name: 'Border',
+            open: false,
+            properties: ['border', 'border-radius', 'box-shadow'],
+          },
+          {
+            name: 'Flex',
+            open: false,
+            properties: ['flex-direction', 'justify-content', 'align-items', 'gap', 'flex-wrap'],
+          },
+        ],
+      },
       plugins: [
         safePlugin('blocks-basic', basicBlocks, {
           blocks: ['column1', 'column2', 'column3', 'column3-7', 'text', 'link', 'image', 'video', 'map'],
           flexGrid: true,
         }),
         safePlugin('export', exportPlugin),
-        safePlugin('ckeditor', ckeditorPlugin, {
-          position: 'center',
-          options: {
-            toolbar: [
-              ['Bold', 'Italic', 'Underline', 'Link', 'Unlink'],
-              ['NumberedList', 'BulletedList'],
-              ['Format', 'RemoveFormat'],
-            ],
-          },
-        }),
         safePlugin('tui-image-editor', tuiImageEditor),
         safePlugin('forms', formsPlugin),
         safePlugin('navbar', navbarPlugin),
@@ -272,6 +291,20 @@ export class PageDesignerComponent implements AfterViewInit, OnDestroy {
       label: 'Hero',
       category: 'SurveyFlow',
       content: '<section style="padding:72px 24px;background:#f8fafc;"><div style="max-width:1120px;margin:0 auto;"><p style="margin:0 0 12px;color:#2563eb;font-weight:700;text-transform:uppercase;font-size:13px;">Page Label</p><h1 style="font-size:48px;line-height:1.08;margin:0 0 18px;color:#111827;">Page heading</h1><p style="max-width:720px;font-size:19px;line-height:1.7;color:#4b5563;margin:0;">Add a clear summary for this page.</p></div></section>',
+    });
+    blocks.add('sf-navbar', {
+      label: 'Navbar',
+      category: 'SurveyFlow',
+      content: `
+        <nav data-gjs-name="Navbar" data-gjs-draggable="true" data-gjs-droppable="true" style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 32px;background:#ffffff;border-bottom:1px solid #e5e7eb;">
+          <a data-gjs-name="Brand" href="#" style="font-size:18px;font-weight:700;color:#111827;text-decoration:none;">Brand</a>
+          <div data-gjs-name="Nav Links" style="display:flex;align-items:center;gap:18px;">
+            <a data-gjs-name="Nav Link" href="#" style="color:#374151;text-decoration:none;font-weight:500;">Home</a>
+            <a data-gjs-name="Nav Link" href="#" style="color:#374151;text-decoration:none;font-weight:500;">About</a>
+            <a data-gjs-name="Nav Link" href="#" style="color:#374151;text-decoration:none;font-weight:500;">Contact</a>
+          </div>
+        </nav>
+      `,
     });
     blocks.add('sf-section', {
       label: 'Section',

@@ -55,3 +55,17 @@
          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
 
 [39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
