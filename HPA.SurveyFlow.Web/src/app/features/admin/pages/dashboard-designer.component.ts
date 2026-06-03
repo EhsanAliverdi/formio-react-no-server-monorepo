@@ -54,6 +54,17 @@ import { ReportPickerPanelComponent } from '../../../shared/components/report-pi
                 <span class="text-sm text-gray-700 dark:text-gray-300">Show card title</span>
               </label>
 
+              <!-- Display mode -->
+              <div>
+                <label class="ta-field-label">Display mode</label>
+                <select [(ngModel)]="displayMode" class="ta-field">
+                  <option value="chart">Chart only</option>
+                  <option value="table">Table only</option>
+                  <option value="both">Chart + Table toggle</option>
+                </select>
+                <p class="mt-1 text-xs text-gray-400">"Chart + Table" shows a toggle button on the card so viewers can switch between the two views.</p>
+              </div>
+
               <!-- Fit content toggle -->
               <div>
                 <label class="flex items-center gap-2 cursor-pointer">
@@ -102,6 +113,7 @@ export class DashboardDesignerComponent implements OnInit {
   showTitle = true;
   fitContent = false;
   customCss = '';
+  displayMode: 'chart' | 'table' | 'both' = 'chart';
 
   ngOnInit(): void {
     this.load();
@@ -131,6 +143,7 @@ export class DashboardDesignerComponent implements OnInit {
     this.showTitle = card.show_title !== false;
     this.fitContent = card.fit_content === true;
     this.customCss = card.custom_css ?? '';
+    this.displayMode = card.display_mode ?? 'chart';
   }
 
   saveLayout(): void {
@@ -168,6 +181,7 @@ export class DashboardDesignerComponent implements OnInit {
       show_title: this.showTitle,
       fit_content: this.fitContent,
       custom_css: this.customCss || null,
+      display_mode: this.displayMode,
     };
     this.dashboards.updateCard(dashboard.id, card.id, request).subscribe({
       next: updated => {

@@ -262,6 +262,7 @@ public class DashboardsController(
         card.ShowTitle = body.ShowTitle;
         card.FitContent = body.FitContent;
         card.CustomCss = body.CustomCss?.Trim();
+        card.DisplayMode = body.DisplayMode is "chart" or "table" or "both" ? body.DisplayMode : "chart";
     }
 
     private static DashboardDto MapDto(Dashboard dashboard) => new()
@@ -299,6 +300,7 @@ public class DashboardsController(
         ShowTitle = card.ShowTitle,
         FitContent = card.FitContent,
         CustomCss = card.CustomCss,
+        DisplayMode = card.DisplayMode,
     };
 
     private static JsonElement? ParseJson(string? json)

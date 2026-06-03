@@ -94,4 +94,8 @@ public class DashboardCardDto
 
     [JsonPropertyName("custom_css")]
     public string? CustomCss { get; set; }
+
+    /// <summary>chart | table | both</summary>
+    [JsonPropertyName("display_mode")]
+    public string DisplayMode { get; set; } = "chart";
 }

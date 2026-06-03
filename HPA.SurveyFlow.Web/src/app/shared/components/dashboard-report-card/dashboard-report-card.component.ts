@@ -16,7 +16,29 @@ import { ReportDataTableComponent } from '../report-data-table/report-data-table
     } @else if (error()) {
       <div class="flex h-full items-center justify-center px-4 text-center text-sm text-red-500">{{ error() }}</div>
     } @else if (result()) {
-      @if (chartType !== 'table') {
+      @if (displayMode === 'both') {
+        <div class="mb-2 flex gap-1">
+          <button type="button"
+            class="rounded px-2 py-0.5 text-xs font-medium transition-colors"
+            [class.bg-indigo-600]="activeView() === 'chart'"
+            [class.text-white]="activeView() === 'chart'"
+            [class.bg-gray-100]="activeView() !== 'chart'"
+            [class.text-gray-600]="activeView() !== 'chart'"
+            [class.dark:bg-gray-700]="activeView() !== 'chart'"
+            [class.dark:text-gray-300]="activeView() !== 'chart'"
+            (click)="activeView.set('chart')">Chart</button>
+          <button type="button"
+            class="rounded px-2 py-0.5 text-xs font-medium transition-colors"
+            [class.bg-indigo-600]="activeView() === 'table'"
+            [class.text-white]="activeView() === 'table'"
+            [class.bg-gray-100]="activeView() !== 'table'"
+            [class.text-gray-600]="activeView() !== 'table'"
+            [class.dark:bg-gray-700]="activeView() !== 'table'"
+            [class.dark:text-gray-300]="activeView() !== 'table'"
+            (click)="activeView.set('table')">Table</button>
+        </div>
+      }
+      @if (showChart()) {
         <app-report-chart
           [chartType]="chartType"
           [config]="chartConfig"
@@ -42,6 +64,7 @@ export class DashboardReportCardComponent implements OnChanges {
   @Input() dashboardCardId?: number;
   @Input() chartType: ChartTypeName = 'table';
   @Input() chartConfig: ChartConfig = {};
+  @Input() displayMode: 'chart' | 'table' | 'both' = 'chart';
 
   private reports = inject(ReportTemplateService);
   private dashboards = inject(DashboardService);
@@ -50,9 +73,20 @@ export class DashboardReportCardComponent implements OnChanges {
   result = signal<ReportExecutionResult | null>(null);
   loading = signal(true);
   error = signal('');
+  activeView = signal<'chart' | 'table'>('chart');
+
+  get showChart(): () => boolean {
+    return () => {
+      if (this.displayMode === 'table') return false;
+      if (this.displayMode === 'chart') return this.chartType !== 'table';
+      return this.activeView() === 'chart';
+    };
+  }
 
   ngOnChanges(): void {
     if (!this.reportId) return;
+    // Reset active view to default for the current displayMode
+    this.activeView.set(this.displayMode === 'table' ? 'table' : 'chart');
     this.loading.set(true);
     this.error.set('');
     if (this.dashboardSlug && this.dashboardCardId) {

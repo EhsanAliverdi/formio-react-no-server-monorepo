@@ -35,6 +35,7 @@ import { DashboardReportCardComponent } from '../dashboard-report-card/dashboard
           [dashboardCardId]="card.id"
           [chartType]="card.report_chart_type"
           [chartConfig]="card.report_chart_config ?? {}"
+          [displayMode]="card.display_mode ?? 'chart'"
         />
       </div>
     </section>

@@ -567,6 +567,7 @@ export interface DashboardCard {
   show_title: boolean;
   fit_content: boolean;
   custom_css?: string | null;
+  display_mode: 'chart' | 'table' | 'both';
 }
 
 export interface SaveDashboardRequest {
@@ -592,6 +593,7 @@ export interface SaveDashboardCardRequest {
   show_title?: boolean;
   fit_content?: boolean;
   custom_css?: string | null;
+  display_mode?: 'chart' | 'table' | 'both';
 }
 
 export interface SaveDashboardLayoutRequest {

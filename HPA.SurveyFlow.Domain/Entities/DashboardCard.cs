@@ -18,6 +18,8 @@ public class DashboardCard
     public bool ShowTitle { get; set; } = true;
     public bool FitContent { get; set; } = false;
     public string? CustomCss { get; set; }
+    /// <summary>chart | table | both</summary>
+    public string DisplayMode { get; set; } = "chart";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
