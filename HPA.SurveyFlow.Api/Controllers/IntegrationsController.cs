@@ -7,12 +7,13 @@ using HPA.SurveyFlow.Domain.DTOs.Responses;
 using HPA.SurveyFlow.Domain.Entities;
 using HPA.SurveyFlow.Domain.Security;
 using HPA.SurveyFlow.Infrastructure.Data;
+using HPA.SurveyFlow.Infrastructure.Sms;
 
 namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/integrations")]
-public class IntegrationsController(AppDbContext db) : ControllerBase
+public class IntegrationsController(AppDbContext db, ILogger<IntegrationsController> logger) : ControllerBase
 {
     [RequirePermission(Permissions.Admin.ManageSettings)]
     [HttpGet]
@@ -47,6 +48,18 @@ public class IntegrationsController(AppDbContext db) : ControllerBase
             if (body.Mex.Enabled != null) updates["integration.mex.enabled"] = body.Mex.Enabled;
             if (body.Mex.BaseUrl != null) updates["integration.mex.baseUrl"] = body.Mex.BaseUrl;
             if (body.Mex.ApiKey != null) updates["integration.mex.apiKey"] = body.Mex.ApiKey;
+        }
+
+        if (body.Sms != null)
+        {
+            if (body.Sms.Enabled != null) updates["integration.sms.enabled"] = body.Sms.Enabled;
+            if (body.Sms.Provider != null) updates["integration.sms.provider"] = body.Sms.Provider;
+            if (body.Sms.MessageMediaApiKey != null) updates["integration.sms.messageMediaApiKey"] = body.Sms.MessageMediaApiKey;
+            if (body.Sms.MessageMediaApiSecret != null) updates["integration.sms.messageMediaApiSecret"] = body.Sms.MessageMediaApiSecret;
+            if (body.Sms.SourceNumber != null) updates["integration.sms.sourceNumber"] = body.Sms.SourceNumber;
+            if (body.Sms.SourceNumberType != null) updates["integration.sms.sourceNumberType"] = body.Sms.SourceNumberType;
+            if (body.Sms.CallbackUrl != null) updates["integration.sms.callbackUrl"] = body.Sms.CallbackUrl;
+            if (body.Sms.DeliveryReport != null) updates["integration.sms.deliveryReport"] = body.Sms.DeliveryReport;
         }
 
         foreach (var (key, value) in updates)
@@ -139,6 +152,60 @@ public class IntegrationsController(AppDbContext db) : ControllerBase
             }
 
             return Ok(new { success = true, message = $"Test email sent to {toEmail}." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [RequirePermission(Permissions.Admin.ManageSettings)]
+    [HttpPost("sms/test")]
+    public async Task<IActionResult> TestSmsIntegration([FromBody] TestSmsRequest body)
+    {
+        var settings = (await db.SiteSettings.ToListAsync()).ToDictionary(s => s.Key, s => (string?)s.Value);
+        settings["integration.sms.enabled"] = "true";
+        settings["integration.sms.provider"] = body.Provider ?? settings.GetValueOrDefault("integration.sms.provider") ?? "messagemedia";
+        if (!string.IsNullOrWhiteSpace(body.MessageMediaApiKey))
+            settings["integration.sms.messageMediaApiKey"] = body.MessageMediaApiKey;
+        if (!string.IsNullOrWhiteSpace(body.MessageMediaApiSecret))
+            settings["integration.sms.messageMediaApiSecret"] = body.MessageMediaApiSecret;
+        if (body.SourceNumber != null)
+            settings["integration.sms.sourceNumber"] = body.SourceNumber;
+        if (body.SourceNumberType != null)
+            settings["integration.sms.sourceNumberType"] = body.SourceNumberType;
+        if (body.CallbackUrl != null)
+            settings["integration.sms.callbackUrl"] = body.CallbackUrl;
+        if (body.DeliveryReport != null)
+            settings["integration.sms.deliveryReport"] = body.DeliveryReport;
+
+        if (string.IsNullOrWhiteSpace(body.ToNumber))
+            return BadRequest(new { error = "Recipient phone number (toNumber) is required." });
+
+        var sender = SmsSenderFactory.Create(settings, logger);
+        if (sender == null)
+            return BadRequest(new { error = "MessageMedia SMS integration is disabled or missing API credentials." });
+
+        try
+        {
+            var message = string.IsNullOrWhiteSpace(body.Message)
+                ? "This is a test SMS from SurveyFlow. Your MessageMedia integration is working correctly."
+                : body.Message;
+            var result = await sender.SendAsync(new HPA.SurveyFlow.Domain.Sms.SmsMessage
+            {
+                To = [body.ToNumber],
+                Body = message,
+            });
+
+            return Ok(new { success = true, message = $"Test SMS accepted by MessageMedia (HTTP {result.StatusCode})." });
+        }
+        catch (HttpRequestException ex)
+        {
+            return BadRequest(new { error = $"MessageMedia request failed: {ex.Message}" });
+        }
+        catch (TaskCanceledException)
+        {
+            return BadRequest(new { error = "MessageMedia request timed out after 30 seconds." });
         }
         catch (Exception ex)
         {
@@ -315,6 +382,17 @@ public class IntegrationsController(AppDbContext db) : ControllerBase
                 Enabled = dict.GetValueOrDefault("integration.mex.enabled") == "true",
                 BaseUrl = dict.GetValueOrDefault("integration.mex.baseUrl"),
                 ApiKeySet = !string.IsNullOrEmpty(dict.GetValueOrDefault("integration.mex.apiKey")),
+            },
+            Sms = new SmsIntegrationDto
+            {
+                Enabled = dict.GetValueOrDefault("integration.sms.enabled") == "true",
+                Provider = dict.GetValueOrDefault("integration.sms.provider") ?? "messagemedia",
+                MessageMediaApiKeySet = !string.IsNullOrEmpty(dict.GetValueOrDefault("integration.sms.messageMediaApiKey")),
+                MessageMediaApiSecretSet = !string.IsNullOrEmpty(dict.GetValueOrDefault("integration.sms.messageMediaApiSecret")),
+                SourceNumber = dict.GetValueOrDefault("integration.sms.sourceNumber"),
+                SourceNumberType = dict.GetValueOrDefault("integration.sms.sourceNumberType"),
+                CallbackUrl = dict.GetValueOrDefault("integration.sms.callbackUrl"),
+                DeliveryReport = dict.GetValueOrDefault("integration.sms.deliveryReport") == "true",
             }
         };
     }

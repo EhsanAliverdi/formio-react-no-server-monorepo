@@ -5,7 +5,7 @@ import { IntegrationsService } from '../../../core/services/integrations.service
 import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { environment } from '../../../../environments/environment';
 
-type Tab = 'email' | 'mex';
+type Tab = 'email' | 'sms' | 'mex';
 type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok'; message: string } | { status: 'fail'; message: string };
 
 @Component({
@@ -208,6 +208,107 @@ type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok'; me
           </div>
         }
 
+        <!-- SMS TAB -->
+        @if (activeTab() === 'sms') {
+          <div class="space-y-4">
+            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-semibold dark:text-white">SMS service</h2>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <div class="relative">
+                    <input type="checkbox" class="sr-only peer" [(ngModel)]="smsEnabled" />
+                    <div class="w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition-colors dark:bg-gray-600"></div>
+                    <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></div>
+                  </div>
+                  <span class="text-sm text-gray-600 dark:text-gray-300">{{ smsEnabled ? 'Enabled' : 'Disabled' }}</span>
+                </label>
+              </div>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+                Send SMS notification rules through MessageMedia.
+              </p>
+
+              <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div class="lg:col-span-2">
+                  <label class="field-label">Provider</label>
+                  <input class="field" value="MessageMedia" disabled />
+                </div>
+                <div>
+                  <label class="field-label">
+                    REST API Key
+                    @if (messageMediaApiKeySet()) {
+                      <span class="ml-1 text-xs text-green-600 font-normal">(set - enter new to change)</span>
+                    }
+                  </label>
+                  <input class="field" type="password" [(ngModel)]="messageMediaApiKey" placeholder="API key" autocomplete="new-password" />
+                </div>
+                <div>
+                  <label class="field-label">
+                    REST API Secret
+                    @if (messageMediaApiSecretSet()) {
+                      <span class="ml-1 text-xs text-green-600 font-normal">(set - enter new to change)</span>
+                    }
+                  </label>
+                  <input class="field" type="password" [(ngModel)]="messageMediaApiSecret" placeholder="API secret" autocomplete="new-password" />
+                </div>
+                <div>
+                  <label class="field-label">Source number / sender ID</label>
+                  <input class="field" [(ngModel)]="smsSourceNumber" placeholder="+61491570157 or BRAND" />
+                </div>
+                <div>
+                  <label class="field-label">Source number type</label>
+                  <select class="field" [(ngModel)]="smsSourceNumberType">
+                    <option value="">Auto</option>
+                    <option value="INTERNATIONAL">International number</option>
+                    <option value="ALPHANUMERIC">Alphanumeric sender ID</option>
+                    <option value="SHORTCODE">Shortcode</option>
+                  </select>
+                </div>
+                <div class="lg:col-span-2">
+                  <label class="field-label">Callback URL</label>
+                  <input class="field" [(ngModel)]="smsCallbackUrl" placeholder="https://example.com/message-status" />
+                </div>
+                <label class="flex items-center gap-2 lg:col-span-2 cursor-pointer">
+                  <input type="checkbox" [(ngModel)]="smsDeliveryReport" class="rounded border-gray-300" />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">Request delivery reports</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+              <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-1">Test connection</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Send a test SMS using the current settings. Unsaved credentials typed above will be used if provided.
+              </p>
+              <div class="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,2fr)_auto] lg:items-end">
+                <div>
+                  <label class="field-label">Send test SMS to</label>
+                  <input class="field" [(ngModel)]="smsTestNumber" placeholder="+61491570156" />
+                </div>
+                <div>
+                  <label class="field-label">Message</label>
+                  <input class="field" [(ngModel)]="smsTestMessage" placeholder="SurveyFlow SMS test" />
+                </div>
+                <button
+                  class="rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center gap-2"
+                  (click)="testSms()"
+                  [disabled]="smsTestState().status === 'testing' || !smsTestNumber"
+                >
+                  @if (smsTestState().status === 'testing') {
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Testing...
+                  } @else {
+                    Send test
+                  }
+                </button>
+              </div>
+              <ng-container *ngTemplateOutlet="testResult; context: { $implicit: smsTestState() }"></ng-container>
+            </div>
+          </div>
+        }
+
         <!-- MEX TAB -->
         @if (activeTab() === 'mex') {
           <div class="space-y-4">
@@ -405,6 +506,20 @@ export class IntegrationsComponent implements OnInit {
   emailTestAddress = '';
   emailTestState = signal<TestState>({ status: 'idle' });
 
+  // SMS fields
+  smsEnabled = false;
+  messageMediaApiKey = '';
+  messageMediaApiSecret = '';
+  messageMediaApiKeySet = signal(false);
+  messageMediaApiSecretSet = signal(false);
+  smsSourceNumber = '';
+  smsSourceNumberType: '' | 'INTERNATIONAL' | 'ALPHANUMERIC' | 'SHORTCODE' = '';
+  smsCallbackUrl = '';
+  smsDeliveryReport = false;
+  smsTestNumber = '';
+  smsTestMessage = 'This is a test SMS from SurveyFlow.';
+  smsTestState = signal<TestState>({ status: 'idle' });
+
   // MEX fields
   mexEnabled = false;
   mexBaseUrl = '';
@@ -421,6 +536,11 @@ export class IntegrationsComponent implements OnInit {
       id: 'email' as Tab,
       label: 'Email',
       icon: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75',
+    },
+    {
+      id: 'sms' as Tab,
+      label: 'SMS',
+      icon: 'M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z',
     },
     {
       id: 'mex' as Tab,
@@ -442,7 +562,9 @@ export class IntegrationsComponent implements OnInit {
   ];
 
   isTabEnabled(tab: Tab): boolean {
-    return tab === 'email' ? this.emailEnabled : this.mexEnabled;
+    if (tab === 'email') return this.emailEnabled;
+    if (tab === 'sms') return this.smsEnabled;
+    return this.mexEnabled;
   }
 
   ngOnInit(): void {
@@ -458,6 +580,13 @@ export class IntegrationsComponent implements OnInit {
         this.sendgridApiKeySet.set(data.email.sendgridApiKeySet);
         this.emailFrom = data.email.fromEmail ?? '';
         this.emailFromName = data.email.fromName ?? '';
+        this.smsEnabled = data.sms.enabled;
+        this.messageMediaApiKeySet.set(data.sms.messageMediaApiKeySet);
+        this.messageMediaApiSecretSet.set(data.sms.messageMediaApiSecretSet);
+        this.smsSourceNumber = data.sms.sourceNumber ?? '';
+        this.smsSourceNumberType = data.sms.sourceNumberType ?? '';
+        this.smsCallbackUrl = data.sms.callbackUrl ?? '';
+        this.smsDeliveryReport = data.sms.deliveryReport ?? false;
         this.mexEnabled = data.mex.enabled;
         this.mexBaseUrl = data.mex.baseUrl ?? '';
         this.mexApiKeySet.set(data.mex.apiKeySet);
@@ -490,20 +619,34 @@ export class IntegrationsComponent implements OnInit {
         enabled: this.mexEnabled ? 'true' : 'false',
         baseUrl: this.mexBaseUrl,
       },
+      sms: {
+        enabled: this.smsEnabled ? 'true' : 'false',
+        provider: 'messagemedia',
+        sourceNumber: this.smsSourceNumber,
+        sourceNumberType: this.smsSourceNumberType,
+        callbackUrl: this.smsCallbackUrl,
+        deliveryReport: this.smsDeliveryReport ? 'true' : 'false',
+      },
     };
 
     if (this.smtpPassword) payload.email.smtpPassword = this.smtpPassword;
     if (this.sendgridApiKey) payload.email.sendgridApiKey = this.sendgridApiKey;
     if (this.mexApiKey) payload.mex.apiKey = this.mexApiKey;
+    if (this.messageMediaApiKey) payload.sms.messageMediaApiKey = this.messageMediaApiKey;
+    if (this.messageMediaApiSecret) payload.sms.messageMediaApiSecret = this.messageMediaApiSecret;
 
     this.svc.updateIntegrations(payload).subscribe({
       next: data => {
         this.smtpPasswordSet.set(data.email.smtpPasswordSet);
         this.sendgridApiKeySet.set(data.email.sendgridApiKeySet);
         this.mexApiKeySet.set(data.mex.apiKeySet);
+        this.messageMediaApiKeySet.set(data.sms.messageMediaApiKeySet);
+        this.messageMediaApiSecretSet.set(data.sms.messageMediaApiSecretSet);
         this.smtpPassword = '';
         this.sendgridApiKey = '';
         this.mexApiKey = '';
+        this.messageMediaApiKey = '';
+        this.messageMediaApiSecret = '';
         this.saving.set(false);
         this.saveSuccess.set(true);
         setTimeout(() => this.saveSuccess.set(false), 4000);
@@ -530,6 +673,26 @@ export class IntegrationsComponent implements OnInit {
     this.svc.testEmail(payload).subscribe({
       next: res => this.emailTestState.set({ status: 'ok', message: res.message }),
       error: err => this.emailTestState.set({ status: 'fail', message: err?.error?.error || 'Test failed.' }),
+    });
+  }
+
+  testSms(): void {
+    this.smsTestState.set({ status: 'testing' });
+    const payload: any = {
+      toNumber: this.smsTestNumber,
+      message: this.smsTestMessage,
+      provider: 'messagemedia',
+      sourceNumber: this.smsSourceNumber,
+      sourceNumberType: this.smsSourceNumberType,
+      callbackUrl: this.smsCallbackUrl,
+      deliveryReport: this.smsDeliveryReport ? 'true' : 'false',
+    };
+    if (this.messageMediaApiKey) payload.messageMediaApiKey = this.messageMediaApiKey;
+    if (this.messageMediaApiSecret) payload.messageMediaApiSecret = this.messageMediaApiSecret;
+
+    this.svc.testSms(payload).subscribe({
+      next: res => this.smsTestState.set({ status: 'ok', message: res.message }),
+      error: err => this.smsTestState.set({ status: 'fail', message: err?.error?.error || 'Test failed.' }),
     });
   }
 

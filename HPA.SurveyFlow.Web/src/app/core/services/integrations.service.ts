@@ -23,6 +23,12 @@ export class IntegrationsService {
     );
   }
 
+  testSms(payload: object): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      this.api.apiUrl('/api/integrations/sms/test'), payload
+    );
+  }
+
   testMex(payload: object): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(
       this.api.apiUrl('/api/integrations/mex/test'), payload

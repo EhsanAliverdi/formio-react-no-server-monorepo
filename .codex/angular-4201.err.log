@@ -196,3 +196,374 @@
          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
 
 [39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'form_name' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:44:
+[37m      39 │ ...lder="Fault reported for {{[32mform_name[37m}} submission #{{submission...
+         ╵                               [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'submission_id' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:70:
+[37m      39 │ ...="Fault reported for {{form_name}} submission #{{[32msubmission_id[37m}}."
+         ╵                                                     [32m~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'form_name' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:44:
+[37m      39 │ ...lder="Fault reported for {{[32mform_name[37m}} submission #{{submission...
+         ╵                               [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'submission_id' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:70:
+[37m      39 │ ...="Fault reported for {{form_name}} submission #{{[32msubmission_id[37m}}."
+         ╵                                                     [32m~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'form_name' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:44:
+[37m      39 │ ...lder="Fault reported for {{[32mform_name[37m}} submission #{{submission...
+         ╵                               [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'submission_id' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:70:
+[37m      39 │ ...="Fault reported for {{form_name}} submission #{{[32msubmission_id[37m}}."
+         ╵                                                     [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1: Property 'smsEnabled' does not exist on type 'IntegrationsComponent'. Did you mean 'mexEnabled'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:219:77:
+[37m      219 │ ... type="checkbox" class="sr-only peer" [(ngModel)]="[32msmsEnabled[37m" />
+          ╵                                                       [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1: Property 'smsEnabled' does not exist on type 'IntegrationsComponent'. Did you mean 'mexEnabled'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:219:77:
+[37m      219 │ ... type="checkbox" class="sr-only peer" [(ngModel)]="[32msmsEnabled[37m" />
+          ╵                                                       [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1: Property 'smsEnabled' does not exist on type 'IntegrationsComponent'. Did you mean 'mexEnabled'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:223:76:
+[37m      223 │ ...00 dark:text-gray-300">{{ [32msmsEnabled[37m ? 'Enabled' : 'Disabled' ...
+          ╵                              [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'messageMediaApiKeySet' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:238:25:
+[37m      238 │                     @if ([32mmessageMediaApiKeySet[37m()) {
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'messageMediaApiKey' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:242:68:
+[37m      242 │ ...assword" [(ngModel)]="[32mmessageMediaApiKey[37m" placeholder="API key...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'messageMediaApiKey' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:242:68:
+[37m      242 │ ...assword" [(ngModel)]="[32mmessageMediaApiKey[37m" placeholder="API key...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'messageMediaApiSecretSet' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:247:25:
+[37m      247 │                     @if ([32mmessageMediaApiSecretSet[37m()) {
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'messageMediaApiSecret' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:251:68:
+[37m      251 │ ...ssword" [(ngModel)]="[32mmessageMediaApiSecret[37m" placeholder="API s...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'messageMediaApiSecret' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:251:68:
+[37m      251 │ ...ssword" [(ngModel)]="[32mmessageMediaApiSecret[37m" placeholder="API s...
+          ╵                         [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsSourceNumber' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:255:52:
+[37m      255 │ ...ss="field" [(ngModel)]="[32msmsSourceNumber[37m" placeholder="+6149157...
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsSourceNumber' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:255:52:
+[37m      255 │ ...ss="field" [(ngModel)]="[32msmsSourceNumber[37m" placeholder="+6149157...
+          ╵                            [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsSourceNumberType' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:259:53:
+[37m      259 │ ...         <select class="field" [(ngModel)]="[32msmsSourceNumberType[37m">
+          ╵                                                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsSourceNumberType' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:259:53:
+[37m      259 │ ...         <select class="field" [(ngModel)]="[32msmsSourceNumberType[37m">
+          ╵                                                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsCallbackUrl' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:268:52:
+[37m      268 │ ...ss="field" [(ngModel)]="[32msmsCallbackUrl[37m" placeholder="https://e...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsCallbackUrl' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:268:52:
+[37m      268 │ ...ss="field" [(ngModel)]="[32msmsCallbackUrl[37m" placeholder="https://e...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsDeliveryReport' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:271:54:
+[37m      271 │ ...checkbox" [(ngModel)]="[32msmsDeliveryReport[37m" class="rounded borde...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsDeliveryReport' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:271:54:
+[37m      271 │ ...checkbox" [(ngModel)]="[32msmsDeliveryReport[37m" class="rounded borde...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsTestNumber' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:285:52:
+[37m      285 │ ...ass="field" [(ngModel)]="[32msmsTestNumber[37m" placeholder="+61491570...
+          ╵                             [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsTestNumber' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:285:52:
+[37m      285 │ ...ass="field" [(ngModel)]="[32msmsTestNumber[37m" placeholder="+61491570...
+          ╵                             [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsTestMessage' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:289:52:
+[37m      289 │ ...ss="field" [(ngModel)]="[32msmsTestMessage[37m" placeholder="SurveyFlo...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsTestMessage' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:289:52:
+[37m      289 │ ...ss="field" [(ngModel)]="[32msmsTestMessage[37m" placeholder="SurveyFlo...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'testSms' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:293:27:
+[37m      293 │                   (click)="[32mtestSms[37m()"
+          ╵                            [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1: Property 'smsTestState' does not exist on type 'IntegrationsComponent'. Did you mean 'mexTestState'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:294:30:
+[37m      294 │ ...             [disabled]="[32msmsTestState[37m().status === 'testing' |...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'smsTestNumber' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:294:70:
+[37m      294 │ ...disabled]="smsTestState().status === 'testing' || ![32msmsTestNumber[37m"
+          ╵                                                       [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1: Property 'smsTestState' does not exist on type 'IntegrationsComponent'. Did you mean 'mexTestState'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:296:23:
+[37m      296 │                   @if ([32msmsTestState[37m().status === 'testing') {
+          ╵                        [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG1: Property 'smsTestState' does not exist on type 'IntegrationsComponent'. Did you mean 'mexTestState'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:307:81:
+[37m      307 │ ...stResult; context: { $implicit: [32msmsTestState[37m() }"></ng-container>
+          ╵                                    [32m~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'form_name' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:44:
+[37m      39 │ ...lder="Fault reported for {{[32mform_name[37m}} submission #{{submission...
+         ╵                               [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'submission_id' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:70:
+[37m      39 │ ...="Fault reported for {{form_name}} submission #{{[32msubmission_id[37m}}."
+         ╵                                                     [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'testSms' does not exist on type 'IntegrationsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/integrations.component.ts:293:27:
+[37m      293 │                   (click)="[32mtestSms[37m()"
+          ╵                            [32m~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'form_name' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:44:
+[37m      39 │ ...lder="Fault reported for {{[32mform_name[37m}} submission #{{submission...
+         ╵                               [32m~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'submission_id' does not exist on type 'NotificationRuleSmsConfigComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/components/notification-rule-sms-config/notification-rule-sms-config.component.ts:39:70:
+[37m      39 │ ...="Fault reported for {{form_name}} submission #{{[32msubmission_id[37m}}."
+         ╵                                                     [32m~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m

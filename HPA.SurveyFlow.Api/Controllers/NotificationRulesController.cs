@@ -23,6 +23,7 @@ public class NotificationRulesController(AppDbContext db) : ControllerBase
 
         var rules = await db.FormNotificationRules
             .Include(r => r.EmailConfig)
+            .Include(r => r.SmsConfig)
             .Where(r => r.FormId == formId)
             .OrderBy(r => r.SortOrder)
             .ThenBy(r => r.Id)
@@ -67,6 +68,19 @@ public class NotificationRulesController(AppDbContext db) : ControllerBase
             rule.EmailConfig = emailConfig;
         }
 
+        if (body.Channel == "sms" && body.SmsConfig != null)
+        {
+            var smsConfig = new FormNotificationRuleSms
+            {
+                RuleId = rule.Id,
+                ToNumbersJson = JsonSerializer.Serialize(body.SmsConfig.ToNumbers),
+                Body = body.SmsConfig.Body,
+            };
+            db.FormNotificationRuleSmsConfigs.Add(smsConfig);
+            await db.SaveChangesAsync();
+            rule.SmsConfig = smsConfig;
+        }
+
         return CreatedAtAction(nameof(Get), new { formId, id = rule.Id }, MapDto(rule));
     }
 
@@ -75,6 +89,7 @@ public class NotificationRulesController(AppDbContext db) : ControllerBase
     {
         var rule = await db.FormNotificationRules
             .Include(r => r.EmailConfig)
+            .Include(r => r.SmsConfig)
             .FirstOrDefaultAsync(r => r.Id == id && r.FormId == formId);
 
         if (rule == null) return NotFound(new { error = "Notification rule not found." });
@@ -86,6 +101,7 @@ public class NotificationRulesController(AppDbContext db) : ControllerBase
     {
         var rule = await db.FormNotificationRules
             .Include(r => r.EmailConfig)
+            .Include(r => r.SmsConfig)
             .FirstOrDefaultAsync(r => r.Id == id && r.FormId == formId);
 
         if (rule == null) return NotFound(new { error = "Notification rule not found." });
@@ -108,19 +124,45 @@ public class NotificationRulesController(AppDbContext db) : ControllerBase
             }
             else
             {
-                db.FormNotificationRuleEmails.Add(new FormNotificationRuleEmail
+                var emailConfig = new FormNotificationRuleEmail
                 {
                     RuleId = rule.Id,
                     ToAddressesJson = JsonSerializer.Serialize(body.EmailConfig.ToAddresses),
                     Subject = body.EmailConfig.Subject,
                     BodyHtml = body.EmailConfig.BodyHtml,
                     AttachPdf = body.EmailConfig.AttachPdf,
-                });
+                };
+                db.FormNotificationRuleEmails.Add(emailConfig);
+                rule.EmailConfig = emailConfig;
             }
         }
         else if (rule.EmailConfig != null && body.Channel != "email")
         {
             db.FormNotificationRuleEmails.Remove(rule.EmailConfig);
+        }
+
+        if (body.Channel == "sms" && body.SmsConfig != null)
+        {
+            if (rule.SmsConfig != null)
+            {
+                rule.SmsConfig.ToNumbersJson = JsonSerializer.Serialize(body.SmsConfig.ToNumbers);
+                rule.SmsConfig.Body = body.SmsConfig.Body;
+            }
+            else
+            {
+                var smsConfig = new FormNotificationRuleSms
+                {
+                    RuleId = rule.Id,
+                    ToNumbersJson = JsonSerializer.Serialize(body.SmsConfig.ToNumbers),
+                    Body = body.SmsConfig.Body,
+                };
+                db.FormNotificationRuleSmsConfigs.Add(smsConfig);
+                rule.SmsConfig = smsConfig;
+            }
+        }
+        else if (rule.SmsConfig != null && body.Channel != "sms")
+        {
+            db.FormNotificationRuleSmsConfigs.Remove(rule.SmsConfig);
         }
 
         await db.SaveChangesAsync();
@@ -180,6 +222,11 @@ public class NotificationRulesController(AppDbContext db) : ControllerBase
                 Subject = rule.EmailConfig.Subject,
                 BodyHtml = rule.EmailConfig.BodyHtml,
                 AttachPdf = rule.EmailConfig.AttachPdf,
+            },
+            SmsConfig = rule.SmsConfig == null ? null : new NotificationRuleSmsDto
+            {
+                ToNumbers = JsonSerializer.Deserialize<List<string>>(rule.SmsConfig.ToNumbersJson) ?? [],
+                Body = rule.SmsConfig.Body,
             }
         };
     }

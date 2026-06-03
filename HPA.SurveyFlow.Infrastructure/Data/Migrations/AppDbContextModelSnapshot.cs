@@ -976,6 +976,41 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.ToTable("form_notification_rule_emails", (string)null);
                 });
 
+            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.FormNotificationRuleSms", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("")
+                        .HasColumnName("body");
+
+                    b.Property<int>("RuleId")
+                        .HasColumnType("integer")
+                        .HasColumnName("rule_id");
+
+                    b.Property<string>("ToNumbersJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("[]")
+                        .HasColumnName("to_numbers_json");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RuleId")
+                        .IsUnique();
+
+                    b.ToTable("form_notification_rule_sms", (string)null);
+                });
+
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.FormSubmission", b =>
                 {
                     b.Property<int>("Id")
@@ -2121,6 +2156,17 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.Navigation("Rule");
                 });
 
+            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.FormNotificationRuleSms", b =>
+                {
+                    b.HasOne("HPA.SurveyFlow.Domain.Entities.FormNotificationRule", "Rule")
+                        .WithOne("SmsConfig")
+                        .HasForeignKey("HPA.SurveyFlow.Domain.Entities.FormNotificationRuleSms", "RuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rule");
+                });
+
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.FormSubmission", b =>
                 {
                     b.HasOne("HPA.SurveyFlow.Domain.Entities.User", "DeletedByUser")
@@ -2324,6 +2370,8 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.FormNotificationRule", b =>
                 {
                     b.Navigation("EmailConfig");
+
+                    b.Navigation("SmsConfig");
                 });
 
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.FormSubmission", b =>

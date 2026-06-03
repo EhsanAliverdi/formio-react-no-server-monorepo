@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NotificationRule, NotificationRuleEmailConfig, ConditionGroup, PlaceholderCategory } from '../../../../core/models';
+import { NotificationRule, NotificationRuleEmailConfig, NotificationRuleSmsConfig, ConditionGroup, PlaceholderCategory } from '../../../../core/models';
 import { FormField } from '../../../../shared/components/condition-group-editor/condition-group-editor.component';
 import { ConditionGroupEditorComponent } from '../../../../shared/components/condition-group-editor/condition-group-editor.component';
 import { RuleValidationBadgeComponent } from '../../../../shared/components/rule-validation-badge/rule-validation-badge.component';
 import { NotificationRuleEmailConfigComponent } from '../notification-rule-email-config/notification-rule-email-config.component';
+import { NotificationRuleSmsConfigComponent } from '../notification-rule-sms-config/notification-rule-sms-config.component';
 import { HelpTriggerComponent } from '../../../../shared/help/help-trigger.component';
 
 export type RuleCardMode = 'view' | 'edit';
@@ -19,6 +20,7 @@ export type RuleCardMode = 'view' | 'edit';
     ConditionGroupEditorComponent,
     RuleValidationBadgeComponent,
     NotificationRuleEmailConfigComponent,
+    NotificationRuleSmsConfigComponent,
     HelpTriggerComponent,
   ],
   template: `
@@ -65,7 +67,9 @@ export type RuleCardMode = 'view' | 'edit';
         <!-- Channel badge -->
         <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
               [class.bg-blue-100]="draft.channel === 'email'"
-              [class.text-blue-800]="draft.channel === 'email'">
+              [class.text-blue-800]="draft.channel === 'email'"
+              [class.bg-emerald-100]="draft.channel === 'sms'"
+              [class.text-emerald-800]="draft.channel === 'sms'">
           {{ draft.channel | titlecase }}
         </span>
 
@@ -113,13 +117,46 @@ export type RuleCardMode = 'view' | 'edit';
           <div class="border-t border-gray-100 pt-4">
             <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
-              Email Notification <app-help-trigger helpKey="admin.form.notification-rules" label="Help for notification rules" />
+              Notification Channel <app-help-trigger helpKey="admin.form.notification-rules" label="Help for notification rules" />
             </h4>
-            <app-notification-rule-email-config
-              [config]="emailConfig"
-              [placeholderCategories]="placeholderCategories"
-              (configChange)="patchDraft({ email_config: $event })"
-            />
+            <div class="mb-4 flex gap-3">
+              <button
+                type="button"
+                class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+                [class.border-blue-500]="draft.channel === 'email'"
+                [class.bg-blue-50]="draft.channel === 'email'"
+                [class.text-blue-700]="draft.channel === 'email'"
+                [class.border-gray-200]="draft.channel !== 'email'"
+                [class.text-gray-600]="draft.channel !== 'email'"
+                (click)="setChannel('email')"
+              >Email</button>
+              <button
+                type="button"
+                class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+                [class.border-emerald-500]="draft.channel === 'sms'"
+                [class.bg-emerald-50]="draft.channel === 'sms'"
+                [class.text-emerald-700]="draft.channel === 'sms'"
+                [class.border-gray-200]="draft.channel !== 'sms'"
+                [class.text-gray-600]="draft.channel !== 'sms'"
+                (click)="setChannel('sms')"
+              >SMS</button>
+            </div>
+
+            @if (draft.channel === 'email') {
+              <app-notification-rule-email-config
+                [config]="emailConfig"
+                [placeholderCategories]="placeholderCategories"
+                (configChange)="patchDraft({ email_config: $event })"
+              />
+            }
+
+            @if (draft.channel === 'sms') {
+              <app-notification-rule-sms-config
+                [config]="smsConfig"
+                [placeholderCategories]="placeholderCategories"
+                (configChange)="patchDraft({ sms_config: $event })"
+              />
+            }
           </div>
 
           <!-- Save / Cancel -->
@@ -155,6 +192,10 @@ export class NotificationRuleCardComponent implements OnChanges {
     return this.draft.email_config ?? { to_addresses: [], subject: '', body_html: '', attach_pdf: false };
   }
 
+  get smsConfig(): NotificationRuleSmsConfig {
+    return this.draft.sms_config ?? { to_numbers: [], body: '' };
+  }
+
   ngOnChanges(changes: SimpleChanges) {
     if (changes['rule'] && this.rule) {
       this.draft = structuredClone(this.rule);
@@ -166,6 +207,14 @@ export class NotificationRuleCardComponent implements OnChanges {
 
   patchDraft(patch: Partial<NotificationRule>) {
     this.draft = { ...this.draft, ...patch };
+  }
+
+  setChannel(channel: NotificationRule['channel']) {
+    this.patchDraft({
+      channel,
+      email_config: channel === 'email' ? this.emailConfig : this.draft.email_config,
+      sms_config: channel === 'sms' ? this.smsConfig : this.draft.sms_config,
+    });
   }
 
   save() {

@@ -220,7 +220,7 @@ internal static class DemoPagesSeedData
             {
                 Title = "Hutchison Ports",
                 Slug = PageSlug,
-                Description = "Demo landing page with Hutchison Ports navigation, Report Fault action, and Google iframe.",
+                Description = "Demo landing page with Hutchison Ports navigation, Report Fault action, and NTRACS iframe.",
                 Visibility = "public",
                 IsActive = true,
                 UseLayout = false,
@@ -237,7 +237,7 @@ internal static class DemoPagesSeedData
         if (!overrideExisting) return;
 
         existing.Title = "Hutchison Ports";
-        existing.Description = "Demo landing page with Hutchison Ports navigation, Report Fault action, and Google iframe.";
+        existing.Description = "Demo landing page with Hutchison Ports navigation, Report Fault action, and NTRACS iframe.";
         existing.Visibility = "public";
         existing.IsActive = true;
         existing.UseLayout = false;
@@ -287,7 +287,7 @@ internal static class DemoPagesSeedData
             </div>
           </nav>
           <section class="hp-frame-section">
-            <iframe src="https://www.google.com/webhp?igu=1" title="google.com" loading="lazy"></iframe>
+            <iframe src="https://hpslsvrngp0001:8080/ntracs/mobile/index.html?SICTL" title="NTRACS" loading="lazy"></iframe>
           </section>
         </main>
         """;

@@ -2,11 +2,12 @@ using System.Net;
 using System.Text.Json;
 using HPA.SurveyFlow.Domain.Email;
 using HPA.SurveyFlow.Domain.Entities;
+using HPA.SurveyFlow.Domain.Sms;
 using HPA.SurveyFlow.Infrastructure.Data;
 using HPA.SurveyFlow.Infrastructure.Email;
+using HPA.SurveyFlow.Infrastructure.Sms;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace HPA.SurveyFlow.Infrastructure.Services;
 
@@ -33,81 +34,151 @@ public class NotificationRuleSenderService(
         if (matchedRules.Count == 0) return;
 
         var settings = (await db.SiteSettings.ToListAsync()).ToDictionary(s => s.Key, s => (string?)s.Value);
-        var sender = EmailSenderFactory.Create(settings, logger);
-        if (sender == null)
-        {
-            logger.LogDebug("Email integration disabled or misconfigured — skipping {Count} notification rule(s) for submission {SubmissionId}", matchedRules.Count, submission.Id);
-            return;
-        }
+        var emailSender = EmailSenderFactory.Create(settings, logger);
+        var smsSender = SmsSenderFactory.Create(settings, logger);
 
         DetectAndLogOverlaps(matchedRules, submission.Id);
 
         var placeholders = await BuildPlaceholdersAsync(form, submission, currentUser, abnormalities, errorCount, warningCount, submissionData, outcome);
 
         foreach (var rule in matchedRules.Where(r => r.Channel == "email" && r.EmailConfig != null))
-        {
-            var cfg = rule.EmailConfig!;
-            var recipients = cfg.ToAddressesJson != null
-                ? JsonSerializer.Deserialize<List<string>>(cfg.ToAddressesJson) ?? []
-                : [];
+            await SendEmailRuleAsync(rule, submission, placeholders, form, submissionData, emailSender);
 
-            recipients = recipients.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            if (recipients.Count == 0) continue;
-
-            var subject = ReplacePlaceholders(cfg.Subject, placeholders);
-            var bodyHtml = ReplacePlaceholders(cfg.BodyHtml, placeholders);
-
-            if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(bodyHtml)) continue;
-
-            byte[]? pdfBytes = null;
-            if (cfg.AttachPdf)
-            {
-                try { pdfBytes = await pdfService.GeneratePdfAsync(BuildSubmissionPdfHtml(form, submission, submissionData)); }
-                catch (Exception ex) { logger.LogWarning(ex, "PDF generation failed for rule {RuleId}", rule.Id); }
-            }
-
-            var triggeredAt = DateTime.UtcNow;
-            var log = new SubmissionRuleLog
-            {
-                SubmissionId = submission.Id,
-                RuleId = rule.Id,
-                RuleName = rule.Name,
-                RuleType = "notification",
-                Channel = "email",
-                Action = null,
-                Status = "pending",
-                RequestJson = JsonSerializer.Serialize(new { to = recipients, subject }),
-                TriggeredAt = triggeredAt,
-            };
-            db.SubmissionRuleLogs.Add(log);
-
-            try
-            {
-                await sender.SendAsync(new EmailMessage
-                {
-                    To = recipients,
-                    Subject = subject,
-                    BodyHtml = bodyHtml,
-                    Attachment = pdfBytes == null ? null : new EmailAttachment { Bytes = pdfBytes, FileName = $"submission-{submission.Id}.pdf" }
-                });
-                log.Status = "success";
-                log.CompletedAt = DateTime.UtcNow;
-                log.ResponseJson = JsonSerializer.Serialize(new { sent_to = recipients.Count, with_pdf = cfg.AttachPdf });
-                logger.LogInformation("Notification rule {RuleId} ({RuleName}) sent to {Count} recipient(s) for submission {SubmissionId}",
-                    rule.Id, rule.Name, recipients.Count, submission.Id);
-            }
-            catch (Exception ex)
-            {
-                log.Status = "failed";
-                log.CompletedAt = DateTime.UtcNow;
-                log.ErrorMessage = ex.Message;
-                logger.LogError(ex, "Failed to send notification rule {RuleId} ({RuleName}) for submission {SubmissionId}",
-                    rule.Id, rule.Name, submission.Id);
-            }
-        }
+        foreach (var rule in matchedRules.Where(r => r.Channel == "sms" && r.SmsConfig != null))
+            await SendSmsRuleAsync(rule, submission, placeholders, smsSender);
 
         // Persist all log rows in one shot
         await db.SaveChangesAsync();
+    }
+
+    private async Task SendEmailRuleAsync(
+        FormNotificationRule rule,
+        FormSubmission submission,
+        IReadOnlyDictionary<string, string> placeholders,
+        Form form,
+        JsonElement submissionData,
+        IEmailSender? sender)
+    {
+        if (sender == null)
+        {
+            logger.LogDebug("Email integration disabled or misconfigured - skipping notification rule {RuleId} for submission {SubmissionId}", rule.Id, submission.Id);
+            return;
+        }
+
+        var cfg = rule.EmailConfig!;
+        var recipients = cfg.ToAddressesJson != null
+            ? JsonSerializer.Deserialize<List<string>>(cfg.ToAddressesJson) ?? []
+            : [];
+
+        recipients = recipients.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (recipients.Count == 0) return;
+
+        var subject = ReplacePlaceholders(cfg.Subject, placeholders);
+        var bodyHtml = ReplacePlaceholders(cfg.BodyHtml, placeholders);
+
+        if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(bodyHtml)) return;
+
+        byte[]? pdfBytes = null;
+        if (cfg.AttachPdf)
+        {
+            try { pdfBytes = await pdfService.GeneratePdfAsync(BuildSubmissionPdfHtml(form, submission, submissionData)); }
+            catch (Exception ex) { logger.LogWarning(ex, "PDF generation failed for rule {RuleId}", rule.Id); }
+        }
+
+        var log = new SubmissionRuleLog
+        {
+            SubmissionId = submission.Id,
+            RuleId = rule.Id,
+            RuleName = rule.Name,
+            RuleType = "notification",
+            Channel = "email",
+            Action = null,
+            Status = "pending",
+            RequestJson = JsonSerializer.Serialize(new { to = recipients, subject }),
+            TriggeredAt = DateTime.UtcNow,
+        };
+        db.SubmissionRuleLogs.Add(log);
+
+        try
+        {
+            await sender.SendAsync(new EmailMessage
+            {
+                To = recipients,
+                Subject = subject,
+                BodyHtml = bodyHtml,
+                Attachment = pdfBytes == null ? null : new EmailAttachment { Bytes = pdfBytes, FileName = $"submission-{submission.Id}.pdf" }
+            });
+            log.Status = "success";
+            log.CompletedAt = DateTime.UtcNow;
+            log.ResponseJson = JsonSerializer.Serialize(new { sent_to = recipients.Count, with_pdf = cfg.AttachPdf });
+            logger.LogInformation("Notification rule {RuleId} ({RuleName}) sent email to {Count} recipient(s) for submission {SubmissionId}",
+                rule.Id, rule.Name, recipients.Count, submission.Id);
+        }
+        catch (Exception ex)
+        {
+            log.Status = "failed";
+            log.CompletedAt = DateTime.UtcNow;
+            log.ErrorMessage = ex.Message;
+            logger.LogError(ex, "Failed to send email notification rule {RuleId} ({RuleName}) for submission {SubmissionId}",
+                rule.Id, rule.Name, submission.Id);
+        }
+    }
+
+    private async Task SendSmsRuleAsync(
+        FormNotificationRule rule,
+        FormSubmission submission,
+        IReadOnlyDictionary<string, string> placeholders,
+        ISmsSender? sender)
+    {
+        if (sender == null)
+        {
+            logger.LogDebug("SMS integration disabled or misconfigured - skipping notification rule {RuleId} for submission {SubmissionId}", rule.Id, submission.Id);
+            return;
+        }
+
+        var cfg = rule.SmsConfig!;
+        var recipients = cfg.ToNumbersJson != null
+            ? JsonSerializer.Deserialize<List<string>>(cfg.ToNumbersJson) ?? []
+            : [];
+
+        recipients = recipients.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (recipients.Count == 0) return;
+
+        var body = ReplacePlaceholders(cfg.Body, placeholders);
+        if (string.IsNullOrWhiteSpace(body)) return;
+
+        var log = new SubmissionRuleLog
+        {
+            SubmissionId = submission.Id,
+            RuleId = rule.Id,
+            RuleName = rule.Name,
+            RuleType = "notification",
+            Channel = "sms",
+            Action = null,
+            Status = "pending",
+            RequestJson = JsonSerializer.Serialize(new { to = recipients, body }),
+            TriggeredAt = DateTime.UtcNow,
+        };
+        db.SubmissionRuleLogs.Add(log);
+
+        try
+        {
+            var result = await sender.SendAsync(new SmsMessage { To = recipients, Body = body });
+            log.Status = "success";
+            log.CompletedAt = DateTime.UtcNow;
+            log.StatusCode = result.StatusCode;
+            log.ResponseJson = result.ResponseBody;
+            logger.LogInformation("Notification rule {RuleId} ({RuleName}) sent SMS to {Count} recipient(s) for submission {SubmissionId}",
+                rule.Id, rule.Name, recipients.Count, submission.Id);
+        }
+        catch (Exception ex)
+        {
+            log.Status = "failed";
+            log.CompletedAt = DateTime.UtcNow;
+            log.ErrorMessage = ex.Message;
+            logger.LogError(ex, "Failed to send SMS notification rule {RuleId} ({RuleName}) for submission {SubmissionId}",
+                rule.Id, rule.Name, submission.Id);
+        }
     }
 
     private void DetectAndLogOverlaps(IReadOnlyList<FormNotificationRule> matchedRules, int submissionId)

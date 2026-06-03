@@ -34,6 +34,9 @@ public class NotificationRuleDto
 
     [JsonPropertyName("email_config")]
     public NotificationRuleEmailDto? EmailConfig { get; set; }
+
+    [JsonPropertyName("sms_config")]
+    public NotificationRuleSmsDto? SmsConfig { get; set; }
 }
 
 public class NotificationRuleEmailDto
@@ -49,4 +52,13 @@ public class NotificationRuleEmailDto
 
     [JsonPropertyName("attach_pdf")]
     public bool AttachPdf { get; set; }
+}
+
+public class NotificationRuleSmsDto
+{
+    [JsonPropertyName("to_numbers")]
+    public List<string> ToNumbers { get; set; } = [];
+
+    [JsonPropertyName("body")]
+    public string Body { get; set; } = string.Empty;
 }

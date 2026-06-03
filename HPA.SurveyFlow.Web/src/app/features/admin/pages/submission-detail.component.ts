@@ -272,6 +272,7 @@ function panelTitle(p: Panel, i: number): string {
                       <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                         [class]="log.channel === 'mex' ? 'bg-orange-100 text-orange-800'
                           : log.channel === 'webhook' ? 'bg-blue-100 text-blue-800'
+                          : log.channel === 'sms' ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-purple-100 text-purple-800'">
                         {{ log.channel | uppercase }}
                       </span>

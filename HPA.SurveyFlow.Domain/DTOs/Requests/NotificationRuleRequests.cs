@@ -21,6 +21,9 @@ public class SaveNotificationRuleRequest
 
     [JsonPropertyName("email_config")]
     public SaveNotificationRuleEmailRequest? EmailConfig { get; set; }
+
+    [JsonPropertyName("sms_config")]
+    public SaveNotificationRuleSmsRequest? SmsConfig { get; set; }
 }
 
 public class SaveNotificationRuleEmailRequest
@@ -36,4 +39,13 @@ public class SaveNotificationRuleEmailRequest
 
     [JsonPropertyName("attach_pdf")]
     public bool AttachPdf { get; set; } = false;
+}
+
+public class SaveNotificationRuleSmsRequest
+{
+    [JsonPropertyName("to_numbers")]
+    public List<string> ToNumbers { get; set; } = [];
+
+    [JsonPropertyName("body")]
+    public string Body { get; set; } = string.Empty;
 }

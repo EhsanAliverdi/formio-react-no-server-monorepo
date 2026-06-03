@@ -190,9 +190,21 @@ export interface MexIntegration {
   apiKeySet: boolean;
 }
 
+export interface SmsIntegration {
+  enabled: boolean;
+  provider: 'messagemedia';
+  messageMediaApiKeySet: boolean;
+  messageMediaApiSecretSet: boolean;
+  sourceNumber?: string;
+  sourceNumberType?: 'INTERNATIONAL' | 'ALPHANUMERIC' | 'SHORTCODE' | '';
+  callbackUrl?: string;
+  deliveryReport: boolean;
+}
+
 export interface Integrations {
   email: EmailIntegration;
   mex: MexIntegration;
+  sms: SmsIntegration;
 }
 
 export interface ScheduledJob {
@@ -256,7 +268,7 @@ export interface PaginatedResult<T> {
 
 // ── Notification Rules ────────────────────────────────────────────────────────
 
-export type NotificationChannel = 'email'; // future: 'sms' | 'webhook'
+export type NotificationChannel = 'email' | 'sms'; // future: 'webhook'
 
 export type ConditionOperator =
   | 'equals' | 'not_equals'
@@ -287,6 +299,11 @@ export interface NotificationRuleEmailConfig {
   attach_pdf: boolean;
 }
 
+export interface NotificationRuleSmsConfig {
+  to_numbers: string[];
+  body: string;
+}
+
 export interface NotificationRule {
   id: number;
   form_id: number;
@@ -298,6 +315,7 @@ export interface NotificationRule {
   created_at: string;
   updated_at: string;
   email_config?: NotificationRuleEmailConfig;
+  sms_config?: NotificationRuleSmsConfig;
 }
 
 export interface SaveNotificationRuleRequest {
@@ -307,6 +325,7 @@ export interface SaveNotificationRuleRequest {
   condition_group: ConditionGroup;
   sort_order: number;
   email_config?: NotificationRuleEmailConfig;
+  sms_config?: NotificationRuleSmsConfig;
 }
 
 // Available placeholder categories for the email body builder

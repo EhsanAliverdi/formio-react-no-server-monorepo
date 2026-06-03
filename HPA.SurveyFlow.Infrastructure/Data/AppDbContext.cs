@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ExternalAsset> ExternalAssets { get; set; }
     public DbSet<FormNotificationRule> FormNotificationRules { get; set; }
     public DbSet<FormNotificationRuleEmail> FormNotificationRuleEmails { get; set; }
+    public DbSet<FormNotificationRuleSms> FormNotificationRuleSmsConfigs { get; set; }
     public DbSet<FormIntegrationRule> FormIntegrationRules { get; set; }
     public DbSet<FormIntegrationRuleMex> FormIntegrationRuleMexConfigs { get; set; }
     public DbSet<FormIntegrationRuleWebhook> FormIntegrationRuleWebhooks { get; set; }
@@ -233,6 +234,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.BodyHtml).HasColumnName("body_html").HasDefaultValue(string.Empty);
             e.Property(r => r.AttachPdf).HasColumnName("attach_pdf").HasDefaultValue(false);
             e.HasOne(r => r.Rule).WithOne(r => r.EmailConfig).HasForeignKey<FormNotificationRuleEmail>(r => r.RuleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FormNotificationRuleSms>(e =>
+        {
+            e.ToTable("form_notification_rule_sms");
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(r => r.RuleId).HasColumnName("rule_id");
+            e.Property(r => r.ToNumbersJson).HasColumnName("to_numbers_json").HasDefaultValue("[]");
+            e.Property(r => r.Body).HasColumnName("body").HasDefaultValue(string.Empty);
+            e.HasOne(r => r.Rule).WithOne(r => r.SmsConfig).HasForeignKey<FormNotificationRuleSms>(r => r.RuleId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<FormIntegrationRule>(e =>

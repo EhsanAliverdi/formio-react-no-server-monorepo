@@ -32,6 +32,7 @@ public class UpdateIntegrationsRequest
 {
     [JsonPropertyName("email")] public EmailIntegrationRequest? Email { get; set; }
     [JsonPropertyName("mex")] public MexIntegrationRequest? Mex { get; set; }
+    [JsonPropertyName("sms")] public SmsIntegrationRequest? Sms { get; set; }
 }
 
 public class EmailIntegrationRequest
@@ -55,6 +56,18 @@ public class MexIntegrationRequest
     [JsonPropertyName("enabled")] public string? Enabled { get; set; }
 }
 
+public class SmsIntegrationRequest
+{
+    [JsonPropertyName("enabled")] public string? Enabled { get; set; }
+    [JsonPropertyName("provider")] public string? Provider { get; set; }
+    [JsonPropertyName("messageMediaApiKey")] public string? MessageMediaApiKey { get; set; }
+    [JsonPropertyName("messageMediaApiSecret")] public string? MessageMediaApiSecret { get; set; }
+    [JsonPropertyName("sourceNumber")] public string? SourceNumber { get; set; }
+    [JsonPropertyName("sourceNumberType")] public string? SourceNumberType { get; set; }
+    [JsonPropertyName("callbackUrl")] public string? CallbackUrl { get; set; }
+    [JsonPropertyName("deliveryReport")] public string? DeliveryReport { get; set; }
+}
+
 public class TestEmailRequest
 {
     [JsonPropertyName("toEmail")] public string? ToEmail { get; set; }
@@ -74,4 +87,17 @@ public class TestMexRequest
     [JsonPropertyName("baseUrl")] public string? BaseUrl { get; set; }
     [JsonPropertyName("apiKey")] public string? ApiKey { get; set; }
     [JsonPropertyName("confirmedProduction")] public bool? ConfirmedProduction { get; set; }
+}
+
+public class TestSmsRequest
+{
+    [JsonPropertyName("toNumber")] public string? ToNumber { get; set; }
+    [JsonPropertyName("message")] public string? Message { get; set; }
+    [JsonPropertyName("provider")] public string? Provider { get; set; }
+    [JsonPropertyName("messageMediaApiKey")] public string? MessageMediaApiKey { get; set; }
+    [JsonPropertyName("messageMediaApiSecret")] public string? MessageMediaApiSecret { get; set; }
+    [JsonPropertyName("sourceNumber")] public string? SourceNumber { get; set; }
+    [JsonPropertyName("sourceNumberType")] public string? SourceNumberType { get; set; }
+    [JsonPropertyName("callbackUrl")] public string? CallbackUrl { get; set; }
+    [JsonPropertyName("deliveryReport")] public string? DeliveryReport { get; set; }
 }
