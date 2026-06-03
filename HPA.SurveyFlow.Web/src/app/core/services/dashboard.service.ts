@@ -1,10 +1,12 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import {
   Dashboard,
   DashboardCard,
+  PaginatedResult,
   ReportExecutionResult,
   RunReportRequest,
   SaveDashboardCardRequest,
@@ -18,7 +20,14 @@ export class DashboardService {
   private api = inject(ApiService);
 
   list(): Observable<Dashboard[]> {
-    return this.http.get<Dashboard[]>(this.api.apiUrl('/api/reporting/dashboards'));
+    return this.listPaged().pipe(map(result => result.items));
+  }
+
+  listPaged(options: { limit?: number; offset?: number } = {}): Observable<PaginatedResult<Dashboard>> {
+    let params = new HttpParams();
+    if (options.limit != null) params = params.set('limit', options.limit);
+    if (options.offset != null) params = params.set('offset', options.offset);
+    return this.http.get<PaginatedResult<Dashboard>>(this.api.apiUrl('/api/reporting/dashboards'), { params });
   }
 
   get(id: number): Observable<Dashboard> {

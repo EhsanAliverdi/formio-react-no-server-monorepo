@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Page, SavePageRequest } from '../models';
+import { Page, PaginatedResult, SavePageRequest } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class PageService {
@@ -11,6 +11,13 @@ export class PageService {
 
   list(): Observable<Page[]> {
     return this.http.get<Page[]>(this.api.apiUrl('/api/pages'));
+  }
+
+  listPaged(options: { limit?: number; offset?: number } = {}): Observable<PaginatedResult<Page>> {
+    let params = new HttpParams().set('paged', true);
+    if (options.limit != null) params = params.set('limit', options.limit);
+    if (options.offset != null) params = params.set('offset', options.offset);
+    return this.http.get<PaginatedResult<Page>>(this.api.apiUrl('/api/pages'), { params });
   }
 
   get(id: number): Observable<Page> {

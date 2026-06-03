@@ -25,8 +25,15 @@ public class ReportTemplatesController(
         [FromQuery] int? formId,
         [FromQuery] string? category,
         [FromQuery] string? tag,
-        [FromQuery] int? createdBy)
+        [FromQuery] int? createdBy,
+        [FromQuery] string? q,
+        [FromQuery] bool favourite = false,
+        [FromQuery] bool drift = false,
+        [FromQuery] int limit = 25,
+        [FromQuery] int offset = 0)
     {
+        limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
         var user = HttpContext.GetCurrentUser();
         var isManager = user?.Role is "admin" or "editor";
 
@@ -44,6 +51,16 @@ public class ReportTemplatesController(
         if (createdBy.HasValue)
             query = query.Where(t => t.CreatedBy == createdBy.Value);
 
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var search = q.Trim().ToLower();
+            query = query.Where(t =>
+                t.Name.ToLower().Contains(search) ||
+                (t.Description != null && t.Description.ToLower().Contains(search)) ||
+                (t.Tags != null && t.Tags.ToLower().Contains(search)) ||
+                t.Form.Name.ToLower().Contains(search));
+        }
+
         // Viewers see public templates + templates shared with their role
         if (!isManager)
         {
@@ -53,14 +70,22 @@ public class ReportTemplatesController(
                 (t.SharedWithRolesJson != null && t.SharedWithRolesJson.Contains(role)));
         }
 
-        var templates = await query.OrderByDescending(t => t.UpdatedAt).ToListAsync();
-
         // Load user's favourites once so we can flag each template
         var favouriteIds = user != null
             ? (await db.UserFavouriteReports.Where(f => f.UserId == user.Id).Select(f => f.ReportTemplateId).ToListAsync()).ToHashSet()
             : new HashSet<int>();
 
-        return Ok(templates.Select(t => MapDto(t, includeDrift: false, favouriteIds)));
+        if (favourite)
+            query = query.Where(t => favouriteIds.Contains(t.Id));
+
+        var ordered = await query.OrderByDescending(t => t.UpdatedAt).ToListAsync();
+        var mapped = ordered.Select(t => MapDto(t, includeDrift: false, favouriteIds)).ToList();
+        if (drift) mapped = mapped.Where(t => t.HasSchemaDrift).ToList();
+
+        var total = mapped.Count;
+        var items = mapped.Skip(offset).Take(limit).ToList();
+
+        return Ok(new { items, total, limit, offset });
     }
 
     [HttpGet("{id:int}")]

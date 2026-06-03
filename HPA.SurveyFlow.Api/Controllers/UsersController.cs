@@ -19,12 +19,15 @@ public class UsersController(AppDbContext db, AuthService authService, StorageSe
         [FromQuery] string? search,
         [FromQuery] string? active,
         [FromQuery] string? roles,
-        [FromQuery] int limit = 200)
+        [FromQuery] int limit = 200,
+        [FromQuery] int offset = 0,
+        [FromQuery] bool paged = false)
     {
         try { HttpContext.RequireRole(UserRole.Admin); }
         catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
 
         limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
 
         var query = db.Users.AsQueryable();
 
@@ -47,7 +50,11 @@ public class UsersController(AppDbContext db, AuthService authService, StorageSe
             query = query.Where(u => roleList.Contains(u.Role));
         }
 
-        var users = await query.OrderBy(u => u.Id).Take(limit).ToListAsync();
+        var total = await query.CountAsync();
+        var users = await query.OrderBy(u => u.Id).Skip(offset).Take(limit).ToListAsync();
+        if (paged)
+            return Ok(new { items = users.Select(ToDto).ToList(), total, limit, offset });
+
         return Ok(users.Select(ToDto).ToList());
     }
 

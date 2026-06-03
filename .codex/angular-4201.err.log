@@ -567,3 +567,591 @@
          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
 
 [39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:220:51:
+[37m      220 │                       @if (!t.category && !t.tags?.[32mlength[37m) {
+          ╵                                                    [32m~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:220:51:
+[37m      220 │                       @if (!t.category && !t.tags?.[32mlength[37m) {
+          ╵                                                    [32m~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:220:51:
+[37m      220 │                       @if (!t.category && !t.tags?.[32mlength[37m) {
+          ╵                                                    [32m~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'total' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:134:40:
+[37m      134 │ ...{ loading() ? 'Loading...' : [32mtotal[37m() + ' result' + (total() !=...
+          ╵                                 [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'total' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:134:63:
+[37m      134 │ ...Loading...' : total() + ' result' + ([32mtotal[37m() !== 1 ? 's' : '') }}
+          ╵                                         [32m~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'total' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:134:40:
+[37m      134 │ ...{ loading() ? 'Loading...' : [32mtotal[37m() + ' result' + (total() !=...
+          ╵                                 [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'total' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:134:63:
+[37m      134 │ ...Loading...' : total() + ' result' + ([32mtotal[37m() !== 1 ? 's' : '') }}
+          ╵                                         [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'total' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:252:25:
+[37m      252 │               Showing {{ [32mtotal[37m() === 0 ? 0 : offset() + 1 }}-{{ M...
+          ╵                          [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'offset' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:252:45:
+[37m      252 │ ...wing {{ total() === 0 ? 0 : [32moffset[37m() + 1 }}-{{ Math.min(offset...
+          ╵                                [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'Math' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:252:64:
+[37m      252 │ ...= 0 ? 0 : offset() + 1 }}-{{ [32mMath[37m.min(offset() + pageSize, tot...
+          ╵                                 [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'offset' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:252:73:
+[37m      252 │ ...offset() + 1 }}-{{ Math.min([32moffset[37m() + pageSize, total()) }} o...
+          ╵                                [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'pageSize' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:252:84:
+[37m      252 │ ... }}-{{ Math.min(offset() + [32mpageSize[37m, total()) }} of {{ total() }}
+          ╵                               [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'total' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:252:94:
+[37m      252 │ ... }}-{{ Math.min(offset() + pageSize, [32mtotal[37m()) }} of {{ total() }}
+          ╵                                         [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'total' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:252:112:
+[37m      252 │ ... }}-{{ Math.min(offset() + pageSize, total()) }} of {{ [32mtotal[37m() }}
+          ╵                                                           [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'pageSize' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:255:35:
+[37m      255 │ ...      <select [(ngModel)]="[32mpageSize[37m" (ngModelChange)="changePa...
+          ╵                               [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'pageSize' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:255:35:
+[37m      255 │ ...      <select [(ngModel)]="[32mpageSize[37m" (ngModelChange)="changePa...
+          ╵                               [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'changePageSize' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:255:62:
+[37m      255 │ ...eSize" (ngModelChange)="[32mchangePageSize[37m()" class="ta-admin-cont...
+          ╵                            [32m~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'offset' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:261:100:
+[37m      261 │ ...py-1.5 text-xs" [disabled]="[32moffset[37m() === 0" (click)="previousP...
+          ╵                                [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'previousPage' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:261:125:
+[37m      261 │ ...bled]="offset() === 0" (click)="[32mpreviousPage[37m()">Previous</button>
+          ╵                                    [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'currentPage' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:262:44:
+[37m      262 │ ...n class="text-xs">Page {{ [32mcurrentPage[37m() }} of {{ totalPages() ...
+          ╵                              [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'totalPages' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:262:67:
+[37m      262 │ ...s="text-xs">Page {{ currentPage() }} of {{ [32mtotalPages[37m() }}</span>
+          ╵                                               [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'offset' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:263:100:
+[37m      263 │ ...py-1.5 text-xs" [disabled]="[32moffset[37m() + pageSize >= total()" (c...
+          ╵                                [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'pageSize' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:263:111:
+[37m      263 │ ...xs" [disabled]="offset() + [32mpageSize[37m >= total()" (click)="nextP...
+          ╵                               [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'total' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:263:123:
+[37m      263 │ ...led]="offset() + pageSize >= [32mtotal[37m()" (click)="nextPage()">Nex...
+          ╵                                 [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'nextPage' does not exist on type 'ReportsComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/reports.component.ts:263:141:
+[37m      263 │ ...ffset() + pageSize >= total()" (click)="[32mnextPage[37m()">Next</button>
+          ╵                                            [32m~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngModel' since it isn't a known property of 'select'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/dashboard-list.component.ts:74:22:
+[37m      74 │               <select [32m[(ngModel)]="pageSize"[37m (ngModelChange)="chan...
+         ╵                       [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m

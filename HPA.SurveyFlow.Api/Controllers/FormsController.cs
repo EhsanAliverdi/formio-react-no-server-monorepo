@@ -22,8 +22,16 @@ namespace HPA.SurveyFlow.Api.Controllers;
 public class FormsController(AppDbContext db, FormAccessService formAccessService, SecondarySubmitService secondarySubmitService, PdfService pdfService, NotificationRuleEvaluatorService notificationEvaluator, NotificationRuleSenderService notificationSender, IntegrationRuleExecutorService integrationExecutor, FormVersionService formVersionService, ILogger<FormsController> logger) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> ListForms([FromQuery] string? mode, [FromQuery] string? category)
+    public async Task<IActionResult> ListForms(
+        [FromQuery] string? mode,
+        [FromQuery] string? category,
+        [FromQuery] bool paged = false,
+        [FromQuery] string? q = null,
+        [FromQuery] int limit = 25,
+        [FromQuery] int offset = 0)
     {
+        limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
         if (!string.IsNullOrWhiteSpace(category))
         {
             var categorySlug = category.Trim();
@@ -97,6 +105,33 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         var isPrivileged = role == UserRole.Admin || role == UserRole.Editor;
         if (!isPrivileged)
             forms = forms.Where(f => f.ParentFormId == null);
+
+        if (paged)
+        {
+            var formList = forms.ToList();
+            var parents = formList.Where(f => f.ParentFormId == null);
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var search = q.Trim().ToLowerInvariant();
+                parents = parents.Where(f => f.Name.ToLower().Contains(search));
+            }
+
+            var total = parents.Count();
+            var pagedParents = parents
+                .OrderBy(f => f.Name)
+                .Skip(offset)
+                .Take(limit)
+                .ToList();
+            var parentIds = pagedParents.Select(f => f.Id).ToHashSet();
+            var children = isPrivileged
+                ? formList
+                    .Where(f => f.ParentFormId.HasValue && parentIds.Contains(f.ParentFormId.Value))
+                    .OrderBy(f => f.Name)
+                    .ToList()
+                : new List<Form>();
+            var visibleRows = pagedParents.Concat(children).Select(f => MapFormDto(f, isPrivileged)).ToList();
+            return Ok(new { items = visibleRows, total, limit, offset });
+        }
 
         var result = forms.Select(f => MapFormDto(f, isPrivileged)).ToList();
         return Ok(result);

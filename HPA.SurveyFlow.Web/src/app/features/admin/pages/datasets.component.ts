@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, computed, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatasetService } from '../../../core/services/dataset.service';
@@ -31,14 +31,7 @@ import { Dataset, Form } from '../../../core/models';
       }
 
       @if (loading()) {
-        <div class="grid gap-4 sm:grid-cols-2">
-          @for (sk of [1,2,3,4]; track sk) {
-            <div class="ta-card animate-pulse">
-              <div class="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-              <div class="h-4 w-24 bg-gray-100 dark:bg-gray-700/60 rounded"></div>
-            </div>
-          }
-        </div>
+        <div class="py-16 text-center text-sm text-gray-400">Loading datasets...</div>
       } @else if (datasets().length === 0) {
         <div class="ta-card flex flex-col items-center justify-center py-16 text-center">
           <div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
@@ -51,36 +44,57 @@ import { Dataset, Form } from '../../../core/models';
           <button type="button" (click)="openNew()" class="ta-btn ta-btn-primary">Create Dataset</button>
         </div>
       } @else {
-        <div class="grid gap-4 sm:grid-cols-2">
-          @for (d of datasets(); track d.id) {
-            <div class="ta-card flex flex-col gap-3 hover:border-brand-300 dark:hover:border-brand-600 hover:shadow-md transition-all">
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                  <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ d.name }}</h3>
-                  <p class="text-xs text-gray-400 mt-0.5">{{ formName(d.form_id) }}</p>
-                </div>
-                <span [class]="d.is_active
-                  ? 'inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium'
-                  : 'inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 text-xs font-medium'">
-                  {{ d.is_active ? 'Active' : 'Inactive' }}
-                </span>
-              </div>
-              @if (d.description) {
-                <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{ d.description }}</p>
+        <div class="ta-table-shell">
+          <table class="ta-table min-w-[720px]">
+            <thead>
+              <tr class="ta-table-head">
+                <th scope="col" class="ta-table-th">Dataset</th>
+                <th scope="col" class="ta-table-th">Form</th>
+                <th scope="col" class="ta-table-th">Status</th>
+                <th scope="col" class="ta-table-th">Updated</th>
+                <th scope="col" class="ta-table-th text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of datasets(); track d.id) {
+                <tr class="ta-table-row align-top">
+                  <td class="px-5 py-4">
+                    <div class="font-semibold text-gray-900 dark:text-white">{{ d.name }}</div>
+                    <div class="mt-1 max-w-md text-xs text-gray-500 dark:text-gray-400">{{ d.description || 'No description.' }}</div>
+                  </td>
+                  <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ formName(d.form_id) }}</td>
+                  <td class="px-5 py-4">
+                    <span class="ta-badge" [class]="d.is_active ? 'ta-badge-success' : 'ta-badge-neutral'">
+                      {{ d.is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">{{ d.updated_at | date:'mediumDate' }}</td>
+                  <td class="px-5 py-4">
+                    <div class="flex justify-end gap-2">
+                      <button type="button" (click)="openEdit(d)" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs">Edit</button>
+                      <button type="button" (click)="deletingDataset.set(d)" class="ta-btn ta-btn-ghost px-3 py-1.5 text-xs text-red-600">Delete</button>
+                    </div>
+                  </td>
+                </tr>
               }
-              <div class="text-xs text-gray-400">Updated {{ d.updated_at | date:'mediumDate' }}</div>
-              <div class="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                <button type="button" (click)="openEdit(d)" class="ta-btn ta-btn-secondary text-xs h-8 px-3 flex-1">Edit</button>
-                <button type="button" (click)="deletingDataset.set(d)"
-                  class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  title="Delete dataset">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                  </svg>
-                </button>
-              </div>
+            </tbody>
+          </table>
+          <div class="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              Showing {{ total() === 0 ? 0 : offset() + 1 }}-{{ Math.min(offset() + pageSize, total()) }} of {{ total() }}
             </div>
-          }
+            <div class="flex items-center gap-2">
+              <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()" class="ta-admin-control px-2 py-1 text-sm">
+                <option [value]="10">10</option>
+                <option [value]="25">25</option>
+                <option [value]="50">50</option>
+                <option [value]="100">100</option>
+              </select>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() === 0" (click)="previousPage()">Previous</button>
+              <span class="text-xs">Page {{ currentPage() }} of {{ totalPages() }}</span>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() + pageSize >= total()" (click)="nextPage()">Next</button>
+            </div>
+          </div>
         </div>
       }
 
@@ -158,6 +172,8 @@ export class DatasetsComponent implements OnInit {
   private formService = inject(FormService);
 
   datasets = signal<Dataset[]>([]);
+  total = signal(0);
+  offset = signal(0);
   forms = signal<Form[]>([]);
   loading = signal(true);
   error = signal('');
@@ -169,6 +185,10 @@ export class DatasetsComponent implements OnInit {
   deleting = signal(false);
 
   form = { name: '', description: '', form_id: 0, is_active: true };
+  pageSize = 25;
+  readonly Math = Math;
+  currentPage = computed(() => Math.floor(this.offset() / this.pageSize) + 1);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize)));
 
   ngOnInit(): void {
     this.formService.list().subscribe({ next: f => this.forms.set(f), error: () => {} });
@@ -177,10 +197,27 @@ export class DatasetsComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.datasetService.list().subscribe({
-      next: d => { this.datasets.set(d); this.loading.set(false); },
+    this.datasetService.listPaged({ limit: this.pageSize, offset: this.offset() }).subscribe({
+      next: result => { this.datasets.set(result.items); this.total.set(result.total ?? 0); this.loading.set(false); },
       error: () => { this.error.set('Failed to load datasets.'); this.loading.set(false); },
     });
+  }
+
+  changePageSize(): void {
+    this.pageSize = Number(this.pageSize);
+    this.offset.set(0);
+    this.load();
+  }
+
+  nextPage(): void {
+    if (this.offset() + this.pageSize >= this.total()) return;
+    this.offset.update(v => v + this.pageSize);
+    this.load();
+  }
+
+  previousPage(): void {
+    this.offset.update(v => Math.max(0, v - this.pageSize));
+    this.load();
   }
 
   formName(formId: number): string {
@@ -225,7 +262,8 @@ export class DatasetsComponent implements OnInit {
         if (id) {
           this.datasets.update(list => list.map(x => x.id === id ? d : x));
         } else {
-          this.datasets.update(list => [...list, d]);
+          this.offset.set(0);
+          this.load();
         }
         this.saving.set(false);
         this.editing.set(false);
@@ -240,7 +278,10 @@ export class DatasetsComponent implements OnInit {
     this.deleting.set(true);
     this.datasetService.delete(d.id).subscribe({
       next: () => {
-        this.datasets.update(list => list.filter(x => x.id !== d.id));
+        if (this.datasets().length === 1 && this.offset() > 0) {
+          this.offset.update(v => Math.max(0, v - this.pageSize));
+        }
+        this.load();
         this.deletingDataset.set(null);
         this.deleting.set(false);
       },

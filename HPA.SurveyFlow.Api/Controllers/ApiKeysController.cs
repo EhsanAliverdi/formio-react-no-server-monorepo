@@ -15,17 +15,29 @@ namespace HPA.SurveyFlow.Api.Controllers;
 public class ApiKeysController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List()
+    public async Task<IActionResult> List([FromQuery] bool paged = false, [FromQuery] int limit = 25, [FromQuery] int offset = 0)
     {
-        var keys = await db.ApiKeys
+        limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
+        var query = db.ApiKeys
             .AsNoTracking()
-            .OrderByDescending(k => k.CreatedAt)
-            .Select(k => new
+            .OrderByDescending(k => k.CreatedAt);
+        var total = await query.CountAsync();
+        if (paged)
+        {
+            var items = await query.Skip(offset).Take(limit).Select(k => new
             {
                 k.Id, k.Name, k.Prefix, k.Scopes, k.IsActive,
                 k.CreatedBy, k.CreatedAt, k.LastUsedAt, k.ExpiresAt,
-            })
-            .ToListAsync();
+            }).ToListAsync();
+            return Ok(new { items, total, limit, offset });
+        }
+
+        var keys = await query.Select(k => new
+        {
+            k.Id, k.Name, k.Prefix, k.Scopes, k.IsActive,
+            k.CreatedBy, k.CreatedAt, k.LastUsedAt, k.ExpiresAt,
+        }).ToListAsync();
         return Ok(keys);
     }
 

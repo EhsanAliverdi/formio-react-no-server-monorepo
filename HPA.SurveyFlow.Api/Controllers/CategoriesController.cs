@@ -13,9 +13,15 @@ namespace HPA.SurveyFlow.Api.Controllers;
 public class CategoriesController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List()
+    public async Task<IActionResult> List([FromQuery] bool paged = false, [FromQuery] int limit = 25, [FromQuery] int offset = 0)
     {
-        var categories = await db.Categories.OrderBy(c => c.Name).ToListAsync();
+        limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
+        var query = db.Categories.OrderBy(c => c.Name);
+        var total = await query.CountAsync();
+        var categories = paged
+            ? await query.Skip(offset).Take(limit).ToListAsync()
+            : await query.ToListAsync();
 
         // Count forms referencing each slug via the JSON column
         var allForms = await db.Forms.Select(f => new { f.Json }).ToListAsync();
@@ -38,7 +44,11 @@ public class CategoriesController(AppDbContext db) : ControllerBase
             catch { }
         }
 
-        return Ok(categories.Select(c => ToDto(c, formCounts.GetValueOrDefault(c.Slug))));
+        var items = categories.Select(c => ToDto(c, formCounts.GetValueOrDefault(c.Slug))).ToList();
+        if (paged)
+            return Ok(new { items, total, limit, offset });
+
+        return Ok(items);
     }
 
     [HttpGet("{slug}")]

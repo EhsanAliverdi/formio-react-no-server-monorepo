@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import {
   FieldDescriptor,
@@ -11,6 +12,7 @@ import {
   ConditionGroup,
   RlsPolicy,
   SaveRlsPolicyRequest,
+  PaginatedResult,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -19,12 +21,31 @@ export class ReportTemplateService {
   private api = inject(ApiService);
 
   list(options?: { formId?: number; category?: string; tag?: string; createdBy?: number }): Observable<ReportTemplate[]> {
+    return this.listPaged(options).pipe(map(result => result.items));
+  }
+
+  listPaged(options?: {
+    formId?: number;
+    category?: string;
+    tag?: string;
+    createdBy?: number;
+    q?: string;
+    favourite?: boolean;
+    drift?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Observable<PaginatedResult<ReportTemplate>> {
     let params = new HttpParams();
     if (options?.formId != null) params = params.set('formId', options.formId);
     if (options?.category) params = params.set('category', options.category);
     if (options?.tag) params = params.set('tag', options.tag);
     if (options?.createdBy != null) params = params.set('createdBy', options.createdBy);
-    return this.http.get<ReportTemplate[]>(this.api.apiUrl('/api/report-templates'), { params });
+    if (options?.q) params = params.set('q', options.q);
+    if (options?.favourite) params = params.set('favourite', true);
+    if (options?.drift) params = params.set('drift', true);
+    if (options?.limit != null) params = params.set('limit', options.limit);
+    if (options?.offset != null) params = params.set('offset', options.offset);
+    return this.http.get<PaginatedResult<ReportTemplate>>(this.api.apiUrl('/api/report-templates'), { params });
   }
 
   get(id: number): Observable<ReportTemplate> {

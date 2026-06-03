@@ -66,23 +66,11 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
         </div>
       }
 
-      <!-- Favourites section -->
-      @if (favouriteTemplates().length > 0 && !filterCategory && !searchQuery && !showDriftOnly && !filterFormId) {
-        <div class="mb-6">
-          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wide mb-3">Favourites</h2>
-          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            @for (t of favouriteTemplates(); track t.id) {
-              <ng-container *ngTemplateOutlet="templateCard; context: { $implicit: t, compact: true }"></ng-container>
-            }
-          </div>
-        </div>
-      }
-
       <!-- Filter bar -->
       <div class="mb-5 flex flex-wrap items-center gap-3">
         <!-- Form filter -->
         <div class="ta-input-group">
-          <select [(ngModel)]="filterFormId" (ngModelChange)="loadTemplates()" aria-label="Filter by form" class="ta-input-group-field h-9 px-3 text-sm">
+          <select [(ngModel)]="filterFormId" (ngModelChange)="applyFilters()" aria-label="Filter by form" class="ta-input-group-field h-9 px-3 text-sm">
             <option value="">All forms</option>
             @for (f of forms(); track f.id) {
               <option [value]="f.id">{{ f.name }}</option>
@@ -143,21 +131,13 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
         </label>
 
         <span class="text-sm text-gray-500 ml-auto">
-          {{ loading() ? 'Loading…' : filteredTemplates().length + ' result' + (filteredTemplates().length !== 1 ? 's' : '') }}
+          {{ loading() ? 'Loading...' : total() + ' result' + (total() !== 1 ? 's' : '') }}
         </span>
       </div>
 
       <!-- Loading skeleton -->
       @if (loading()) {
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          @for (sk of [1,2,3]; track sk) {
-            <div class="ta-card animate-pulse">
-              <div class="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-              <div class="h-4 w-24 bg-gray-100 dark:bg-gray-700/60 rounded mb-4"></div>
-              <div class="h-3 w-full bg-gray-100 dark:bg-gray-700/60 rounded"></div>
-            </div>
-          }
-        </div>
+        <div class="py-16 text-center text-sm text-gray-400">Loading reports...</div>
       }
 
       <!-- Empty state -->
@@ -191,122 +171,102 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
         </div>
       }
 
-      <!-- Template cards grid -->
+      <!-- Reports table -->
       @else {
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          @for (t of filteredTemplates(); track t.id) {
-            <ng-container *ngTemplateOutlet="templateCard; context: { $implicit: t }"></ng-container>
-          }
+        <div class="ta-table-shell">
+          <table class="ta-table min-w-[920px]">
+            <thead>
+              <tr class="ta-table-head">
+                <th scope="col" class="ta-table-th">Report</th>
+                <th scope="col" class="ta-table-th">Form</th>
+                <th scope="col" class="ta-table-th">Category / Tags</th>
+                <th scope="col" class="ta-table-th">Columns</th>
+                <th scope="col" class="ta-table-th">Status</th>
+                <th scope="col" class="ta-table-th">Updated</th>
+                <th scope="col" class="ta-table-th text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of filteredTemplates(); track t.id) {
+                <tr class="ta-table-row align-top">
+                  <td class="px-5 py-4">
+                    <div class="flex items-start gap-2">
+                      <button type="button" (click)="toggleFavourite(t, $event)"
+                        class="mt-0.5 shrink-0 rounded text-gray-300 transition-colors hover:text-yellow-400"
+                        [class.text-yellow-400]="t.is_favourite"
+                        [attr.aria-label]="t.is_favourite ? 'Remove from favourites' : 'Add to favourites'">
+                        <svg class="h-4 w-4" [attr.fill]="t.is_favourite ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                        </svg>
+                      </button>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1 font-semibold text-gray-900 dark:text-white">
+                          <span class="truncate">{{ t.name }}</span>
+                          <app-help-trigger helpKey="admin.reports.card" label="Help for report template" />
+                        </div>
+                        <div class="mt-1 max-w-md text-xs text-gray-500 dark:text-gray-400">{{ t.description || 'No description.' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ t.form_name }}</td>
+                  <td class="px-5 py-4">
+                    <div class="flex flex-wrap gap-1.5">
+                      @if (t.category) {
+                        <span class="ta-badge ta-badge-info">{{ t.category }}</span>
+                      }
+                      @for (tag of t.tags; track tag) {
+                        <span class="ta-badge ta-badge-neutral">#{{ tag }}</span>
+                      }
+                      @if (!t.category && !t.tags.length) {
+                        <span class="text-sm text-gray-400">-</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ t.columns.length }}</td>
+                  <td class="px-5 py-4">
+                    <div class="flex flex-wrap gap-1.5">
+                      @if (t.is_public) {
+                        <span class="ta-badge ta-badge-success">Public</span>
+                      } @else {
+                        <span class="ta-badge ta-badge-neutral">Restricted</span>
+                      }
+                      @if (t.has_schema_drift) {
+                        <span class="ta-badge ta-badge-warning">Outdated</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">{{ t.updated_at | date:'mediumDate' }}</td>
+                  <td class="px-5 py-4">
+                    <div class="flex justify-end gap-2">
+                      <button type="button" (click)="runReport(t)" class="ta-btn ta-btn-primary px-3 py-1.5 text-xs">Run</button>
+                      <button type="button" (click)="editReport(t)" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs">Edit</button>
+                      <button type="button" (click)="deleteReport(t)" class="ta-btn ta-btn-ghost px-3 py-1.5 text-xs text-red-600">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <div class="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              Showing {{ total() === 0 ? 0 : offset() + 1 }}-{{ Math.min(offset() + pageSize, total()) }} of {{ total() }}
+            </div>
+            <div class="flex items-center gap-2">
+              <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()" class="ta-admin-control px-2 py-1 text-sm">
+                <option [value]="10">10</option>
+                <option [value]="25">25</option>
+                <option [value]="50">50</option>
+                <option [value]="100">100</option>
+              </select>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() === 0" (click)="previousPage()">Previous</button>
+              <span class="text-xs">Page {{ currentPage() }} of {{ totalPages() }}</span>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() + pageSize >= total()" (click)="nextPage()">Next</button>
+            </div>
+          </div>
         </div>
       }
 
     </div>
-
-    <!-- Reusable template card -->
-    <ng-template #templateCard let-t let-compact="compact">
-      <div class="ta-card flex flex-col gap-3 hover:border-brand-300 dark:hover:border-brand-600 hover:shadow-md transition-all cursor-default group">
-
-        <!-- Card header -->
-        <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate group-hover:text-brand-600 transition-colors flex items-center gap-1">
-              {{ t.name }}
-              <app-help-trigger helpKey="admin.reports.card" label="Help for report template card" />
-            </h3>
-            <p class="text-xs text-gray-500 mt-0.5">{{ t.form_name }}</p>
-          </div>
-          <div class="flex items-center gap-1 flex-shrink-0">
-            <!-- Favourite star -->
-            <button type="button" (click)="toggleFavourite(t, $event)"
-              class="p-1 rounded transition-colors"
-              [class]="t.is_favourite ? 'text-yellow-400 hover:text-yellow-500' : 'text-gray-300 hover:text-yellow-400'"
-              [attr.aria-label]="t.is_favourite ? 'Remove from favourites' : 'Add to favourites'">
-              <svg class="w-4 h-4" [attr.fill]="t.is_favourite ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
-              </svg>
-            </button>
-            <div class="flex flex-wrap gap-1 justify-end">
-              @if (t.is_public) {
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                  </svg>
-                  Public
-                </span>
-              }
-              @if (t.has_schema_drift) {
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                  </svg>
-                  Outdated
-                </span>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Category + Tags -->
-        @if (t.category || t.tags?.length) {
-          <div class="flex flex-wrap gap-1.5">
-            @if (t.category) {
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300 text-xs font-medium border border-brand-200 dark:border-brand-700">
-                {{ t.category }}
-              </span>
-            }
-            @for (tag of t.tags; track tag) {
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 text-xs">
-                #{{ tag }}
-              </span>
-            }
-          </div>
-        }
-
-        <!-- Description -->
-        @if (t.description && !compact) {
-          <p class="text-sm text-gray-500 dark:text-gray-500 line-clamp-2">{{ t.description }}</p>
-        }
-
-        <!-- Meta -->
-        <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-500">
-          <span class="flex items-center gap-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/>
-            </svg>
-            {{ t.columns.length }} col{{ t.columns.length !== 1 ? 's' : '' }}
-          </span>
-          <span class="flex items-center gap-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            {{ t.updated_at | date:'mediumDate' }}
-          </span>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-          <button type="button" (click)="runReport(t)" class="ta-btn ta-btn-primary text-xs h-8 px-3 flex-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            Run
-          </button>
-          <button type="button" (click)="editReport(t)" class="ta-btn ta-btn-secondary text-xs h-8 px-3">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            </svg>
-            Edit
-          </button>
-          <button type="button" (click)="deleteReport(t)"
-            class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            aria-label="Delete template">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </ng-template>
 
     <!-- Delete confirmation modal -->
     @if (deletingTemplate()) {
@@ -334,6 +294,8 @@ export class ReportsComponent implements OnInit {
   private router = inject(Router);
 
   templates = signal<ReportTemplate[]>([]);
+  total = signal(0);
+  offset = signal(0);
   forms = signal<Form[]>([]);
   categories = signal<string[]>([]);
   recentlyUsed = signal<number[]>([]);
@@ -348,23 +310,12 @@ export class ReportsComponent implements OnInit {
   showDriftOnly = false;
   showFavouritesOnly = false;
   newReportFormId = '';
+  pageSize = 25;
+  readonly Math = Math;
 
-  filteredTemplates = computed(() => {
-    let list = this.templates();
-    if (this.filterCategory) list = list.filter(t => t.category === this.filterCategory);
-    if (this.searchQuery) {
-      const q = this.searchQuery.toLowerCase();
-      list = list.filter(t =>
-        t.name.toLowerCase().includes(q) ||
-        t.form_name.toLowerCase().includes(q) ||
-        t.description?.toLowerCase().includes(q) ||
-        t.tags?.some(tag => tag.toLowerCase().includes(q))
-      );
-    }
-    if (this.showDriftOnly) list = list.filter(t => t.has_schema_drift);
-    if (this.showFavouritesOnly) list = list.filter(t => t.is_favourite);
-    return list;
-  });
+  filteredTemplates = computed(() => this.templates());
+  currentPage = computed(() => Math.floor(this.offset() / this.pageSize) + 1);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize)));
 
   favouriteTemplates = computed(() => this.templates().filter(t => t.is_favourite));
 
@@ -393,19 +344,50 @@ export class ReportsComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
     const formId = this.filterFormId ? +this.filterFormId : undefined;
-    this.reportService.list({ formId }).subscribe({
-      next: t => { this.templates.set(t); this.loading.set(false); },
+    this.reportService.listPaged({
+      formId,
+      category: this.filterCategory || undefined,
+      q: this.searchQuery || undefined,
+      favourite: this.showFavouritesOnly,
+      drift: this.showDriftOnly,
+      limit: this.pageSize,
+      offset: this.offset(),
+    }).subscribe({
+      next: result => { this.templates.set(result.items); this.total.set(result.total ?? 0); this.loading.set(false); },
       error: () => { this.error.set('Failed to load report templates.'); this.loading.set(false); },
     });
   }
 
-  applyFilters(): void { /* computed() handles this reactively */ }
+  applyFilters(): void {
+    this.offset.set(0);
+    this.loadTemplates();
+  }
 
   clearFilters(): void {
+    this.filterFormId = '';
     this.filterCategory = '';
     this.searchQuery = '';
     this.showDriftOnly = false;
     this.showFavouritesOnly = false;
+    this.offset.set(0);
+    this.loadTemplates();
+  }
+
+  changePageSize(): void {
+    this.pageSize = Number(this.pageSize);
+    this.offset.set(0);
+    this.loadTemplates();
+  }
+
+  nextPage(): void {
+    if (this.offset() + this.pageSize >= this.total()) return;
+    this.offset.update(v => v + this.pageSize);
+    this.loadTemplates();
+  }
+
+  previousPage(): void {
+    this.offset.update(v => Math.max(0, v - this.pageSize));
+    this.loadTemplates();
   }
 
   toggleFavourite(t: ReportTemplate, event: Event): void {
@@ -440,7 +422,10 @@ export class ReportsComponent implements OnInit {
     this.deleting.set(true);
     this.reportService.delete(t.id).subscribe({
       next: () => {
-        this.templates.update(list => list.filter(x => x.id !== t.id));
+        if (this.templates().length === 1 && this.offset() > 0) {
+          this.offset.update(v => Math.max(0, v - this.pageSize));
+        }
+        this.loadTemplates();
         this.deletingTemplate.set(null);
         this.deleting.set(false);
       },

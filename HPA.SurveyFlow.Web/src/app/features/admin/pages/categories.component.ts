@@ -178,6 +178,22 @@ const emptyForm = (): CategoryFormModel => ({
               }
             </tbody>
           </table>
+          <div class="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              Showing {{ total() === 0 ? 0 : offset() + 1 }}-{{ Math.min(offset() + pageSize, total()) }} of {{ total() }}
+            </div>
+            <div class="flex items-center gap-2">
+              <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()" class="ta-admin-control px-2 py-1 text-sm">
+                <option [value]="10">10</option>
+                <option [value]="25">25</option>
+                <option [value]="50">50</option>
+                <option [value]="100">100</option>
+              </select>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() === 0" (click)="previousPage()">Previous</button>
+              <span class="text-xs">Page {{ currentPage() }} of {{ totalPages() }}</span>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() + pageSize >= total()" (click)="nextPage()">Next</button>
+            </div>
+          </div>
         </div>
       }
     </div>
@@ -442,6 +458,8 @@ export class CategoriesComponent implements OnInit {
   @ViewChild('categoryFormTpl') categoryFormTpl!: TemplateRef<unknown>;
 
   categories = signal<Category[]>([]);
+  total = signal(0);
+  offset = signal(0);
   loading = signal(true);
   error = signal<string | null>(null);
   saving = signal(false);
@@ -450,6 +468,10 @@ export class CategoriesComponent implements OnInit {
 
   isAdmin = computed(() => this.authService.currentUser()?.role === 'admin');
   canEdit = computed(() => ['admin', 'editor'].includes(this.authService.currentUser()?.role ?? ''));
+  pageSize = 25;
+  readonly Math = Math;
+  currentPage = computed(() => Math.floor(this.offset() / this.pageSize) + 1);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize)));
 
   form: CategoryFormModel = emptyForm();
 
@@ -460,10 +482,31 @@ export class CategoriesComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.categoryService.list().subscribe({
-      next: (cats) => { this.categories.set(cats); this.loading.set(false); },
+    this.categoryService.listPaged({ limit: this.pageSize, offset: this.offset() }).subscribe({
+      next: (result) => {
+        this.categories.set(result.items);
+        this.total.set(result.total ?? 0);
+        this.loading.set(false);
+      },
       error: (err) => { this.loading.set(false); this.error.set(err?.error?.error || 'Failed to load categories.'); },
     });
+  }
+
+  changePageSize(): void {
+    this.pageSize = Number(this.pageSize);
+    this.offset.set(0);
+    this.load();
+  }
+
+  nextPage(): void {
+    if (this.offset() + this.pageSize >= this.total()) return;
+    this.offset.update(v => v + this.pageSize);
+    this.load();
+  }
+
+  previousPage(): void {
+    this.offset.update(v => Math.max(0, v - this.pageSize));
+    this.load();
   }
 
   openCreate(): void {
@@ -572,7 +615,10 @@ export class CategoriesComponent implements OnInit {
     this.categoryService.delete(cat.slug).subscribe({
       next: () => {
         this.toastr.success(`Category "${cat.name}" deleted.`);
-        this.categories.update(list => list.filter(c => c.slug !== cat.slug));
+        if (this.categories().length === 1 && this.offset() > 0) {
+          this.offset.update(v => Math.max(0, v - this.pageSize));
+        }
+        this.load();
       },
       error: (err) => {
         this.toastr.error(err?.error?.error || 'Failed to delete category.');

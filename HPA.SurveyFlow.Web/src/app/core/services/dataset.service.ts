@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { Dataset, SaveDatasetRequest } from '../models';
+import { Dataset, PaginatedResult, SaveDatasetRequest } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class DatasetService {
@@ -10,9 +11,15 @@ export class DatasetService {
   private api = inject(ApiService);
 
   list(formId?: number): Observable<Dataset[]> {
+    return this.listPaged({ formId }).pipe(map(result => result.items));
+  }
+
+  listPaged(options: { formId?: number; limit?: number; offset?: number } = {}): Observable<PaginatedResult<Dataset>> {
     let params = new HttpParams();
-    if (formId != null) params = params.set('formId', formId);
-    return this.http.get<Dataset[]>(this.api.apiUrl('/api/datasets'), { params });
+    if (options.formId != null) params = params.set('formId', options.formId);
+    if (options.limit != null) params = params.set('limit', options.limit);
+    if (options.offset != null) params = params.set('offset', options.offset);
+    return this.http.get<PaginatedResult<Dataset>>(this.api.apiUrl('/api/datasets'), { params });
   }
 
   get(id: number): Observable<Dataset> {

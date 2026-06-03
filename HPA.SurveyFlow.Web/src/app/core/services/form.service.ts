@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Form } from '../models';
+import { Form, PaginatedResult } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class FormService {
@@ -15,6 +15,17 @@ export class FormService {
     if (category !== undefined) params = params.set('category', category);
     const headers = silent ? new HttpHeaders({ 'X-Silent': '1' }) : new HttpHeaders();
     return this.http.get<Form[]>(this.api.apiUrl('/api/forms'), { params, headers });
+  }
+
+  listPaged(options: { mode?: string; category?: string; q?: string; limit?: number; offset?: number; silent?: boolean } = {}): Observable<PaginatedResult<Form>> {
+    let params = new HttpParams().set('paged', true);
+    if (options.mode !== undefined) params = params.set('mode', options.mode);
+    if (options.category !== undefined) params = params.set('category', options.category);
+    if (options.q) params = params.set('q', options.q);
+    if (options.limit != null) params = params.set('limit', options.limit);
+    if (options.offset != null) params = params.set('offset', options.offset);
+    const headers = options.silent ? new HttpHeaders({ 'X-Silent': '1' }) : new HttpHeaders();
+    return this.http.get<PaginatedResult<Form>>(this.api.apiUrl('/api/forms'), { params, headers });
   }
 
   get(id: number, mode?: string): Observable<Form> {

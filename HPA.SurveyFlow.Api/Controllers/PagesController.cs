@@ -19,9 +19,19 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
 {
     [HttpGet]
     [RequirePermission(Permissions.Pages.Read)]
-    public async Task<IActionResult> List()
+    public async Task<IActionResult> List([FromQuery] bool paged = false, [FromQuery] int limit = 25, [FromQuery] int offset = 0)
     {
-        var pages = await db.Pages.OrderBy(p => p.Title).ToListAsync();
+        limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
+        var query = db.Pages.OrderBy(p => p.Title);
+        if (paged)
+        {
+            var total = await query.CountAsync();
+            var items = await query.Skip(offset).Take(limit).ToListAsync();
+            return Ok(new { items = items.Select(MapDto), total, limit, offset });
+        }
+
+        var pages = await query.ToListAsync();
         return Ok(pages.Select(MapDto));
     }
 

@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { User } from '../models';
+import { PaginatedResult, User } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -23,6 +23,18 @@ export class UserService {
       }
     }
     return this.http.get<User[]>(this.api.apiUrl('/api/users'), { params: httpParams });
+  }
+
+  listPaged(params?: any): Observable<PaginatedResult<User>> {
+    let httpParams = new HttpParams().set('paged', true);
+    if (params) {
+      for (const key of Object.keys(params)) {
+        if (params[key] !== undefined && params[key] !== null) {
+          httpParams = httpParams.set(key, String(params[key]));
+        }
+      }
+    }
+    return this.http.get<PaginatedResult<User>>(this.api.apiUrl('/api/users'), { params: httpParams });
   }
 
   get(id: number): Observable<User> {

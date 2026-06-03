@@ -1,5 +1,6 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PageService } from '../../../core/services/page.service';
 import { ConfirmDialogService } from '../../../shared/components/confirm-dialog/confirm-dialog.service';
@@ -8,7 +9,7 @@ import { Page } from '../../../core/models';
 @Component({
   selector: 'app-page-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div>
       <div class="mb-6 flex items-center justify-between gap-4">
@@ -69,6 +70,22 @@ import { Page } from '../../../core/models';
               </tbody>
             </table>
           </div>
+          <div class="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              Showing {{ total() === 0 ? 0 : offset() + 1 }}-{{ Math.min(offset() + pageSize, total()) }} of {{ total() }}
+            </div>
+            <div class="flex items-center gap-2">
+              <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()" class="ta-admin-control px-2 py-1 text-sm">
+                <option [value]="10">10</option>
+                <option [value]="25">25</option>
+                <option [value]="50">50</option>
+                <option [value]="100">100</option>
+              </select>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() === 0" (click)="previousPage()">Previous</button>
+              <span class="text-xs">Page {{ currentPage() }} of {{ totalPages() }}</span>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() + pageSize >= total()" (click)="nextPage()">Next</button>
+            </div>
+          </div>
         </div>
       }
     </div>
@@ -78,23 +95,55 @@ export class PageListComponent implements OnInit {
   private pageService = inject(PageService);
   private confirm = inject(ConfirmDialogService);
   pages = signal<Page[]>([]);
+  total = signal(0);
+  offset = signal(0);
   loading = signal(true);
   error = signal('');
+  pageSize = 25;
+  readonly Math = Math;
+  currentPage = computed(() => Math.floor(this.offset() / this.pageSize) + 1);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize)));
 
   ngOnInit(): void { this.load(); }
 
   load(): void {
     this.loading.set(true);
-    this.pageService.list().subscribe({
-      next: pages => { this.pages.set(pages); this.loading.set(false); },
+    this.pageService.listPaged({ limit: this.pageSize, offset: this.offset() }).subscribe({
+      next: result => {
+        this.pages.set(result.items);
+        this.total.set(result.total ?? 0);
+        this.loading.set(false);
+      },
       error: () => { this.error.set('Failed to load pages.'); this.loading.set(false); },
     });
+  }
+
+  changePageSize(): void {
+    this.pageSize = Number(this.pageSize);
+    this.offset.set(0);
+    this.load();
+  }
+
+  nextPage(): void {
+    if (this.offset() + this.pageSize >= this.total()) return;
+    this.offset.update(v => v + this.pageSize);
+    this.load();
+  }
+
+  previousPage(): void {
+    this.offset.update(v => Math.max(0, v - this.pageSize));
+    this.load();
   }
 
   async remove(page: Page): Promise<void> {
     if (!await this.confirm.open({ title: 'Delete Page', message: `Delete "${page.title}"?`, confirmLabel: 'Delete', variant: 'danger' })) return;
     this.pageService.delete(page.id).subscribe({
-      next: () => this.pages.update(items => items.filter(item => item.id !== page.id)),
+      next: () => {
+        if (this.pages().length === 1 && this.offset() > 0) {
+          this.offset.update(v => Math.max(0, v - this.pageSize));
+        }
+        this.load();
+      },
       error: () => this.error.set('Failed to delete page.'),
     });
   }

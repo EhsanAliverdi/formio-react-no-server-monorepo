@@ -24,12 +24,18 @@ public class DashboardsController(
 {
     [HttpGet]
     [RequirePermission(Permissions.Reports.Read)]
-    public async Task<IActionResult> List()
+    public async Task<IActionResult> List([FromQuery] int limit = 25, [FromQuery] int offset = 0)
     {
+        limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
+        var query = DashboardQuery().OrderBy(d => d.Name);
+        var total = await query.CountAsync();
         var dashboards = await DashboardQuery()
             .OrderBy(d => d.Name)
+            .Skip(offset)
+            .Take(limit)
             .ToListAsync();
-        return Ok(dashboards.Select(MapDto));
+        return Ok(new { items = dashboards.Select(MapDto), total, limit, offset });
     }
 
     [HttpGet("{id:int}")]

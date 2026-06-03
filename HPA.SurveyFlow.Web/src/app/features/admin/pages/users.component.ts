@@ -145,6 +145,22 @@ interface UserFormModel {
               }
             </tbody>
           </table>
+          <div class="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              Showing {{ total() === 0 ? 0 : offset() + 1 }}-{{ Math.min(offset() + pageSize, total()) }} of {{ total() }}
+            </div>
+            <div class="flex items-center gap-2">
+              <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()" class="ta-admin-control px-2 py-1 text-sm">
+                <option [value]="10">10</option>
+                <option [value]="25">25</option>
+                <option [value]="50">50</option>
+                <option [value]="100">100</option>
+              </select>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() === 0" (click)="previousPage()">Previous</button>
+              <span class="text-xs">Page {{ currentPage() }} of {{ totalPages() }}</span>
+              <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() + pageSize >= total()" (click)="nextPage()">Next</button>
+            </div>
+          </div>
         </div>
       }
 
@@ -275,6 +291,8 @@ export class UsersComponent implements OnInit {
   private toastr = inject(ToastrService);
 
   users = signal<User[]>([]);
+  total = signal(0);
+  offset = signal(0);
   availableRoles = signal<string[]>(['admin', 'editor', 'viewer']);
   loading = signal(true);
   error = signal<string | null>(null);
@@ -285,6 +303,10 @@ export class UsersComponent implements OnInit {
   deleteConfirm = signal<number | null>(null);
 
   isAdmin = computed(() => this.authService.currentUser()?.role === 'admin');
+  pageSize = 25;
+  readonly Math = Math;
+  currentPage = computed(() => Math.floor(this.offset() / this.pageSize) + 1);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize)));
 
   form: UserFormModel = {
     email: '',
@@ -309,9 +331,10 @@ export class UsersComponent implements OnInit {
   loadUsers(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.userService.list().subscribe({
-      next: (users) => {
-        this.users.set(users);
+    this.userService.listPaged({ limit: this.pageSize, offset: this.offset() }).subscribe({
+      next: (result) => {
+        this.users.set(result.items);
+        this.total.set(result.total ?? 0);
         this.loading.set(false);
       },
       error: (err) => {
@@ -319,6 +342,23 @@ export class UsersComponent implements OnInit {
         this.error.set(err?.error?.error || 'Failed to load users.');
       },
     });
+  }
+
+  changePageSize(): void {
+    this.pageSize = Number(this.pageSize);
+    this.offset.set(0);
+    this.loadUsers();
+  }
+
+  nextPage(): void {
+    if (this.offset() + this.pageSize >= this.total()) return;
+    this.offset.update(v => v + this.pageSize);
+    this.loadUsers();
+  }
+
+  previousPage(): void {
+    this.offset.update(v => Math.max(0, v - this.pageSize));
+    this.loadUsers();
   }
 
   openAddModal(): void {
@@ -409,7 +449,10 @@ export class UsersComponent implements OnInit {
       next: () => {
         this.toastr.success('User deleted.');
         this.deleteConfirm.set(null);
-        this.users.update((list) => list.filter((u) => u.id !== id));
+        if (this.users().length === 1 && this.offset() > 0) {
+          this.offset.update(v => Math.max(0, v - this.pageSize));
+        }
+        this.loadUsers();
       },
       error: (err) => {
         this.toastr.error(err?.error?.error || 'Failed to delete user.');

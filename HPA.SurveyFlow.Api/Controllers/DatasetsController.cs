@@ -17,14 +17,17 @@ namespace HPA.SurveyFlow.Api.Controllers;
 public class DatasetsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] int? formId)
+    public async Task<IActionResult> List([FromQuery] int? formId, [FromQuery] int limit = 25, [FromQuery] int offset = 0)
     {
+        limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
         var query = db.Datasets.Include(d => d.Form).Where(d => d.IsActive);
         if (formId.HasValue)
             query = query.Where(d => d.FormId == formId.Value);
 
-        var datasets = await query.OrderBy(d => d.Name).ToListAsync();
-        return Ok(datasets.Select(MapDto));
+        var total = await query.CountAsync();
+        var datasets = await query.OrderBy(d => d.Name).Skip(offset).Take(limit).ToListAsync();
+        return Ok(new { items = datasets.Select(MapDto), total, limit, offset });
     }
 
     [HttpGet("{id:int}")]

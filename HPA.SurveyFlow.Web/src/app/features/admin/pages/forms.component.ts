@@ -55,6 +55,7 @@ import { Form } from '../../../core/models';
         <input
           type="text"
           [(ngModel)]="searchQuery"
+          (ngModelChange)="applyFilters()"
           placeholder="Search forms..."
           class="ta-admin-control w-full max-w-sm px-4 py-2 text-sm"
         />
@@ -201,6 +202,22 @@ import { Form } from '../../../core/models';
             </ng-container>
           </tbody>
         </table>
+        <div class="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            Showing {{ total() === 0 ? 0 : offset() + 1 }}-{{ Math.min(offset() + pageSize, total()) }} of {{ total() }}
+          </div>
+          <div class="flex items-center gap-2">
+            <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()" class="ta-admin-control px-2 py-1 text-sm">
+              <option [value]="10">10</option>
+              <option [value]="25">25</option>
+              <option [value]="50">50</option>
+              <option [value]="100">100</option>
+            </select>
+            <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() === 0" (click)="previousPage()">Previous</button>
+            <span class="text-xs">Page {{ currentPage() }} of {{ totalPages() }}</span>
+            <button type="button" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs" [disabled]="offset() + pageSize >= total()" (click)="nextPage()">Next</button>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -215,18 +232,21 @@ export class AdminFormsComponent implements OnInit {
   private router = inject(Router);
 
   forms = signal<Form[]>([]);
+  total = signal(0);
+  offset = signal(0);
   loading = signal(true);
   error = signal('');
   searchQuery = '';
+  pageSize = 25;
+  readonly Math = Math;
 
   private expandedIds = signal<Set<number>>(new Set());
+  currentPage = computed(() => Math.floor(this.offset() / this.pageSize) + 1);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize)));
 
   filteredForms = computed(() => {
-    const q = this.searchQuery.toLowerCase().trim();
     // Only top-level forms in the main list; sub-forms appear under their expanded parent
-    const topLevel = this.forms().filter(f => f.parent_form_id == null);
-    if (!q) return topLevel;
-    return topLevel.filter(f => f.name.toLowerCase().includes(q));
+    return this.forms().filter(f => f.parent_form_id == null);
   });
 
   childCount(parentId: number): number {
@@ -271,9 +291,14 @@ export class AdminFormsComponent implements OnInit {
 
   loadForms(): void {
     this.loading.set(true);
-    this.formService.list().subscribe({
-      next: (forms) => {
-        this.forms.set(forms);
+    this.formService.listPaged({
+      q: this.searchQuery.trim() || undefined,
+      limit: this.pageSize,
+      offset: this.offset(),
+    }).subscribe({
+      next: (result) => {
+        this.forms.set(result.items);
+        this.total.set(result.total ?? 0);
         this.loading.set(false);
       },
       error: (err) => {
@@ -281,6 +306,28 @@ export class AdminFormsComponent implements OnInit {
         this.error.set(err?.error?.error || 'Failed to load forms.');
       },
     });
+  }
+
+  applyFilters(): void {
+    this.offset.set(0);
+    this.loadForms();
+  }
+
+  changePageSize(): void {
+    this.pageSize = Number(this.pageSize);
+    this.offset.set(0);
+    this.loadForms();
+  }
+
+  nextPage(): void {
+    if (this.offset() + this.pageSize >= this.total()) return;
+    this.offset.update(v => v + this.pageSize);
+    this.loadForms();
+  }
+
+  previousPage(): void {
+    this.offset.update(v => Math.max(0, v - this.pageSize));
+    this.loadForms();
   }
 
   async deleteForm(form: Form): Promise<void> {
@@ -294,7 +341,10 @@ export class AdminFormsComponent implements OnInit {
     this.formService.delete(form.id).subscribe({
       next: () => {
         this.toastr.success(`Form "${form.name}" deleted.`, 'Deleted');
-        this.forms.update(list => list.filter(f => f.id !== form.id));
+        if (this.filteredForms().length === 1 && this.offset() > 0) {
+          this.offset.update(v => Math.max(0, v - this.pageSize));
+        }
+        this.loadForms();
       },
       error: (err) => {
         this.toastr.error(err?.error?.error || 'Failed to delete form.', 'Error');
@@ -313,7 +363,7 @@ export class AdminFormsComponent implements OnInit {
     this.formService.delete(form.id).subscribe({
       next: () => {
         this.toastr.success(`Sub-form "${form.name}" deleted.`, 'Deleted');
-        this.forms.update(list => list.filter(f => f.id !== form.id));
+        this.loadForms();
       },
       error: (err) => {
         this.toastr.error(err?.error?.error || 'Failed to delete sub-form.', 'Error');
