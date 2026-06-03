@@ -22,7 +22,6 @@ import { DashboardCardComponent } from '../dashboard-card/dashboard-card.compone
           [attr.gs-min-h]="card.min_h"
           [attr.gs-max-w]="card.max_w"
           [attr.gs-max-h]="card.max_h"
-          [attr.gs-size-to-content]="card.fit_content ? true : null"
         >
           <div class="grid-stack-item-content">
             <app-dashboard-card
@@ -71,6 +70,19 @@ export class DashboardGridComponent implements AfterViewInit, OnChanges, OnDestr
       disableResize: this.mode === 'viewer',
     }, this.gridElement.nativeElement);
     this.grid.on('change', (_event, nodes) => this.emitLayout(nodes));
+    this.applyFitContent();
+  }
+
+  private applyFitContent(): void {
+    const fitCards = this.dashboard.cards.filter(c => c.fit_content);
+    if (!fitCards.length || !this.grid) return;
+    // Wait one frame for Angular to finish rendering card content
+    setTimeout(() => {
+      fitCards.forEach(card => {
+        const el = this.gridElement.nativeElement.querySelector(`[gs-id="${card.id}"]`) as HTMLElement | null;
+        if (el) this.grid!.resizeToContent(el);
+      });
+    }, 50);
   }
 
   private reload(): void {
