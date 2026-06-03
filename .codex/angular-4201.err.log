@@ -69,3 +69,116 @@
          ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
 
 [39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2353: Object literal may only specify known properties, and 'customUploadFile' does not exist in type 'AssetManagerConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/page-designer.component.ts:219:8:
+[37m      219 │         [32mcustomUploadFile[37m: event => this.uploadAssets(event),
+          ╵         [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'event' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/page-designer.component.ts:219:26:
+[37m      219 │         customUploadFile: [32mevent[37m => this.uploadAssets(event),
+          ╵                           [32m~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2353: Object literal may only specify known properties, and 'customUploadFile' does not exist in type 'AssetManagerConfig'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/page-designer.component.ts:219:8:
+[37m      219 │         [32mcustomUploadFile[37m: (event: Event) => this.uploadAssets(eve...
+          ╵         [32m~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type '(event: DragEvent) => void' is not assignable to type 'UploadFileFn'.
+  Type 'void' is not assignable to type 'Promise<void> | undefined'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/page-designer.component.ts:219:8:
+[37m      219 │         [32muploadFile[37m: (event: DragEvent) => this.uploadAssets(event),
+          ╵         [32m~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mTS-998113: FormCardComponent is not used within the template of FormEditComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/pages/form-edit.component.ts:152:129:
+[37m      152 │ ..., IconPickerComponent, [32mFormCardComponent[37m, NotificationRulesEdi...
+          ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/components/dashboard-card/dashboard-card.component.ts:38:25:
+[37m      38 │           [displayMode]="[32mcard.display_mode ?? 'chart'[37m"
+         ╵                          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m

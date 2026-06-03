@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PageService } from '../../../core/services/page.service';
 import { Page, SavePageRequest } from '../../../core/models';
+import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-page-designer',
@@ -103,6 +104,7 @@ export class PageDesignerComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private pageService = inject(PageService);
+  private api = inject(ApiService);
   private editor: any;
 
   pageId = signal<number | null>(null);
@@ -212,6 +214,10 @@ export class PageDesignerComponent implements AfterViewInit, OnDestroy {
       height: '760px',
       storageManager: false,
       fromElement: false,
+      assetManager: {
+        upload: false,
+        uploadFile: (event: DragEvent) => this.uploadAssets(event),
+      },
       selectorManager: { componentFirst: true },
       styleManager: {
         sectors: [
@@ -334,21 +340,67 @@ export class PageDesignerComponent implements AfterViewInit, OnDestroy {
       const project = JSON.parse(this.form.project_json || '{}');
       if (project?.pages || project?.assets || project?.styles) {
         this.editor.loadProjectData(project);
+        if (this.editor.getHtml()?.trim()) return;
+        if (this.form.html?.trim()) {
+          this.editor.setComponents(this.form.html);
+          this.editor.setStyle(this.form.css || '');
+        }
         return;
       }
     } catch {}
+    if (this.form.html?.trim()) {
+      this.editor.setComponents(this.form.html);
+      this.editor.setStyle(this.form.css || '');
+      return;
+    }
     this.editor.setComponents('<main style="font-family:Inter,Arial,sans-serif;color:#111827;"><section style="padding:64px 24px;max-width:1120px;margin:0 auto;"><h1 style="font-size:42px;line-height:1.1;margin:0 0 16px;">New page</h1><p style="font-size:18px;line-height:1.7;color:#4b5563;">Start by dragging blocks from the left panel.</p></section></main>');
   }
 
+  private async uploadAssets(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement | null;
+    const dataTransfer = (event as DragEvent).dataTransfer;
+    const files = Array.from(dataTransfer?.files ?? input?.files ?? []);
+    if (!files.length) return;
+
+    await Promise.all(files.map(async file => {
+      const data = new FormData();
+      data.append('file', file);
+      try {
+        const response = await fetch(this.api.apiUrl('/api/uploads'), {
+          method: 'POST',
+          headers: this.api.getToken() ? { Authorization: `Bearer ${this.api.getToken()}` } : undefined,
+          body: data,
+        });
+        if (!response.ok) throw new Error(`Upload failed (${response.status})`);
+        const asset = await response.json();
+        if (!asset?.url) return;
+        this.editor?.AssetManager?.add({
+          src: asset.url,
+          name: asset.originalName || asset.name || file.name,
+          type: asset.type?.startsWith('image/') ? 'image' : undefined,
+        });
+      } catch (err) {
+        console.warn('Page asset upload failed.', err);
+        this.error.set('Asset upload failed. Please check the file type and try again.');
+      }
+    }));
+  }
+
   private applyPage(page: Page): void {
+    const raw = page as Page & {
+      isActive?: boolean;
+      useLayout?: boolean;
+      projectJson?: string;
+      createdByUserId?: number;
+    };
     this.form = {
       title: page.title,
       slug: page.slug,
       description: page.description || '',
       visibility: page.visibility,
-      is_active: page.is_active,
-      use_layout: page.use_layout,
-      project_json: page.project_json || '{}',
+      is_active: page.is_active ?? raw.isActive ?? true,
+      use_layout: page.use_layout ?? raw.useLayout ?? true,
+      project_json: page.project_json || raw.projectJson || '{}',
       html: page.html || '',
       css: page.css || '',
     };

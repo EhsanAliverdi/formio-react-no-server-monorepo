@@ -39,6 +39,9 @@ public sealed class SeedOptions
     /// <summary>Seed demo scheduled reports.</summary>
     public bool Schedules { get; init; }
 
+    /// <summary>Seed demo dynamic pages and page-linked forms.</summary>
+    public bool Pages { get; init; }
+
     // ── Behaviour modifiers ───────────────────────────────────────────────────
 
     /// <summary>

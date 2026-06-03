@@ -190,6 +190,7 @@ using (var scope = app.Services.CreateScope())
         Submissions      = GetFlag(builder.Configuration, "Seed:Submissions",  "SEED_SUBMISSIONS",   false),
         Datasets         = GetFlag(builder.Configuration, "Seed:Datasets",     "SEED_DATASETS",      false),
         Schedules        = GetFlag(builder.Configuration, "Seed:Schedules",    "SEED_SCHEDULES",     false),
+        Pages            = GetFlag(builder.Configuration, "Seed:Pages",        "SEED_PAGES",         false),
         OverrideExisting = GetFlag(builder.Configuration, "Seed:Override",     "SEED_OVERRIDE",      false),
         Reset            = GetFlag(builder.Configuration, "Seed:Reset",        "SEED_RESET",         false),
     };

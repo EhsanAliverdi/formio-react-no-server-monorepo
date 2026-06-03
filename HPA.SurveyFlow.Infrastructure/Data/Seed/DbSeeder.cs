@@ -84,6 +84,14 @@ public static class DbSeeder
             Console.WriteLine("[Seed] Schedules: done");
         }
 
+        if (opts.Pages && storage != null)
+        {
+            Console.WriteLine("[Seed] Pages: starting");
+            await DemoPagesSeedData.SeedAsync(db, storage, opts.OverrideExisting, opts.Reset);
+            var pageCount = await db.Pages.CountAsync();
+            Console.WriteLine($"[Seed] Pages: done — {pageCount} pages in DB");
+        }
+
         await SeedJobDefinitionsAsync(db);
 
         await db.SaveChangesAsync();
