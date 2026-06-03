@@ -46,6 +46,7 @@ export class DashboardGridComponent implements AfterViewInit, OnChanges, OnDestr
   @ViewChild('grid', { static: true }) gridElement!: ElementRef<HTMLElement>;
 
   private grid?: GridStack;
+  private resizeObservers: ResizeObserver[] = [];
 
   ngAfterViewInit(): void {
     this.initialise();
@@ -57,6 +58,7 @@ export class DashboardGridComponent implements AfterViewInit, OnChanges, OnDestr
   }
 
   ngOnDestroy(): void {
+    this.teardownObservers();
     this.grid?.destroy(false);
   }
 
@@ -70,22 +72,36 @@ export class DashboardGridComponent implements AfterViewInit, OnChanges, OnDestr
       disableResize: this.mode === 'viewer',
     }, this.gridElement.nativeElement);
     this.grid.on('change', (_event, nodes) => this.emitLayout(nodes));
-    this.applyFitContent();
+    this.watchFitContentCards();
   }
 
-  private applyFitContent(): void {
+  private watchFitContentCards(): void {
+    this.teardownObservers();
     const fitCards = this.dashboard.cards.filter(c => c.fit_content);
     if (!fitCards.length || !this.grid) return;
-    // Wait one frame for Angular to finish rendering card content
-    setTimeout(() => {
-      fitCards.forEach(card => {
-        const el = this.gridElement.nativeElement.querySelector(`[gs-id="${card.id}"]`) as HTMLElement | null;
-        if (el) this.grid!.resizeToContent(el);
-      });
-    }, 50);
+
+    fitCards.forEach(card => {
+      const item = this.gridElement.nativeElement.querySelector(`[gs-id="${card.id}"]`) as HTMLElement | null;
+      const content = item?.querySelector('.grid-stack-item-content') as HTMLElement | null;
+      if (!item || !content) return;
+
+      // Trigger once immediately after a frame so Angular has rendered
+      setTimeout(() => { if (this.grid) this.grid.resizeToContent(item); }, 50);
+
+      // Then watch for async content changes (charts loading, tables rendering)
+      const ro = new ResizeObserver(() => { if (this.grid) this.grid.resizeToContent(item); });
+      ro.observe(content);
+      this.resizeObservers.push(ro);
+    });
+  }
+
+  private teardownObservers(): void {
+    this.resizeObservers.forEach(ro => ro.disconnect());
+    this.resizeObservers = [];
   }
 
   private reload(): void {
+    this.teardownObservers();
     this.grid?.destroy(false);
     this.grid = undefined;
     this.initialise();
