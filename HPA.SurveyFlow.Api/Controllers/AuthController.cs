@@ -11,7 +11,7 @@ namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(AppDbContext db, AuthService authService) : ControllerBase
+public class AuthController(AppDbContext db, AuthService authService, AuditService auditService) : ControllerBase
 {
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest body)
@@ -25,6 +25,14 @@ public class AuthController(AppDbContext db, AuthService authService) : Controll
 
         await authService.CleanExpiredSessionsAsync();
         var (token, expiresAt) = await authService.CreateSessionAsync(user.Id);
+        await auditService.LogAsync(
+            user.Id,
+            user.Email,
+            "login",
+            "User",
+            user.Id.ToString(),
+            user.DisplayName ?? user.Email,
+            ClientIp());
 
         return Ok(new
         {
@@ -42,7 +50,21 @@ public class AuthController(AppDbContext db, AuthService authService) : Controll
         {
             var token = authHeader["Bearer ".Length..].Trim();
             if (!string.IsNullOrEmpty(token))
+            {
+                var user = await authService.GetUserFromTokenAsync(token);
                 await authService.DeleteSessionByTokenAsync(token);
+                if (user != null)
+                {
+                    await auditService.LogAsync(
+                        user.Id,
+                        user.Email,
+                        "logout",
+                        "User",
+                        user.Id.ToString(),
+                        user.DisplayName ?? user.Email,
+                        ClientIp());
+                }
+            }
         }
         return Ok(new { success = true });
     }
@@ -72,4 +94,6 @@ public class AuthController(AppDbContext db, AuthService authService) : Controll
         LastName = u.LastName,
         AvatarUrl = u.AvatarUrl
     };
+
+    private string? ClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

@@ -47,7 +47,9 @@ import { AuditLog } from '../../../core/models';
 
       <!-- Table -->
       <div class="ta-table-shell">
-        @if (loading()) {
+        @if (error()) {
+          <div class="p-8 text-center text-red-600 dark:text-red-400">{{ error() }}</div>
+        } @else if (loading()) {
           <div class="p-8 text-center text-gray-500">Loading…</div>
         } @else if (items().length === 0) {
           <div class="p-8 text-center text-gray-500">No audit records found.</div>
@@ -126,6 +128,7 @@ export class AuditLogComponent implements OnInit {
   private svc = inject(AuditLogService);
 
   loading = signal(false);
+  error = signal('');
   items = signal<AuditLog[]>([]);
   total = signal(0);
   entityTypes = signal<string[]>([]);
@@ -162,6 +165,7 @@ export class AuditLogComponent implements OnInit {
 
   private fetch() {
     this.loading.set(true);
+    this.error.set('');
     this.svc.list({
       entityType: this.filterEntityType || undefined,
       search: this.filterSearch || undefined,
@@ -171,7 +175,12 @@ export class AuditLogComponent implements OnInit {
       offset: this.offset(),
     }).subscribe({
       next: r => { this.items.set(r.items); this.total.set(r.total); this.loading.set(false); },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.items.set([]);
+        this.total.set(0);
+        this.error.set('Failed to load audit records.');
+        this.loading.set(false);
+      },
     });
   }
 

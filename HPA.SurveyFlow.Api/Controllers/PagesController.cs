@@ -9,12 +9,13 @@ using HPA.SurveyFlow.Domain.DTOs.Responses;
 using HPA.SurveyFlow.Domain.Entities;
 using HPA.SurveyFlow.Domain.Security;
 using HPA.SurveyFlow.Infrastructure.Data;
+using HPA.SurveyFlow.Infrastructure.Services;
 
 namespace HPA.SurveyFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/pages")]
-public class PagesController(AppDbContext db) : ControllerBase
+public class PagesController(AppDbContext db, AuditService auditService) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.Pages.Read)]
@@ -60,6 +61,16 @@ public class PagesController(AppDbContext db) : ControllerBase
         ApplyPage(page, body, slug);
         db.Pages.Add(page);
         await db.SaveChangesAsync();
+        await auditService.LogAsync(
+            user.Id,
+            user.Email,
+            "created",
+            "Page",
+            page.Id.ToString(),
+            page.Title,
+            before: null,
+            after: MapDto(page),
+            ipAddress: ClientIp());
         return CreatedAtAction(nameof(Get), new { id = page.Id }, MapDto(page));
     }
 
@@ -69,6 +80,9 @@ public class PagesController(AppDbContext db) : ControllerBase
     {
         var page = await db.Pages.FindAsync(id);
         if (page == null) return NotFound(new { error = "Page not found." });
+        var user = HttpContext.GetCurrentUser();
+        if (user == null) return Unauthorized();
+        var before = MapDto(page);
 
         var slug = NormaliseSlug(body.Slug);
         var validation = await ValidatePage(body.Title, slug, body.Visibility, id);
@@ -77,6 +91,16 @@ public class PagesController(AppDbContext db) : ControllerBase
         ApplyPage(page, body, slug);
         page.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+        await auditService.LogAsync(
+            user.Id,
+            user.Email,
+            "updated",
+            "Page",
+            page.Id.ToString(),
+            page.Title,
+            before,
+            MapDto(page),
+            ClientIp());
         return Ok(MapDto(page));
     }
 
@@ -86,8 +110,21 @@ public class PagesController(AppDbContext db) : ControllerBase
     {
         var page = await db.Pages.FindAsync(id);
         if (page == null) return NotFound(new { error = "Page not found." });
+        var user = HttpContext.GetCurrentUser();
+        if (user == null) return Unauthorized();
+        var before = MapDto(page);
         db.Pages.Remove(page);
         await db.SaveChangesAsync();
+        await auditService.LogAsync(
+            user.Id,
+            user.Email,
+            "deleted",
+            "Page",
+            id.ToString(),
+            before.Title,
+            before,
+            after: null,
+            ipAddress: ClientIp());
         return NoContent();
     }
 
@@ -133,4 +170,6 @@ public class PagesController(AppDbContext db) : ControllerBase
         CreatedAt = page.CreatedAt,
         UpdatedAt = page.UpdatedAt,
     };
+
+    private string? ClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

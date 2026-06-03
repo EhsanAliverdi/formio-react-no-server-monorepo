@@ -51,9 +51,16 @@ public class AuditLogsController(AppDbContext db) : ControllerBase
             .Take(limit)
             .Select(a => new
             {
-                a.Id, a.ActorId, a.ActorEmail, a.Action,
-                a.EntityType, a.EntityId, a.EntityName,
-                a.ChangesJson, a.IpAddress, a.OccurredAt,
+                id = a.Id,
+                actor_id = a.ActorId,
+                actor_email = a.ActorEmail,
+                action = a.Action,
+                entity_type = a.EntityType,
+                entity_id = a.EntityId,
+                entity_name = a.EntityName,
+                changes_json = a.ChangesJson,
+                ip_address = a.IpAddress,
+                occurred_at = a.OccurredAt,
             })
             .ToListAsync();
 

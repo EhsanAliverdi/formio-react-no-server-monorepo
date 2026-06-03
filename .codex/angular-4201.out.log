@@ -163,3 +163,15 @@ Page reload sent to client(s).
 Application bundle generation complete. [3.183 seconds]
 
 Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m              [2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m               [2m | [22m[36m39.15 kB[39m[2m | [22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m              [2m | [22m[1mRaw size[22m
+[32mchunk-LAF34Q6F.js[39m  [2m | [22m[2maudit-log-component[22m[2m | [22m[36m32.23 kB[39m[2m | [22m
+[32mchunk-JH7YQZCI.js[39m  [2m | [22m[2madmin-routes[22m       [2m | [22m [36m3.86 kB[39m[2m | [22m
+
+Application bundle generation complete. [20.324 seconds]
+
+Page reload sent to client(s).
