@@ -54,12 +54,17 @@ public class AggregationPipelineService(AppDbContext db)
         var page = Math.Max(request.Page, 1);
         var offset = (page - 1) * pageSize;
 
+        var hasMachineId = groupByDefs.Any(g => g.FieldKey == "machineId");
+        var assetJoin = hasMachineId
+            ? "LEFT JOIN external_assets ea ON ea.source = 'mex' AND ea.external_id = data::jsonb->>'machineId'"
+            : string.Empty;
+
         var countSql = groupByParts.Count > 0
-            ? $"SELECT COUNT(*) FROM (SELECT 1 FROM form_submissions WHERE {fullWhere} GROUP BY {string.Join(", ", groupByParts)}) _agg"
+            ? $"SELECT COUNT(*) FROM (SELECT 1 FROM form_submissions {assetJoin} WHERE {fullWhere} GROUP BY {string.Join(", ", groupByParts)}) _agg"
             : $"SELECT COUNT(*) FROM form_submissions WHERE {fullWhere}";
 
         var dataSql = new StringBuilder();
-        dataSql.Append($"SELECT {selectParts} FROM form_submissions WHERE {fullWhere}");
+        dataSql.Append($"SELECT {selectParts} FROM form_submissions {assetJoin} WHERE {fullWhere}");
         if (groupByParts.Count > 0) dataSql.Append($" GROUP BY {string.Join(", ", groupByParts)}");
         dataSql.Append($" ORDER BY {orderBy} LIMIT {pageSize} OFFSET {offset}");
 
@@ -98,9 +103,19 @@ public class AggregationPipelineService(AppDbContext db)
         foreach (var m in measures)
         {
             if (m.FieldKey == "_count" || m.Aggregation == "count")
+            {
                 parts.Add($"COUNT(*) AS \"{m.Alias}\"");
+            }
+            else if (m.Aggregation.StartsWith("count_where_eq:", StringComparison.OrdinalIgnoreCase))
+            {
+                // count_where_eq:value — COUNT(*) FILTER (WHERE field = 'value')
+                var filterValue = m.Aggregation["count_where_eq:".Length..].Replace("'", "''");
+                parts.Add($"COUNT(*) FILTER (WHERE data::jsonb->>'{EscapeKey(m.FieldKey!)}' = '{filterValue}') AS \"{m.Alias}\"");
+            }
             else
+            {
                 parts.Add($"{m.Aggregation.ToUpperInvariant()}(NULLIF(data::jsonb->>'{EscapeKey(m.FieldKey!)}', '')::numeric) AS \"{m.Alias}\"");
+            }
         }
 
         return string.Join(", ", parts);
@@ -111,7 +126,10 @@ public class AggregationPipelineService(AppDbContext db)
 
     private static string DateTruncExpr(GroupByDef g)
     {
-        var raw = $"data::jsonb->>'{EscapeKey(g.FieldKey)}'";
+        // machineId resolves to the asset display name via LEFT JOIN on external_assets
+        var raw = g.FieldKey == "machineId"
+            ? $"COALESCE(ea.display_name, data::jsonb->>'machineId')"
+            : $"data::jsonb->>'{EscapeKey(g.FieldKey)}'";
         return g.DateTrunc switch
         {
             "day"     => $"TO_CHAR(({raw})::date, 'YYYY-MM-DD')",
@@ -146,7 +164,7 @@ public class AggregationPipelineService(AppDbContext db)
         // Delegate to the same filter builder used by ReportQueryEngineService via static helpers
         parameters.Add(formId);
         var paramIdx = parameters.Count; // 1-based
-        var baseSql = $"form_id = ${paramIdx}";
+        var baseSql = $"form_id = ${paramIdx} AND deleted_at IS NULL";
 
         // Apply template filters
         if (!string.IsNullOrWhiteSpace(templateFiltersJson))

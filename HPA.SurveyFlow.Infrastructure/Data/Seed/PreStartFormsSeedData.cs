@@ -22,8 +22,6 @@ internal static class PreStartFormsSeedData
             "Abnormality Outcome to MEX (Demo)",
             "Sub Form Redirect Parent (Demo)",
             "Acknowledgement Sub Form (Demo)",
-            "Forklift Pre-Start to MEX Flow (Demo)",       // superseded by DemoEquipmentMexFlowSeedData
-            "Forklift Warning Acknowledgement (Demo)",
             // Simple (non-MEX) prestart forms — superseded by MEX flow demos
             "Forklift Pre-Start Checklist",
             "Reach Stacker Pre-Start Checklist",

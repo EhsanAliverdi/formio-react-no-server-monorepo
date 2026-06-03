@@ -27,6 +27,12 @@ public sealed class SeedOptions
     /// <summary>Seed demo report templates.</summary>
     public bool Reports { get; init; }
 
+    /// <summary>Seed the Forklift operations dashboard wired to the seeded report templates.</summary>
+    public bool Dashboards { get; init; }
+
+    /// <summary>Seed 20 demo forklift submissions spread over the last 10 days, with rule logs.</summary>
+    public bool Submissions { get; init; }
+
     /// <summary>Seed demo datasets.</summary>
     public bool Datasets { get; init; }
 

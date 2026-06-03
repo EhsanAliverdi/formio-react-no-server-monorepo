@@ -59,14 +59,21 @@ public class ReportQueryEngineService(AppDbContext db)
         var countSql = $"SELECT COUNT(*) FROM form_submissions WHERE {whereClause}";
         var total = await ExecuteCountAsync(countSql, parameters, conn);
 
-        // Data query
+        // Data query — LEFT JOIN external_assets when machineId column is present so
+        // the raw externalId is resolved to a human-readable display name.
+        var hasMachineId = columns.Any(c => c.FieldKey == "machineId");
+        var assetJoin = hasMachineId
+            ? "LEFT JOIN external_assets ea ON ea.source = 'mex' AND ea.external_id = data::jsonb->>'machineId'"
+            : string.Empty;
+
         var orderBy = sortField != null
             ? $"data::jsonb->>'{EscapeKey(sortField)}' {sortDir}"
             : "submitted_at DESC";
 
         var dataSql = $@"
-SELECT {selectParts}, submitted_at, id as submission_id
+SELECT {selectParts}, submitted_at, form_submissions.id as submission_id
 FROM form_submissions
+{assetJoin}
 WHERE {whereClause}
 ORDER BY {orderBy}
 LIMIT {pageSize} OFFSET {offset}";
@@ -130,6 +137,10 @@ LIMIT {pageSize} OFFSET {offset}";
     {
         var parts = columns.Select(c =>
         {
+            // machineId resolves to the asset display name via the LEFT JOIN on external_assets
+            if (c.FieldKey == "machineId")
+                return $"COALESCE(ea.display_name, data::jsonb->>'machineId') AS \"machineId\"";
+
             var key = EscapeKey(c.FieldKey);
             if (c.FieldKey.Contains('.'))
             {

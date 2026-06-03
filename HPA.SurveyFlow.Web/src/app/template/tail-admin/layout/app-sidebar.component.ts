@@ -260,7 +260,14 @@ export class AppSidebarComponent {
   }
 
   openDesktopSubmenu(item: NavItem, event: MouseEvent): void {
-    if (!item.subItems || !this.isDesktop()) return;
+    if (!this.isDesktop()) return;
+    // Always close any open flyout when entering a new nav row.
+    // Only cancel the pending close timer when this item itself has a submenu to show.
+    if (!item.subItems) {
+      this.desktopSubmenu.set(null);
+      this.cancelDesktopSubmenuClose();
+      return;
+    }
     this.cancelDesktopSubmenuClose();
     const target = event.currentTarget as HTMLElement | null;
     this.desktopFlyoutTop.set(target?.getBoundingClientRect().top ?? 0);

@@ -23,34 +23,65 @@ public static class DbSeeder
 
         if (opts.Forms)
         {
+            Console.WriteLine("[Seed] Forms: starting");
             if (opts.Reset) await ResetFormsAsync(db);
             await SeedFormsAsync(db, opts.OverrideExisting);
             if (storage != null)
                 await SeedFormImagesAsync(db, storage, opts.OverrideExisting);
+            var formCount = await db.Forms.CountAsync();
+            Console.WriteLine($"[Seed] Forms: done — {formCount} forms in DB");
         }
 
         if (opts.Rules)
         {
+            Console.WriteLine("[Seed] Rules: starting");
             if (opts.Reset) await ResetRulesAsync(db);
             await DemoRulesSeedData.SeedAsync(db, opts.OverrideExisting);
+            Console.WriteLine("[Seed] Rules: done");
         }
 
         if (opts.Reports)
         {
+            Console.WriteLine("[Seed] Reports: starting");
+            var forkliftForm = await db.Forms.FirstOrDefaultAsync(f => f.Name == "Forklift Pre-Start to MEX Flow (Demo)");
+            Console.WriteLine($"[Seed] Reports: forklift form = {(forkliftForm == null ? "NOT FOUND" : $"id={forkliftForm.Id}")}");
             if (opts.Reset) await ResetReportsAsync(db);
-            await DemoReportTemplatesSeedData.SeedAsync(db, opts.OverrideExisting);
+            try { await DemoReportTemplatesSeedData.SeedAsync(db, opts.OverrideExisting); }
+            catch (Exception ex) { Console.WriteLine($"[Seed] Reports ERROR: {ex}"); throw; }
+            var reportCount = await db.ReportTemplates.CountAsync();
+            Console.WriteLine($"[Seed] Reports: done — {reportCount} templates in DB");
+        }
+
+        if (opts.Dashboards)
+        {
+            Console.WriteLine("[Seed] Dashboards: starting");
+            if (opts.Reset) await ResetDashboardsAsync(db);
+            await DemoDashboardSeedData.SeedAsync(db, opts.OverrideExisting);
+            var dashCount = await db.Dashboards.CountAsync();
+            Console.WriteLine($"[Seed] Dashboards: done — {dashCount} dashboards in DB");
+        }
+
+        if (opts.Submissions)
+        {
+            Console.WriteLine("[Seed] Submissions: starting");
+            await DemoSubmissionsSeedData.SeedAsync(db, opts.OverrideExisting);
         }
 
         if (opts.Datasets)
         {
+            Console.WriteLine("[Seed] Datasets: starting");
             if (opts.Reset) await ResetDatasetsAsync(db);
             await DemoDatasetsAndSchedulesSeedData.SeedDatasetsAsync(db, opts.OverrideExisting);
+            var datasetCount = await db.Datasets.CountAsync();
+            Console.WriteLine($"[Seed] Datasets: done — {datasetCount} datasets in DB");
         }
 
         if (opts.Schedules)
         {
+            Console.WriteLine("[Seed] Schedules: starting");
             if (opts.Reset) await ResetSchedulesAsync(db);
             await DemoDatasetsAndSchedulesSeedData.SeedSchedulesAsync(db, opts.OverrideExisting);
+            Console.WriteLine("[Seed] Schedules: done");
         }
 
         await SeedJobDefinitionsAsync(db);
@@ -169,7 +200,50 @@ public static class DbSeeder
             .Concat(PreStartFormsSeedData.RetiredSeedFormNames)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        var forms = await db.Forms.Where(f => seedNames.Contains(f.Name)).ToListAsync();
+
+        var formIds = await db.Forms
+            .Where(f => seedNames.Contains(f.Name))
+            .Select(f => f.Id)
+            .ToListAsync();
+
+        if (formIds.Count == 0) return;
+
+        // Delete all FK-dependents in dependency order before deleting forms.
+
+        // 1. Scheduled reports reference report templates
+        var templateIds = await db.ReportTemplates
+            .Where(t => formIds.Contains(t.FormId)).Select(t => t.Id).ToListAsync();
+        if (templateIds.Count > 0)
+        {
+            var schedules = await db.ScheduledReports
+                .Where(s => templateIds.Contains(s.ReportTemplateId)).ToListAsync();
+            if (schedules.Count > 0) db.ScheduledReports.RemoveRange(schedules);
+            await db.SaveChangesAsync();
+        }
+
+        // 2. Report templates (cascade deletes dashboard cards and alert rules)
+        var templates = await db.ReportTemplates.Where(t => formIds.Contains(t.FormId)).ToListAsync();
+        if (templates.Count > 0) db.ReportTemplates.RemoveRange(templates);
+
+        // 3. Datasets (Restrict FK — must be deleted explicitly)
+        var datasets = await db.Datasets.Where(d => formIds.Contains(d.FormId)).ToListAsync();
+        if (datasets.Count > 0) db.Datasets.RemoveRange(datasets);
+
+        // 4. Submissions (Restrict FK — rule logs cascade from submissions)
+        var submissions = await db.FormSubmissions.Where(s => formIds.Contains(s.FormId)).ToListAsync();
+        if (submissions.Count > 0) db.FormSubmissions.RemoveRange(submissions);
+
+        // 5. Integration and notification rules (Cascade, but remove explicitly for safety)
+        var intRules = await db.FormIntegrationRules.Where(r => formIds.Contains(r.FormId)).ToListAsync();
+        if (intRules.Count > 0) db.FormIntegrationRules.RemoveRange(intRules);
+
+        var notifRules = await db.FormNotificationRules.Where(r => formIds.Contains(r.FormId)).ToListAsync();
+        if (notifRules.Count > 0) db.FormNotificationRules.RemoveRange(notifRules);
+
+        await db.SaveChangesAsync();
+
+        // 6. Finally delete the forms themselves
+        var forms = await db.Forms.Where(f => formIds.Contains(f.Id)).ToListAsync();
         if (forms.Count > 0) db.Forms.RemoveRange(forms);
         await db.SaveChangesAsync();
     }
@@ -204,6 +278,13 @@ public static class DbSeeder
         if (formIds.Count == 0) return;
         var datasets = await db.Datasets.Where(d => formIds.Contains(d.FormId)).ToListAsync();
         if (datasets.Count > 0) db.Datasets.RemoveRange(datasets);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task ResetDashboardsAsync(AppDbContext db)
+    {
+        var dashboard = await db.Dashboards.Include(d => d.Cards).FirstOrDefaultAsync(d => d.Slug == "forklift-ops");
+        if (dashboard != null) db.Dashboards.Remove(dashboard);
         await db.SaveChangesAsync();
     }
 

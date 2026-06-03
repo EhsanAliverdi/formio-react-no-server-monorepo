@@ -28,6 +28,12 @@ internal static class DemoEquipmentMexFlowSeedData
     public static SeedForm CreateParent(EquipmentDemoDefinition d, int? warningAcknowledgementFormId = null)
     {
         var titleName = ToTitle(d.EquipmentName);
+
+        // Field-check validation is enabled only for the Forklift form (the primary demo vehicle).
+        var isForklift = d.Path == "forklift-pre-start-mex-flow-demo";
+        FieldCheckSpec? FC(string key, string triggerValue) =>
+            isForklift ? new FieldCheckSpec(key, triggerValue) : null;
+
         var schema = new
         {
             type = "form",
@@ -55,25 +61,25 @@ internal static class DemoEquipmentMexFlowSeedData
                     Explain("seatAndBeltOk_explain", "seatAndBeltOk", "no"),
                     ErrorYesNo("hornAudible", "Is the horn clearly audible?", abnormalWhen: "no"),
                     Explain("hornAudible_explain", "hornAudible", "no"),
-                    ErrorYesNo("safetyDevicesTampered", "Is there any evidence of safety devices being tampered with?", normal: "no", abnormalWhen: "yes"),
+                    ErrorYesNo("safetyDevicesTampered", "Is there any evidence of safety devices being tampered with?", normal: "no", abnormalWhen: "yes", check: FC("safetyDevicesTampered", "yes")),
                     Explain("safetyDevicesTampered_explain", "safetyDevicesTampered", "yes"),
                 ]),
                 Panel("step3_condition", "Step 3 - General Condition", "Condition",
                 [
-                    WarningYesNo("visibleDamage", $"Is there any visible damage to the {d.EquipmentName}?", normal: "no", abnormalWhen: "yes"),
+                    WarningYesNo("visibleDamage", $"Is there any visible damage to the {d.EquipmentName}?", normal: "no", abnormalWhen: "yes", check: FC("visibleDamage", "yes")),
                     Explain("visibleDamage_explain", "visibleDamage", "yes", "Please explain damage / location"),
-                    WarningYesNo("tyresOrWheelsDamaged", "Is there any visible damage to tyres, wheels, tracks, or travel gear?", normal: "no", abnormalWhen: "yes"),
+                    WarningYesNo("tyresOrWheelsDamaged", "Is there any visible damage to tyres, wheels, tracks, or travel gear?", normal: "no", abnormalWhen: "yes", check: FC("tyresOrWheelsDamaged", "yes")),
                     Explain("tyresOrWheelsDamaged_explain", "tyresOrWheelsDamaged", "yes", "Please explain damage"),
-                    WarningYesNo("leaksVisible", "Are there any visible leaks?", normal: "no", abnormalWhen: "yes"),
+                    WarningYesNo("leaksVisible", "Are there any visible leaks?", normal: "no", abnormalWhen: "yes", check: FC("leaksVisible", "yes")),
                     Explain("leaksVisible_explain", "leaksVisible", "yes", "Please describe the leak"),
                     WarningYesNo("cabinClean", "Is the cabin clean and clear?", abnormalWhen: "no"),
                     Explain("cabinClean_explain", "cabinClean", "no"),
                 ]),
                 Panel("step4_brakes_controls", "Step 4 - Brakes & Controls", "Brakes & Controls",
                 [
-                    ErrorYesNo("brakesOk", "Are brakes working correctly?", abnormalWhen: "no"),
+                    ErrorYesNo("brakesOk", "Are brakes working correctly?", abnormalWhen: "no", check: FC("brakesOk", "no")),
                     Explain("brakesOk_explain", "brakesOk", "no"),
-                    ErrorYesNo("steeringControlsOk", "Are steering and operating controls working correctly?", abnormalWhen: "no"),
+                    ErrorYesNo("steeringControlsOk", "Are steering and operating controls working correctly?", abnormalWhen: "no", check: FC("steeringControlsOk", "no")),
                     Explain("steeringControlsOk_explain", "steeringControlsOk", "no"),
                 ]),
                 Panel("step5_fault_details", "Step 5 - Fault Details & Evidence", "Fault Details",
@@ -84,7 +90,7 @@ internal static class DemoEquipmentMexFlowSeedData
                 ]),
                 Panel("step6_safe_to_operate", "Step 6 - Safe to Operate Declaration", "Safe to Operate",
                 [
-                    ErrorYesNo("safeToOperate", $"Is this {d.EquipmentName} safe to operate?", abnormalWhen: "no"),
+                    ErrorYesNo("safeToOperate", $"Is this {d.EquipmentName} safe to operate?", abnormalWhen: "no", check: FC("safeToOperate", "no")),
                     TextArea("unsafeReason", $"Reason {d.EquipmentName} is unsafe", "safeToOperate", "no"),
                     DisplayText("unsafeSystemMessage", "System message", d.UnsafeMessage, "safeToOperate", "no"),
                 ]),
@@ -260,19 +266,19 @@ internal static class DemoEquipmentMexFlowSeedData
             input = true,
         };
 
-    private static object ErrorYesNo(string key, string label, string normal = "yes", string abnormalWhen = "no") =>
-        YesNoWithAbnormality(key, label, normal, abnormalWhen, "error");
+    private static object ErrorYesNo(string key, string label, string normal = "yes", string abnormalWhen = "no", FieldCheckSpec? check = null) =>
+        YesNoWithAbnormality(key, label, normal, abnormalWhen, "error", check);
 
-    private static object WarningYesNo(string key, string label, string normal = "yes", string abnormalWhen = "no") =>
-        YesNoWithAbnormality(key, label, normal, abnormalWhen, "warning");
+    private static object WarningYesNo(string key, string label, string normal = "yes", string abnormalWhen = "no", FieldCheckSpec? check = null) =>
+        YesNoWithAbnormality(key, label, normal, abnormalWhen, "warning", check);
 
-    private static object YesNoWithAbnormality(string key, string label, string normal, string abnormalWhen, string level) =>
+    private static object YesNoWithAbnormality(string key, string label, string normal, string abnormalWhen, string level, FieldCheckSpec? check = null) =>
         new
         {
             type = "radio",
             key,
             label,
-            validate = Required(),
+            validate = check is not null ? RequiredWithFieldCheck(check) : Required(),
             values = new[]
             {
                 new { label = "Yes", value = "yes" },
@@ -286,6 +292,16 @@ internal static class DemoEquipmentMexFlowSeedData
                 abnormal_warning_values = level == "warning" ? new object[] { new { value = abnormalWhen } } : [],
                 abnormal_default_level = "none",
             },
+        };
+
+    // Field-check custom validation wired to the backend API.
+    // Formio POSTs { field_key, field_value, trigger_value, machine_id, data } and displays the message on false.
+    private static object RequiredWithFieldCheck(FieldCheckSpec spec) =>
+        new
+        {
+            required = true,
+            custom = $"valid = true; /* field-check */ var __fc = {{fieldKey:'{spec.FieldKey}',fieldValue:data['{spec.FieldKey}'],triggerValue:'{spec.TriggerValue}',machineId:data['machineId'],hours:{spec.Hours},data:data}}; utils.fetch('/api/forms/'+form._id+'/field-check',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(__fc)}}).then(function(r){{return r.json()}}).then(function(res){{if(!res.valid){{valid=res.message||'This issue has already been reported. Do you still want to submit?';}}instance.triggerRedraw();}}).catch(function(){{}});",
+            customMessage = "This issue has already been reported.",
         };
 
     private static object UrgencyLevel() =>
@@ -322,6 +338,8 @@ internal static class DemoEquipmentMexFlowSeedData
     private static string ToTitle(string value) =>
         string.Join(" ", value.Split(' ', '/', StringSplitOptions.RemoveEmptyEntries).Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 }
+
+internal sealed record FieldCheckSpec(string FieldKey, string TriggerValue, int Hours = 24);
 
 internal sealed record EquipmentDemoDefinition(
     string ParentFormName,
