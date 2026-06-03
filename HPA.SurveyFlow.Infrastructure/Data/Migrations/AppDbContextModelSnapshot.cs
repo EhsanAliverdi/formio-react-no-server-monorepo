@@ -433,6 +433,95 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.ToTable("dashboard_cards", (string)null);
                 });
 
+            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.Page", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Css")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasColumnName("css")
+                        .HasDefaultValue("");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Html")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasColumnName("html")
+                        .HasDefaultValue("");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("ProjectJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasColumnName("project_json")
+                        .HasDefaultValue("{}");
+
+                    b.Property<bool>("UseLayout")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("use_layout");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("public")
+                        .HasColumnName("visibility");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("pages", (string)null);
+                });
+
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.Dataset", b =>
                 {
                     b.Property<int>("Id")
@@ -1905,6 +1994,17 @@ namespace HPA.SurveyFlow.Infrastructure.Data.Migrations
                     b.Navigation("Dashboard");
 
                     b.Navigation("ReportTemplate");
+                });
+
+            modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.Page", b =>
+                {
+                    b.HasOne("HPA.SurveyFlow.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
                 });
 
             modelBuilder.Entity("HPA.SurveyFlow.Domain.Entities.Dataset", b =>

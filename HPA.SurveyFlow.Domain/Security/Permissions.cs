@@ -47,6 +47,12 @@ public static class Permissions
         public const string ManageAlerts = "reports.manage_alerts";
     }
 
+    public static class Pages
+    {
+        public const string Read = "pages.read";
+        public const string Manage = "pages.manage";
+    }
+
     public static class AuditLogs
     {
         public const string Read = "audit_logs.read";

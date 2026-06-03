@@ -534,6 +534,36 @@ export interface ReportExecutionResult {
 
 export type DashboardVisibility = 'public' | 'restricted';
 
+export type PageVisibility = 'public' | 'restricted';
+
+export interface Page {
+  id: number;
+  title: string;
+  slug: string;
+  description?: string | null;
+  visibility: PageVisibility;
+  is_active: boolean;
+  use_layout: boolean;
+  project_json: string;
+  html: string;
+  css: string;
+  created_by_user_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SavePageRequest {
+  title: string;
+  slug: string;
+  description?: string | null;
+  visibility: PageVisibility;
+  is_active: boolean;
+  use_layout: boolean;
+  project_json: string;
+  html: string;
+  css: string;
+}
+
 export interface Dashboard {
   id: number;
   name: string;

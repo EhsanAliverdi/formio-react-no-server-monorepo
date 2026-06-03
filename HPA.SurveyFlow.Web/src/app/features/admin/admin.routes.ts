@@ -32,6 +32,21 @@ export const adminRoutes: Routes = [
       import('./pages/categories.component').then(m => m.CategoriesComponent),
   },
   {
+    path: 'pages',
+    loadComponent: () =>
+      import('./pages/page-list.component').then(m => m.PageListComponent),
+  },
+  {
+    path: 'pages/new',
+    loadComponent: () =>
+      import('./pages/page-designer.component').then(m => m.PageDesignerComponent),
+  },
+  {
+    path: 'pages/:id/designer',
+    loadComponent: () =>
+      import('./pages/page-designer.component').then(m => m.PageDesignerComponent),
+  },
+  {
     path: 'submissions',
     loadComponent: () =>
       import('./pages/submissions.component').then(m => m.SubmissionsComponent),

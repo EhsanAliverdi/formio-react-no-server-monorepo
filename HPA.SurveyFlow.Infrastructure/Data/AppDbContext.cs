@@ -34,6 +34,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SubmissionRuleLog> SubmissionRuleLogs { get; set; }
     public DbSet<Dashboard> Dashboards { get; set; }
     public DbSet<DashboardCard> DashboardCards { get; set; }
+    public DbSet<Page> Pages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -347,6 +348,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(c => c.ReportTemplate).WithMany().HasForeignKey(c => c.ReportTemplateId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(c => c.DashboardId);
             e.HasIndex(c => c.ReportTemplateId);
+        });
+
+        modelBuilder.Entity<Page>(e =>
+        {
+            e.ToTable("pages");
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Id).HasColumnName("id").UseIdentityAlwaysColumn();
+            e.Property(p => p.Title).HasColumnName("title").IsRequired();
+            e.Property(p => p.Slug).HasColumnName("slug").IsRequired();
+            e.Property(p => p.Description).HasColumnName("description");
+            e.Property(p => p.Visibility).HasColumnName("visibility").HasDefaultValue("public");
+            e.Property(p => p.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.Property(p => p.UseLayout).HasColumnName("use_layout").HasDefaultValue(true);
+            e.Property(p => p.ProjectJson).HasColumnName("project_json").HasDefaultValue("{}");
+            e.Property(p => p.Html).HasColumnName("html").HasDefaultValue(string.Empty);
+            e.Property(p => p.Css).HasColumnName("css").HasDefaultValue(string.Empty);
+            e.Property(p => p.CreatedByUserId).HasColumnName("created_by_user_id");
+            e.Property(p => p.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(p => p.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.HasIndex(p => p.Slug).IsUnique();
+            e.HasOne(p => p.CreatedByUser).WithMany().HasForeignKey(p => p.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<RlsPolicy>(e =>

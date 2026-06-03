@@ -33,7 +33,32 @@
               "node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css",
               "node_modules/ngx-toastr/toastr.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "formiojs",
+              "@formio/js",
+              "lodash",
+              "grapesjs",
+              "grapesjs-blocks-basic",
+              "grapesjs-plugin-export",
+              "grapesjs-plugin-ckeditor",
+              "grapesjs-tui-image-editor",
+              "grapesjs-plugin-forms",
+              "grapesjs-navbar",
+              "grapesjs-component-countdown",
+              "grapesjs-style-gradient",
+              "grapesjs-style-filter",
+              "grapesjs-style-bg",
+              "grapesjs-blocks-flexbox",
+              "grapesjs-lory-slider",
+              "grapesjs-tabs",
+              "grapesjs-tooltip",
+              "grapesjs-custom-code",
+              "grapesjs-touch",
+              "grapesjs-parser-postcss",
+              "grapesjs-typed",
+              "grapesjs-ui-suggest-classes"
+            ]
           },
           "configurations": {
             "production": {

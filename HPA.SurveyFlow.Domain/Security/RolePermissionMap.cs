@@ -27,6 +27,8 @@ public static class RolePermissionMap
             Permissions.Reports.Read,
             Permissions.Reports.Manage,
             Permissions.Reports.ManageAlerts,
+            Permissions.Pages.Read,
+            Permissions.Pages.Manage,
             Permissions.AuditLogs.Read,
             Permissions.ApiKeys.Manage,
         ],
@@ -43,6 +45,8 @@ public static class RolePermissionMap
             Permissions.Reports.Read,
             Permissions.Reports.Manage,
             Permissions.Reports.ManageAlerts,
+            Permissions.Pages.Read,
+            Permissions.Pages.Manage,
         ],
         [UserRole.Viewer] =
         [
@@ -53,6 +57,7 @@ public static class RolePermissionMap
             Permissions.Users.ReadSelf,
             Permissions.Users.UpdateSelf,
             Permissions.Reports.Read,
+            Permissions.Pages.Read,
         ],
     };
 

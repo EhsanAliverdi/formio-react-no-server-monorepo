@@ -33,7 +33,11 @@ import { ThemeService } from '../services/theme.service';
         <main class="flex-1 overflow-y-auto overflow-x-hidden">
           <div class="mx-auto flex min-h-full w-full max-w-screen-2xl flex-col p-4  md:p-6">
             <div class="flex-1">
-              <router-outlet />
+              @if (useRouterOutlet) {
+                <router-outlet />
+              } @else {
+                <ng-content />
+              }
             </div>
           </div>
         </main>
@@ -54,6 +58,7 @@ export class AppLayoutComponent {
   @Input() loginHref?: string;
   @Input() copyrightText?: string | null;
   @Input() showCopyright = false;
+  @Input() useRouterOutlet = true;
   @Output() signOut = new EventEmitter<void>();
 
   sidebar = inject(SidebarService);

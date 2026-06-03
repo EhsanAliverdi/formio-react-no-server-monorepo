@@ -41,6 +41,11 @@ export const routes: Routes = [
       import('./features/public/pages/public-form-page.component').then(m => m.PublicFormPageComponent),
   },
   {
+    path: 'page/:slug',
+    loadComponent: () =>
+      import('./features/public/pages/dynamic-page.component').then(m => m.DynamicPageComponent),
+  },
+  {
     path: 'admin/login',
     loadComponent: () =>
       import('./features/auth/login.component').then(m => m.LoginComponent),
