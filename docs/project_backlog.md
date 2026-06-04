@@ -101,6 +101,8 @@ metadata:
 - **Terminal parameter on forms, pages, reports, submissions, and anywhere else required**: Records can belong to both terminals or be scoped to a specific one. Filter and display accordingly throughout the app.
 - *Status: **Needs planning first — confirm plan before implementing.***
 
+- **Implementation update**: Done - implemented in `41725c4` and pushed to `origin/main`. Added nullable `terminal_code` scope to forms, form submissions, report templates, pages, dashboards, and datasets; `null` means all terminals. API filtering includes all-terminal records plus matching terminal-specific records, report execution applies terminal filtering at SQL level, and report/dataset/dashboard compatibility checks prevent conflicting terminal scopes. Verified with `dotnet build HPA.SurveyFlow.slnx`, `dotnet test HPA.SurveyFlow.slnx --no-build`, and `npm run build` on 2026-06-05.
+
 ## Clone / Duplicate
 
 - **Duplicate action on Pages, Forms, Reports, and Dashboards**: Done - list pages now expose Duplicate actions. Backend clone endpoints copy each entity's editable configuration with a unique "Copy of ..." name; pages and dashboards also receive unique slugs. Forms copy access rules plus notification/integration rules, reports copy RLS policies, and dashboards copy cards/layout settings. Verified with `dotnet build`, `dotnet test --no-build`, and Angular build on 2026-06-04.
