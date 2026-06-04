@@ -46,6 +46,7 @@ export interface Form {
   allow_anonymous_submit: number;
   visibility: string;
   parent_form_id?: number | null;
+  terminal_code?: string | null;
   allowed_roles?: string[];
   allowed_user_ids?: number[];
 }
@@ -55,6 +56,7 @@ export interface FormSubmission {
   form_id: number;
   form_name: string;
   parent_submission_id?: number | null;
+  terminal_code?: string | null;
   user_id?: number;
   user_email?: string;
   submitted_at: string;
@@ -188,6 +190,14 @@ export interface MexIntegration {
   enabled: boolean;
   baseUrl?: string;
   apiKeySet: boolean;
+}
+
+export interface Terminal {
+  code: string;
+  description: string;
+  timezone: string;
+  port_code: string;
+  trading_name: string;
 }
 
 export interface SmsIntegration {
@@ -467,6 +477,7 @@ export interface Dataset {
   name: string;
   description?: string;
   form_id: number;
+  terminal_code?: string | null;
   base_filters?: ConditionGroup | null;
   fields?: FieldDescriptor[] | null;
   created_by: number;
@@ -479,6 +490,7 @@ export interface SaveDatasetRequest {
   name: string;
   description?: string;
   form_id: number;
+  terminal_code?: string | null;
   base_filters?: ConditionGroup | null;
   fields?: FieldDescriptor[] | null;
   is_active: boolean;
@@ -488,6 +500,7 @@ export interface ReportTemplate {
   id: number;
   form_id: number;
   form_name: string;
+  terminal_code?: string | null;
   name: string;
   description?: string;
   is_public: boolean;
@@ -515,6 +528,7 @@ export interface ReportTemplate {
 
 export interface SaveReportTemplateRequest {
   form_id: number;
+  terminal_code?: string | null;
   name: string;
   description?: string;
   is_public: boolean;
@@ -537,6 +551,7 @@ export interface SaveReportTemplateRequest {
 export interface RunReportRequest {
   template_id: number;
   runtime_filters?: ConditionGroup | null;
+  terminal_code?: string | null;
   sort_field?: string;
   sort_direction?: 'asc' | 'desc';
   page: number;
@@ -563,6 +578,7 @@ export interface Page {
   visibility: PageVisibility;
   is_active: boolean;
   use_layout: boolean;
+  terminal_code?: string | null;
   project_json: string;
   html: string;
   css: string;
@@ -578,6 +594,7 @@ export interface SavePageRequest {
   visibility: PageVisibility;
   is_active: boolean;
   use_layout: boolean;
+  terminal_code?: string | null;
   project_json: string;
   html: string;
   css: string;
@@ -590,6 +607,7 @@ export interface Dashboard {
   description?: string | null;
   visibility: DashboardVisibility;
   is_active: boolean;
+  terminal_code?: string | null;
   created_by_user_id: number;
   created_at: string;
   updated_at: string;
@@ -625,6 +643,7 @@ export interface SaveDashboardRequest {
   description?: string | null;
   visibility: DashboardVisibility;
   is_active: boolean;
+  terminal_code?: string | null;
 }
 
 export interface SaveDashboardCardRequest {

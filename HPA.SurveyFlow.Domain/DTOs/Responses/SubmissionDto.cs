@@ -16,6 +16,7 @@ public class SubmissionListItemDto
     [JsonPropertyName("id")] public int Id { get; set; }
     [JsonPropertyName("form_id")] public int FormId { get; set; }
     [JsonPropertyName("form_name")] public string FormName { get; set; } = null!;
+    [JsonPropertyName("terminal_code")] public string? TerminalCode { get; set; }
     [JsonPropertyName("submitted_at")] public DateTime SubmittedAt { get; set; }
     [JsonPropertyName("can_export_pdf")] public bool CanExportPdf { get; set; }
 }
@@ -25,6 +26,7 @@ public class SubmissionDetailDto
     [JsonPropertyName("id")] public int Id { get; set; }
     [JsonPropertyName("form_id")] public int FormId { get; set; }
     [JsonPropertyName("form_name")] public string FormName { get; set; } = null!;
+    [JsonPropertyName("terminal_code")] public string? TerminalCode { get; set; }
     [JsonPropertyName("user_id")] public int? UserId { get; set; }
     [JsonPropertyName("user_email")] public string? UserEmail { get; set; }
     [JsonPropertyName("submitted_at")] public DateTime SubmittedAt { get; set; }
@@ -40,6 +42,7 @@ public class AdminSubmissionListItemDto
     [JsonPropertyName("form_id")] public int FormId { get; set; }
     [JsonPropertyName("form_name")] public string FormName { get; set; } = null!;
     [JsonPropertyName("parent_submission_id")] public int? ParentSubmissionId { get; set; }
+    [JsonPropertyName("terminal_code")] public string? TerminalCode { get; set; }
     [JsonPropertyName("user_id")] public int? UserId { get; set; }
     [JsonPropertyName("user_email")] public string? UserEmail { get; set; }
     [JsonPropertyName("submitted_at")] public DateTime SubmittedAt { get; set; }
@@ -74,6 +77,7 @@ public class AdminSubmissionDetailDto
     [JsonPropertyName("form_id")] public int FormId { get; set; }
     [JsonPropertyName("form_name")] public string FormName { get; set; } = null!;
     [JsonPropertyName("parent_submission_id")] public int? ParentSubmissionId { get; set; }
+    [JsonPropertyName("terminal_code")] public string? TerminalCode { get; set; }
     [JsonPropertyName("user_id")] public int? UserId { get; set; }
     [JsonPropertyName("user_email")] public string? UserEmail { get; set; }
     [JsonPropertyName("submitted_at")] public DateTime SubmittedAt { get; set; }

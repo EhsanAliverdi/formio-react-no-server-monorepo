@@ -14,6 +14,9 @@ public class SaveDatasetRequest
     [JsonPropertyName("form_id")]
     public int FormId { get; set; }
 
+    [JsonPropertyName("terminal_code")]
+    public string? TerminalCode { get; set; }
+
     [JsonPropertyName("base_filters")]
     public JsonElement? BaseFilters { get; set; }
 

@@ -23,6 +23,9 @@ public class SaveReportTemplateRequest
     [JsonPropertyName("form_id")]
     public int FormId { get; set; }
 
+    [JsonPropertyName("terminal_code")]
+    public string? TerminalCode { get; set; }
+
     [JsonPropertyName("name")]
     public string Name { get; set; } = null!;
 
@@ -97,6 +100,9 @@ public class RunReportRequest
 
     [JsonPropertyName("runtime_filters")]
     public JsonElement? RuntimeFilters { get; set; }
+
+    [JsonPropertyName("terminal_code")]
+    public string? TerminalCode { get; set; }
 
     [JsonPropertyName("sort_field")]
     public string? SortField { get; set; }

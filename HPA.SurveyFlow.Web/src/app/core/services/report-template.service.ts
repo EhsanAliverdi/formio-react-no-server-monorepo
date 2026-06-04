@@ -20,7 +20,7 @@ export class ReportTemplateService {
   private http = inject(HttpClient);
   private api = inject(ApiService);
 
-  list(options?: { formId?: number; category?: string; tag?: string; createdBy?: number }): Observable<ReportTemplate[]> {
+  list(options?: { formId?: number; category?: string; tag?: string; createdBy?: number; terminal_code?: string | null }): Observable<ReportTemplate[]> {
     return this.listPaged(options).pipe(map(result => result.items));
   }
 
@@ -34,6 +34,7 @@ export class ReportTemplateService {
     drift?: boolean;
     limit?: number;
     offset?: number;
+    terminal_code?: string | null;
   }): Observable<PaginatedResult<ReportTemplate>> {
     let params = new HttpParams();
     if (options?.formId != null) params = params.set('formId', options.formId);
@@ -45,6 +46,7 @@ export class ReportTemplateService {
     if (options?.drift) params = params.set('drift', true);
     if (options?.limit != null) params = params.set('limit', options.limit);
     if (options?.offset != null) params = params.set('offset', options.offset);
+    if (options?.terminal_code) params = params.set('terminal_code', options.terminal_code);
     return this.http.get<PaginatedResult<ReportTemplate>>(this.api.apiUrl('/api/report-templates'), { params });
   }
 
@@ -85,11 +87,13 @@ export class ReportTemplateService {
     sortField?: string,
     sortDirection?: string,
     runtimeFilters?: ConditionGroup | null,
+    terminalCode?: string | null,
   ): string {
     let params = new HttpParams().set('templateId', templateId);
     if (sortField) params = params.set('sortField', sortField);
     if (sortDirection) params = params.set('sortDirection', sortDirection);
     if (runtimeFilters) params = params.set('runtimeFilters', JSON.stringify(runtimeFilters));
+    if (terminalCode) params = params.set('terminal_code', terminalCode);
     return `${this.api.apiUrl('/api/report-executions/export-csv')}?${params.toString()}`;
   }
 
@@ -98,11 +102,13 @@ export class ReportTemplateService {
     sortField?: string,
     sortDirection?: string,
     runtimeFilters?: ConditionGroup | null,
+    terminalCode?: string | null,
   ): string {
     let params = new HttpParams().set('templateId', templateId);
     if (sortField) params = params.set('sortField', sortField);
     if (sortDirection) params = params.set('sortDirection', sortDirection);
     if (runtimeFilters) params = params.set('runtimeFilters', JSON.stringify(runtimeFilters));
+    if (terminalCode) params = params.set('terminal_code', terminalCode);
     return `${this.api.apiUrl('/api/report-executions/export-excel')}?${params.toString()}`;
   }
 

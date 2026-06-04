@@ -19,11 +19,19 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
 {
     [HttpGet]
     [RequirePermission(Permissions.Pages.Read)]
-    public async Task<IActionResult> List([FromQuery] bool paged = false, [FromQuery] int limit = 25, [FromQuery] int offset = 0)
+    public async Task<IActionResult> List(
+        [FromQuery] bool paged = false,
+        [FromQuery] string? terminal_code = null,
+        [FromQuery] int limit = 25,
+        [FromQuery] int offset = 0)
     {
         limit = Math.Clamp(limit, 1, 200);
         offset = Math.Max(0, offset);
-        var query = db.Pages.OrderBy(p => p.Title);
+        var terminalCode = NormaliseTerminalCode(terminal_code);
+        var query = db.Pages.AsQueryable();
+        if (terminalCode != null)
+            query = query.Where(p => p.TerminalCode == null || p.TerminalCode == terminalCode);
+        query = query.OrderBy(p => p.Title);
         if (paged)
         {
             var total = await query.CountAsync();
@@ -49,7 +57,11 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
     [AllowAnonymous]
     public async Task<IActionResult> GetBySlug(string slug)
     {
-        var page = await db.Pages.FirstOrDefaultAsync(p => p.Slug == slug && p.IsActive);
+        var terminalCode = NormaliseTerminalCode(Request.Query["terminal_code"].FirstOrDefault());
+        var page = await db.Pages.FirstOrDefaultAsync(p =>
+            p.Slug == slug
+            && p.IsActive
+            && (terminalCode == null || p.TerminalCode == null || p.TerminalCode == terminalCode));
         if (page == null) return NotFound(new { error = "Page not found." });
         if (page.Visibility != "public" && HttpContext.GetCurrentUser() == null)
             return Unauthorized(new { error = "Sign in to view this page." });
@@ -66,9 +78,12 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
         var slug = NormaliseSlug(body.Slug);
         var validation = await ValidatePage(body.Title, slug, body.Visibility);
         if (validation != null) return validation;
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
 
         var page = new Page { CreatedByUserId = user.Id };
-        ApplyPage(page, body, slug);
+        ApplyPage(page, body, slug, terminalCode);
         db.Pages.Add(page);
         await db.SaveChangesAsync();
         await auditService.LogAsync(
@@ -97,8 +112,11 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
         var slug = NormaliseSlug(body.Slug);
         var validation = await ValidatePage(body.Title, slug, body.Visibility, id);
         if (validation != null) return validation;
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
 
-        ApplyPage(page, body, slug);
+        ApplyPage(page, body, slug, terminalCode);
         page.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
         await auditService.LogAsync(
@@ -136,6 +154,7 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
             Visibility = source.Visibility,
             IsActive = source.IsActive,
             UseLayout = source.UseLayout,
+            TerminalCode = source.TerminalCode,
             ProjectJson = source.ProjectJson,
             Html = source.Html,
             Css = source.Css,
@@ -193,7 +212,7 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
         return null;
     }
 
-    private static void ApplyPage(Page page, SavePageRequest body, string slug)
+    private static void ApplyPage(Page page, SavePageRequest body, string slug, string? terminalCode)
     {
         page.Title = body.Title.Trim();
         page.Slug = slug;
@@ -201,6 +220,7 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
         page.Visibility = body.Visibility;
         page.IsActive = body.IsActive;
         page.UseLayout = body.UseLayout;
+        page.TerminalCode = terminalCode;
         page.ProjectJson = string.IsNullOrWhiteSpace(body.ProjectJson) ? "{}" : body.ProjectJson;
         page.Html = body.Html ?? string.Empty;
         page.Css = body.Css ?? string.Empty;
@@ -238,6 +258,7 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
         Visibility = page.Visibility,
         IsActive = page.IsActive,
         UseLayout = page.UseLayout,
+        TerminalCode = page.TerminalCode,
         ProjectJson = page.ProjectJson,
         Html = page.Html,
         Css = page.Css,
@@ -247,4 +268,14 @@ public class PagesController(AppDbContext db, AuditService auditService) : Contr
     };
 
     private string? ClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
+
+    private async Task<IActionResult?> ValidateTerminalCodeAsync(string? terminalCode)
+    {
+        if (terminalCode == null) return null;
+        if (await db.Terminals.AnyAsync(t => t.Code == terminalCode)) return null;
+        return BadRequest(new { error = "Terminal does not exist." });
+    }
 }

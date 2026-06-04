@@ -23,10 +23,11 @@ export class DashboardService {
     return this.listPaged().pipe(map(result => result.items));
   }
 
-  listPaged(options: { limit?: number; offset?: number } = {}): Observable<PaginatedResult<Dashboard>> {
+  listPaged(options: { limit?: number; offset?: number; terminal_code?: string | null } = {}): Observable<PaginatedResult<Dashboard>> {
     let params = new HttpParams();
     if (options.limit != null) params = params.set('limit', options.limit);
     if (options.offset != null) params = params.set('offset', options.offset);
+    if (options.terminal_code) params = params.set('terminal_code', options.terminal_code);
     return this.http.get<PaginatedResult<Dashboard>>(this.api.apiUrl('/api/reporting/dashboards'), { params });
   }
 
@@ -34,8 +35,9 @@ export class DashboardService {
     return this.http.get<Dashboard>(this.api.apiUrl(`/api/reporting/dashboards/${id}`));
   }
 
-  getBySlug(slug: string): Observable<Dashboard> {
-    return this.http.get<Dashboard>(this.api.apiUrl(`/api/reporting/dashboards/by-slug/${slug}`));
+  getBySlug(slug: string, terminalCode?: string | null): Observable<Dashboard> {
+    const params = terminalCode ? new HttpParams().set('terminal_code', terminalCode) : undefined;
+    return this.http.get<Dashboard>(this.api.apiUrl(`/api/reporting/dashboards/by-slug/${slug}`), { params });
   }
 
   create(data: SaveDashboardRequest): Observable<Dashboard> {
@@ -70,10 +72,12 @@ export class DashboardService {
     return this.http.put<void>(this.api.apiUrl(`/api/reporting/dashboards/${id}/layout`), data);
   }
 
-  executePublicCard(slug: string, cardId: number, data: RunReportRequest): Observable<ReportExecutionResult> {
+  executePublicCard(slug: string, cardId: number, data: RunReportRequest, terminalCode?: string | null): Observable<ReportExecutionResult> {
+    const params = terminalCode ? new HttpParams().set('terminal_code', terminalCode) : undefined;
     return this.http.post<ReportExecutionResult>(
       this.api.apiUrl(`/api/reporting/dashboards/by-slug/${slug}/cards/${cardId}/execute`),
       data,
+      { params },
     );
   }
 }

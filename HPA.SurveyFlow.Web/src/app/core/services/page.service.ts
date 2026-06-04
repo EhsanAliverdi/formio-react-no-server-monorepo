@@ -13,10 +13,11 @@ export class PageService {
     return this.http.get<Page[]>(this.api.apiUrl('/api/pages'));
   }
 
-  listPaged(options: { limit?: number; offset?: number } = {}): Observable<PaginatedResult<Page>> {
+  listPaged(options: { limit?: number; offset?: number; terminal_code?: string | null } = {}): Observable<PaginatedResult<Page>> {
     let params = new HttpParams().set('paged', true);
     if (options.limit != null) params = params.set('limit', options.limit);
     if (options.offset != null) params = params.set('offset', options.offset);
+    if (options.terminal_code) params = params.set('terminal_code', options.terminal_code);
     return this.http.get<PaginatedResult<Page>>(this.api.apiUrl('/api/pages'), { params });
   }
 
@@ -24,8 +25,9 @@ export class PageService {
     return this.http.get<Page>(this.api.apiUrl(`/api/pages/${id}`));
   }
 
-  getBySlug(slug: string): Observable<Page> {
-    return this.http.get<Page>(this.api.apiUrl(`/api/pages/by-slug/${slug}`));
+  getBySlug(slug: string, terminalCode?: string | null): Observable<Page> {
+    const params = terminalCode ? new HttpParams().set('terminal_code', terminalCode) : undefined;
+    return this.http.get<Page>(this.api.apiUrl(`/api/pages/by-slug/${slug}`), { params });
   }
 
   create(data: SavePageRequest): Observable<Page> {

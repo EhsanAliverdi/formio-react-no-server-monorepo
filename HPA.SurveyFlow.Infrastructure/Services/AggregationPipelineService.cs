@@ -43,7 +43,7 @@ public class AggregationPipelineService(AppDbContext db)
             measureDefs.Add(new MeasureDef("_count", "Count", "count", null, null));
 
         var parameters = new List<object>();
-        var baseWhere = BuildBaseWhere(template.FormId, template.FiltersJson, request.RuntimeFilters, parameters);
+        var baseWhere = BuildBaseWhere(template.FormId, ResolveTerminalCode(template, request), template.FiltersJson, request.RuntimeFilters, parameters);
         var fullWhere = rlsClause != null ? $"({baseWhere}) AND {rlsClause}" : baseWhere;
 
         var selectParts = BuildSelectParts(groupByDefs, measureDefs);
@@ -158,13 +158,19 @@ public class AggregationPipelineService(AppDbContext db)
         return "1 ASC";
     }
 
-    private static string BuildBaseWhere(int formId, string? templateFiltersJson,
+    private static string BuildBaseWhere(int formId, string? terminalCode, string? templateFiltersJson,
         JsonElement? runtimeFilters, List<object> parameters)
     {
         // Delegate to the same filter builder used by ReportQueryEngineService via static helpers
         parameters.Add(formId);
         var paramIdx = parameters.Count; // 1-based
         var baseSql = $"form_id = ${paramIdx} AND deleted_at IS NULL";
+
+        if (!string.IsNullOrWhiteSpace(terminalCode))
+        {
+            parameters.Add(terminalCode);
+            baseSql += $" AND terminal_code = ${parameters.Count}";
+        }
 
         // Apply template filters
         if (!string.IsNullOrWhiteSpace(templateFiltersJson))
@@ -200,6 +206,14 @@ public class AggregationPipelineService(AppDbContext db)
 
         return baseSql;
     }
+
+    private static string? ResolveTerminalCode(ReportTemplate template, RunReportRequest request) =>
+        string.IsNullOrWhiteSpace(template.TerminalCode)
+            ? NormaliseTerminalCode(request.TerminalCode)
+            : template.TerminalCode;
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
 
     private static string BuildConditionGroup(ConditionGroupDef group, List<object> parameters)
     {

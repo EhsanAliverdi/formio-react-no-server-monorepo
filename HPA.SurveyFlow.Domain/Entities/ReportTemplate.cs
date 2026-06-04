@@ -4,6 +4,7 @@ public class ReportTemplate
 {
     public int Id { get; set; }
     public int FormId { get; set; }
+    public string? TerminalCode { get; set; }
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
     public bool IsPublic { get; set; } = false;
@@ -67,5 +68,6 @@ public class ReportTemplate
     public int? DatasetId { get; set; }
 
     public Form Form { get; set; } = null!;
+    public Terminal? Terminal { get; set; }
     public User CreatedByUser { get; set; } = null!;
 }

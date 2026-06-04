@@ -22,6 +22,9 @@ public class SavePageRequest
     [JsonPropertyName("use_layout")]
     public bool UseLayout { get; set; } = true;
 
+    [JsonPropertyName("terminal_code")]
+    public string? TerminalCode { get; set; }
+
     [JsonPropertyName("project_json")]
     public string ProjectJson { get; set; } = "{}";
 

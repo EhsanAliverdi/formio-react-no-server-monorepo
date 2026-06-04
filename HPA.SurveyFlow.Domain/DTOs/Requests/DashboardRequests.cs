@@ -18,6 +18,9 @@ public class SaveDashboardRequest
 
     [JsonPropertyName("is_active")]
     public bool IsActive { get; set; } = true;
+
+    [JsonPropertyName("terminal_code")]
+    public string? TerminalCode { get; set; }
 }
 
 public class SaveDashboardCardRequest

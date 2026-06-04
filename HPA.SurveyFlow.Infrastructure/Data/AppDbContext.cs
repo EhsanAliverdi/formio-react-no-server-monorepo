@@ -6,6 +6,7 @@ namespace HPA.SurveyFlow.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users { get; set; }
+    public DbSet<Terminal> Terminals { get; set; }
     public DbSet<Form> Forms { get; set; }
     public DbSet<Session> Sessions { get; set; }
     public DbSet<FormSubmission> FormSubmissions { get; set; }
@@ -39,6 +40,34 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Terminal>(e =>
+        {
+            e.ToTable("terminals");
+            e.HasKey(t => t.Code);
+            e.Property(t => t.Code).HasColumnName("code").HasMaxLength(16);
+            e.Property(t => t.Description).HasColumnName("description").IsRequired();
+            e.Property(t => t.Timezone).HasColumnName("timezone").IsRequired();
+            e.Property(t => t.PortCode).HasColumnName("port_code").IsRequired();
+            e.Property(t => t.TradingName).HasColumnName("trading_name").IsRequired();
+            e.HasData(
+                new Terminal
+                {
+                    Code = "HPAPB",
+                    Description = "HPAPB, Sydney",
+                    Timezone = "AUS Eastern Standard Time",
+                    PortCode = "AUSYD",
+                    TradingName = "Sydney International Container Terminals Pty Limited",
+                },
+                new Terminal
+                {
+                    Code = "HPAFI",
+                    Description = "HPAFI, Brisbane",
+                    Timezone = "E. Australia Standard Time",
+                    PortCode = "AUBNE",
+                    TradingName = "Brisbane Container Terminals Pty Limited",
+                });
+        });
+
         modelBuilder.Entity<User>(e =>
         {
             e.ToTable("users");
@@ -84,7 +113,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(f => f.AllowAnonymousSubmit).HasColumnName("allow_anonymous_submit").HasDefaultValue(true);
             e.Property(f => f.Visibility).HasColumnName("visibility").HasDefaultValue("public");
             e.Property(f => f.ParentFormId).HasColumnName("parent_form_id");
+            e.Property(f => f.TerminalCode).HasColumnName("terminal_code").HasMaxLength(16);
             e.HasOne(f => f.ParentForm).WithMany(f => f.ChildForms).HasForeignKey(f => f.ParentFormId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(f => f.Terminal).WithMany().HasForeignKey(f => f.TerminalCode).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(f => f.TerminalCode);
         });
 
         modelBuilder.Entity<Session>(e =>
@@ -108,6 +140,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(fs => fs.FormId).HasColumnName("form_id");
             e.Property(fs => fs.ParentSubmissionId).HasColumnName("parent_submission_id");
             e.Property(fs => fs.UserId).HasColumnName("user_id");
+            e.Property(fs => fs.TerminalCode).HasColumnName("terminal_code").HasMaxLength(16);
             e.Property(fs => fs.SubmittedAt).HasColumnName("submitted_at").HasDefaultValueSql("now()");
             e.Property(fs => fs.Data).HasColumnName("data").IsRequired();
             e.Property(fs => fs.UpdatedAt).HasColumnName("updated_at");
@@ -120,9 +153,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(fs => fs.SecondarySubmitResponse).HasColumnName("secondary_submit_response");
             e.Property(fs => fs.SecondarySubmitAt).HasColumnName("secondary_submit_at");
             e.HasOne(fs => fs.Form).WithMany(f => f.Submissions).HasForeignKey(fs => fs.FormId);
+            e.HasOne(fs => fs.Terminal).WithMany().HasForeignKey(fs => fs.TerminalCode).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(fs => fs.ParentSubmission).WithMany(fs => fs.ChildSubmissions).HasForeignKey(fs => fs.ParentSubmissionId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(fs => fs.User).WithMany(u => u.Submissions).HasForeignKey(fs => fs.UserId);
             e.HasOne(fs => fs.DeletedByUser).WithMany().HasForeignKey(fs => fs.DeletedBy).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(fs => fs.TerminalCode);
         });
 
         modelBuilder.Entity<SiteSetting>(e =>
@@ -316,8 +351,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.ChartConfigJson).HasColumnName("chart_config_json");
             e.Property(r => r.DatasetId).HasColumnName("dataset_id");
             e.HasOne(r => r.Form).WithMany().HasForeignKey(r => r.FormId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.Terminal).WithMany().HasForeignKey(r => r.TerminalCode).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(r => r.CreatedByUser).WithMany().HasForeignKey(r => r.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(r => r.FormId);
+            e.HasIndex(r => r.TerminalCode);
         });
 
         modelBuilder.Entity<Dashboard>(e =>
@@ -330,11 +367,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(d => d.Description).HasColumnName("description");
             e.Property(d => d.Visibility).HasColumnName("visibility").HasDefaultValue("restricted");
             e.Property(d => d.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.Property(d => d.TerminalCode).HasColumnName("terminal_code").HasMaxLength(16);
             e.Property(d => d.CreatedByUserId).HasColumnName("created_by_user_id");
             e.Property(d => d.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             e.Property(d => d.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             e.HasIndex(d => d.Slug).IsUnique();
+            e.HasIndex(d => d.TerminalCode);
             e.HasOne(d => d.CreatedByUser).WithMany().HasForeignKey(d => d.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(d => d.Terminal).WithMany().HasForeignKey(d => d.TerminalCode).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<DashboardCard>(e =>
@@ -373,6 +413,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(p => p.Visibility).HasColumnName("visibility").HasDefaultValue("public");
             e.Property(p => p.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             e.Property(p => p.UseLayout).HasColumnName("use_layout").HasDefaultValue(true);
+            e.Property(p => p.TerminalCode).HasColumnName("terminal_code").HasMaxLength(16);
             e.Property(p => p.ProjectJson).HasColumnName("project_json").HasDefaultValue("{}");
             e.Property(p => p.Html).HasColumnName("html").HasDefaultValue(string.Empty);
             e.Property(p => p.Css).HasColumnName("css").HasDefaultValue(string.Empty);
@@ -380,7 +421,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(p => p.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             e.Property(p => p.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             e.HasIndex(p => p.Slug).IsUnique();
+            e.HasIndex(p => p.TerminalCode);
             e.HasOne(p => p.CreatedByUser).WithMany().HasForeignKey(p => p.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(p => p.Terminal).WithMany().HasForeignKey(p => p.TerminalCode).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<RlsPolicy>(e =>
@@ -436,6 +479,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(d => d.Name).HasColumnName("name").IsRequired();
             e.Property(d => d.Description).HasColumnName("description");
             e.Property(d => d.FormId).HasColumnName("form_id");
+            e.Property(d => d.TerminalCode).HasColumnName("terminal_code").HasMaxLength(16);
             e.Property(d => d.BaseFiltersJson).HasColumnName("base_filters_json");
             e.Property(d => d.FieldsJson).HasColumnName("fields_json");
             e.Property(d => d.CreatedBy).HasColumnName("created_by");
@@ -443,8 +487,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(d => d.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             e.Property(d => d.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             e.HasOne(d => d.Form).WithMany().HasForeignKey(d => d.FormId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(d => d.Terminal).WithMany().HasForeignKey(d => d.TerminalCode).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(d => d.CreatedByUser).WithMany().HasForeignKey(d => d.CreatedBy).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(d => d.FormId);
+            e.HasIndex(d => d.TerminalCode);
         });
 
         modelBuilder.Entity<ScheduledReport>(e =>

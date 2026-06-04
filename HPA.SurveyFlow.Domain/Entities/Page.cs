@@ -9,6 +9,7 @@ public class Page
     public string Visibility { get; set; } = "public";
     public bool IsActive { get; set; } = true;
     public bool UseLayout { get; set; } = true;
+    public string? TerminalCode { get; set; }
     public string ProjectJson { get; set; } = "{}";
     public string Html { get; set; } = string.Empty;
     public string Css { get; set; } = string.Empty;
@@ -17,4 +18,5 @@ public class Page
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public User CreatedByUser { get; set; } = null!;
+    public Terminal? Terminal { get; set; }
 }

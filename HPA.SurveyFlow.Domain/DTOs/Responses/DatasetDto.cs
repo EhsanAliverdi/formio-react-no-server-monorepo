@@ -20,6 +20,9 @@ public class DatasetDto
     [JsonPropertyName("form_name")]
     public string FormName { get; set; } = null!;
 
+    [JsonPropertyName("terminal_code")]
+    public string? TerminalCode { get; set; }
+
     [JsonPropertyName("base_filters")]
     public JsonElement? BaseFilters { get; set; }
 

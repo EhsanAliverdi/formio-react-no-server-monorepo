@@ -24,13 +24,17 @@ public class DashboardsController(
 {
     [HttpGet]
     [RequirePermission(Permissions.Reports.Read)]
-    public async Task<IActionResult> List([FromQuery] int limit = 25, [FromQuery] int offset = 0)
+    public async Task<IActionResult> List(
+        [FromQuery] string? terminal_code = null,
+        [FromQuery] int limit = 25,
+        [FromQuery] int offset = 0)
     {
         limit = Math.Clamp(limit, 1, 200);
         offset = Math.Max(0, offset);
-        var query = DashboardQuery().OrderBy(d => d.Name);
+        var terminalCode = NormaliseTerminalCode(terminal_code);
+        var query = ApplyTerminalFilter(DashboardQuery(), terminalCode).OrderBy(d => d.Name);
         var total = await query.CountAsync();
-        var dashboards = await DashboardQuery()
+        var dashboards = await ApplyTerminalFilter(DashboardQuery(), terminalCode)
             .OrderBy(d => d.Name)
             .Skip(offset)
             .Take(limit)
@@ -52,7 +56,8 @@ public class DashboardsController(
     [AllowAnonymous]
     public async Task<IActionResult> GetBySlug(string slug)
     {
-        var dashboard = await DashboardQuery()
+        var terminalCode = NormaliseTerminalCode(Request.Query["terminal_code"].FirstOrDefault());
+        var dashboard = await ApplyTerminalFilter(DashboardQuery(), terminalCode)
             .FirstOrDefaultAsync(d => d.Slug == slug && d.IsActive);
         if (dashboard == null) return NotFound(new { error = "Dashboard not found." });
         if (!CanViewDashboard(dashboard)) return Unauthorized(new { error = "Sign in to view this dashboard." });
@@ -69,6 +74,9 @@ public class DashboardsController(
         var slug = NormaliseSlug(body.Slug);
         var validation = await ValidateDashboard(body.Name, slug, body.Visibility);
         if (validation != null) return validation;
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
 
         var dashboard = new Dashboard
         {
@@ -77,6 +85,7 @@ public class DashboardsController(
             Description = body.Description?.Trim(),
             Visibility = body.Visibility,
             IsActive = body.IsActive,
+            TerminalCode = terminalCode,
             CreatedByUserId = user.Id,
         };
         db.Dashboards.Add(dashboard);
@@ -94,12 +103,16 @@ public class DashboardsController(
         var slug = NormaliseSlug(body.Slug);
         var validation = await ValidateDashboard(body.Name, slug, body.Visibility, id);
         if (validation != null) return validation;
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
 
         dashboard.Name = body.Name.Trim();
         dashboard.Slug = slug;
         dashboard.Description = body.Description?.Trim();
         dashboard.Visibility = body.Visibility;
         dashboard.IsActive = body.IsActive;
+        dashboard.TerminalCode = terminalCode;
         dashboard.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
         return Ok(MapDto(dashboard));
@@ -128,6 +141,7 @@ public class DashboardsController(
             Description = source.Description,
             Visibility = source.Visibility,
             IsActive = source.IsActive,
+            TerminalCode = source.TerminalCode,
             CreatedByUserId = user.Id,
             CreatedAt = now,
             UpdatedAt = now,
@@ -185,6 +199,8 @@ public class DashboardsController(
         if (dashboard == null) return NotFound(new { error = "Dashboard not found." });
         var template = await db.ReportTemplates.FindAsync(body.ReportId);
         if (template == null) return NotFound(new { error = "Report template not found." });
+        if (!TerminalIsCompatible(dashboard.TerminalCode, template.TerminalCode))
+            return BadRequest(new { error = "Report template terminal does not match the dashboard terminal scope." });
 
         var card = new DashboardCard { DashboardId = id, ReportTemplateId = body.ReportId };
         ApplyCard(card, body);
@@ -201,14 +217,18 @@ public class DashboardsController(
         var card = await db.DashboardCards.Include(c => c.ReportTemplate)
             .FirstOrDefaultAsync(c => c.Id == cardId && c.DashboardId == id);
         if (card == null) return NotFound(new { error = "Dashboard card not found." });
-        if (body.ReportId != card.ReportTemplateId && !await db.ReportTemplates.AnyAsync(t => t.Id == body.ReportId))
+        var template = await db.ReportTemplates.FindAsync(body.ReportId);
+        if (template == null)
             return NotFound(new { error = "Report template not found." });
+        var dashboard = await db.Dashboards.FindAsync(id);
+        if (dashboard == null) return NotFound(new { error = "Dashboard not found." });
+        if (!TerminalIsCompatible(dashboard.TerminalCode, template.TerminalCode))
+            return BadRequest(new { error = "Report template terminal does not match the dashboard terminal scope." });
 
         ApplyCard(card, body);
+        card.ReportTemplate = template;
         card.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
-        if (card.ReportTemplateId != card.ReportTemplate.Id)
-            card.ReportTemplate = (await db.ReportTemplates.FindAsync(card.ReportTemplateId))!;
         return Ok(MapCard(card));
     }
 
@@ -249,7 +269,8 @@ public class DashboardsController(
     [AllowAnonymous]
     public async Task<IActionResult> ExecuteCard(string slug, int cardId, [FromBody] RunReportRequest body)
     {
-        var dashboard = await DashboardQuery()
+        var terminalCode = NormaliseTerminalCode(Request.Query["terminal_code"].FirstOrDefault());
+        var dashboard = await ApplyTerminalFilter(DashboardQuery(), terminalCode)
             .FirstOrDefaultAsync(d => d.Slug == slug && d.IsActive);
         if (dashboard == null) return NotFound(new { error = "Dashboard not found." });
         if (!CanViewDashboard(dashboard)) return Unauthorized(new { error = "Sign in to view this dashboard." });
@@ -261,6 +282,7 @@ public class DashboardsController(
         if (!CanViewReport(card.ReportTemplate, user?.Role)) return Forbid();
 
         body.TemplateId = card.ReportTemplateId;
+        body.TerminalCode ??= terminalCode;
         body.Page = Math.Max(1, body.Page);
         body.PageSize = Math.Clamp(body.PageSize, 1, 200);
         var rlsClause = await BuildRlsClause(card.ReportTemplate, user);
@@ -279,6 +301,11 @@ public class DashboardsController(
 
     private IQueryable<Dashboard> DashboardQuery() =>
         db.Dashboards.Include(d => d.Cards).ThenInclude(c => c.ReportTemplate);
+
+    private static IQueryable<Dashboard> ApplyTerminalFilter(IQueryable<Dashboard> query, string? terminalCode) =>
+        terminalCode == null
+            ? query
+            : query.Where(d => d.TerminalCode == null || d.TerminalCode == terminalCode);
 
     private bool CanViewDashboard(Dashboard dashboard) =>
         dashboard.Visibility == "public" || HttpContext.GetCurrentUser() != null;
@@ -360,6 +387,7 @@ public class DashboardsController(
         Description = dashboard.Description,
         Visibility = dashboard.Visibility,
         IsActive = dashboard.IsActive,
+        TerminalCode = dashboard.TerminalCode,
         CreatedByUserId = dashboard.CreatedByUserId,
         CreatedAt = dashboard.CreatedAt,
         UpdatedAt = dashboard.UpdatedAt,
@@ -394,5 +422,20 @@ public class DashboardsController(
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
         try { return JsonDocument.Parse(json).RootElement; } catch { return null; }
+    }
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
+
+    private static bool TerminalIsCompatible(string? dashboardTerminalCode, string? reportTerminalCode) =>
+        dashboardTerminalCode == null
+        || reportTerminalCode == null
+        || string.Equals(dashboardTerminalCode, reportTerminalCode, StringComparison.OrdinalIgnoreCase);
+
+    private async Task<IActionResult?> ValidateTerminalCodeAsync(string? terminalCode)
+    {
+        if (terminalCode == null) return null;
+        if (await db.Terminals.AnyAsync(t => t.Code == terminalCode)) return null;
+        return BadRequest(new { error = "Terminal does not exist." });
     }
 }

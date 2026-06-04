@@ -36,7 +36,7 @@ public class ReportQueryEngineService(AppDbContext db)
 
         // Build WHERE predicates
         var parameters = new List<object>();
-        var whereClause = BuildWhereClause(template.FormId, mergedFilters, parameters, rlsClause);
+        var whereClause = BuildWhereClause(template.FormId, ResolveTerminalCode(template, request), mergedFilters, parameters, rlsClause);
 
         // Resolve sort
         var sortField = NormaliseSortField(request.SortField ?? template.DefaultSortField, columns);
@@ -153,11 +153,18 @@ LIMIT {pageSize} OFFSET {offset}";
         return string.Join(", ", parts);
     }
 
-    private string BuildWhereClause(int formId, ConditionNode? filters, List<object> parameters, string? rlsClause = null)
+    private string BuildWhereClause(int formId, string? terminalCode, ConditionNode? filters, List<object> parameters, string? rlsClause = null)
     {
         // Parameter index starts after @p0 (formId)
         parameters.Add(formId);
         var sb = new StringBuilder("form_id = @p0 AND deleted_at IS NULL");
+
+        if (!string.IsNullOrWhiteSpace(terminalCode))
+        {
+            var pIdx = parameters.Count;
+            parameters.Add(terminalCode);
+            sb.Append($" AND terminal_code = @p{pIdx}");
+        }
 
         if (filters != null && !(filters.Children == null && string.IsNullOrEmpty(filters.FieldKey)))
         {
@@ -172,6 +179,14 @@ LIMIT {pageSize} OFFSET {offset}";
 
         return sb.ToString();
     }
+
+    private static string? ResolveTerminalCode(ReportTemplate template, RunReportRequest request) =>
+        string.IsNullOrWhiteSpace(template.TerminalCode)
+            ? NormaliseTerminalCode(request.TerminalCode)
+            : template.TerminalCode;
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
 
     private void BuildNodeSql(ConditionNode node, StringBuilder sb, List<object> parameters)
     {

@@ -6,6 +6,7 @@ public class FormSubmission
     public int FormId { get; set; }
     public int? ParentSubmissionId { get; set; }
     public int? UserId { get; set; }
+    public string? TerminalCode { get; set; }
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
     public string Data { get; set; } = null!;
     public DateTime? UpdatedAt { get; set; }
@@ -21,6 +22,7 @@ public class FormSubmission
     public DateTime? SecondarySubmitAt { get; set; }
 
     public Form Form { get; set; } = null!;
+    public Terminal? Terminal { get; set; }
     public FormSubmission? ParentSubmission { get; set; }
     public ICollection<FormSubmission> ChildSubmissions { get; set; } = [];
     public User? User { get; set; }

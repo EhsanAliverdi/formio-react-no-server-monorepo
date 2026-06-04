@@ -8,9 +8,11 @@ public class Form
     public bool AllowAnonymousSubmit { get; set; } = true;
     public string Visibility { get; set; } = "public";
     public int? ParentFormId { get; set; }
+    public string? TerminalCode { get; set; }
 
     public ICollection<FormSubmission> Submissions { get; set; } = [];
     public Form? ParentForm { get; set; }
+    public Terminal? Terminal { get; set; }
     public ICollection<Form> ChildForms { get; set; } = [];
     public ICollection<FormAllowedRole> AllowedRoles { get; set; } = [];
     public ICollection<FormAllowedUser> AllowedUsers { get; set; } = [];

@@ -17,13 +17,20 @@ namespace HPA.SurveyFlow.Api.Controllers;
 public class DatasetsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] int? formId, [FromQuery] int limit = 25, [FromQuery] int offset = 0)
+    public async Task<IActionResult> List(
+        [FromQuery] int? formId,
+        [FromQuery] string? terminal_code,
+        [FromQuery] int limit = 25,
+        [FromQuery] int offset = 0)
     {
         limit = Math.Clamp(limit, 1, 200);
         offset = Math.Max(0, offset);
+        var terminalCode = NormaliseTerminalCode(terminal_code);
         var query = db.Datasets.Include(d => d.Form).Where(d => d.IsActive);
         if (formId.HasValue)
             query = query.Where(d => d.FormId == formId.Value);
+        if (terminalCode != null)
+            query = query.Where(d => d.TerminalCode == null || d.TerminalCode == terminalCode);
 
         var total = await query.CountAsync();
         var datasets = await query.OrderBy(d => d.Name).Skip(offset).Take(limit).ToListAsync();
@@ -47,12 +54,18 @@ public class DatasetsController(AppDbContext db) : ControllerBase
 
         var form = await db.Forms.FindAsync(body.FormId);
         if (form == null) return NotFound(new { error = "Form not found." });
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
+        if (!TerminalIsCompatible(form.TerminalCode, terminalCode))
+            return BadRequest(new { error = "Dataset terminal does not match the selected form terminal scope." });
 
         var dataset = new Dataset
         {
             Name = body.Name.Trim(),
             Description = body.Description?.Trim(),
             FormId = body.FormId,
+            TerminalCode = terminalCode,
             BaseFiltersJson = body.BaseFilters.HasValue ? body.BaseFilters.Value.GetRawText() : null,
             FieldsJson = body.Fields.HasValue ? body.Fields.Value.GetRawText() : null,
             CreatedBy = user.Id,
@@ -78,10 +91,16 @@ public class DatasetsController(AppDbContext db) : ControllerBase
             if (form == null) return NotFound(new { error = "Form not found." });
             dataset.Form = form;
         }
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
+        if (!TerminalIsCompatible(dataset.Form.TerminalCode, terminalCode))
+            return BadRequest(new { error = "Dataset terminal does not match the selected form terminal scope." });
 
         dataset.Name = body.Name.Trim();
         dataset.Description = body.Description?.Trim();
         dataset.FormId = body.FormId;
+        dataset.TerminalCode = terminalCode;
         dataset.BaseFiltersJson = body.BaseFilters.HasValue ? body.BaseFilters.Value.GetRawText() : null;
         dataset.FieldsJson = body.Fields.HasValue ? body.Fields.Value.GetRawText() : null;
         dataset.IsActive = body.IsActive;
@@ -111,6 +130,7 @@ public class DatasetsController(AppDbContext db) : ControllerBase
         Description = d.Description,
         FormId = d.FormId,
         FormName = d.Form?.Name ?? string.Empty,
+        TerminalCode = d.TerminalCode,
         BaseFilters = ParseJson(d.BaseFiltersJson),
         Fields = ParseJson(d.FieldsJson),
         CreatedBy = d.CreatedBy,
@@ -123,5 +143,19 @@ public class DatasetsController(AppDbContext db) : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
         try { return JsonDocument.Parse(json).RootElement; } catch { return null; }
+    }
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
+
+    private static bool TerminalIsCompatible(string? requiredTerminalCode, string? selectedTerminalCode) =>
+        requiredTerminalCode == null
+        || string.Equals(requiredTerminalCode, selectedTerminalCode, StringComparison.OrdinalIgnoreCase);
+
+    private async Task<IActionResult?> ValidateTerminalCodeAsync(string? terminalCode)
+    {
+        if (terminalCode == null) return null;
+        if (await db.Terminals.AnyAsync(t => t.Code == terminalCode)) return null;
+        return BadRequest(new { error = "Terminal does not exist." });
     }
 }

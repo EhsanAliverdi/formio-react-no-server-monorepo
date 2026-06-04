@@ -27,11 +27,13 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         [FromQuery] string? category,
         [FromQuery] bool paged = false,
         [FromQuery] string? q = null,
+        [FromQuery] string? terminal_code = null,
         [FromQuery] int limit = 25,
         [FromQuery] int offset = 0)
     {
         limit = Math.Clamp(limit, 1, 200);
         offset = Math.Max(0, offset);
+        var terminalCode = NormaliseTerminalCode(terminal_code);
         if (!string.IsNullOrWhiteSpace(category))
         {
             var categorySlug = category.Trim();
@@ -44,6 +46,7 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             var matched = allForms
                 .Where(f => f.ParentFormId == null)
                 .Where(f => FormCategoryMatches(f.Json, categorySlug))
+                .Where(f => TerminalMatches(f.TerminalCode, terminalCode))
                 .ToList();
 
             if (matched.Count == 0)
@@ -105,6 +108,7 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         var isPrivileged = role == UserRole.Admin || role == UserRole.Editor;
         if (!isPrivileged)
             forms = forms.Where(f => f.ParentFormId == null);
+        forms = forms.Where(f => TerminalMatches(f.TerminalCode, terminalCode));
 
         if (paged)
         {
@@ -155,6 +159,9 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         var allowAnon = ParseBoolish(body.AllowAnonymousSubmit, defaultValue: true);
         if (body.ParentFormId.HasValue && !await db.Forms.AnyAsync(f => f.Id == body.ParentFormId.Value))
             return BadRequest(new { error = "Parent form does not exist." });
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
 
         var form = new Form
         {
@@ -162,7 +169,8 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             Json = body.Json.Value.GetRawText(),
             AllowAnonymousSubmit = allowAnon,
             Visibility = body.Visibility ?? FormVisibility.Public,
-            ParentFormId = body.ParentFormId
+            ParentFormId = body.ParentFormId,
+            TerminalCode = terminalCode,
         };
 
         db.Forms.Add(form);
@@ -233,6 +241,10 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         if (body.Json != null && body.Json.Value.ValueKind != JsonValueKind.Undefined)
             form.Json = body.Json.Value.GetRawText();
         if (body.Visibility != null) form.Visibility = body.Visibility;
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
+        form.TerminalCode = terminalCode;
         if (body.ParentFormId.HasValue && body.ParentFormId.Value == id)
             return BadRequest(new { error = "A form cannot be its own parent." });
         if (body.ParentFormId.HasValue && !await db.Forms.AnyAsync(f => f.Id == body.ParentFormId.Value))
@@ -287,6 +299,7 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             AllowAnonymousSubmit = source.AllowAnonymousSubmit,
             Visibility = source.Visibility,
             ParentFormId = source.ParentFormId,
+            TerminalCode = source.TerminalCode,
         };
 
         db.Forms.Add(copy);
@@ -349,6 +362,12 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         }
 
         var dataJson = body.Data?.GetRawText() ?? "{}";
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode) ?? form.TerminalCode;
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
+        if (!TerminalIsCompatible(form.TerminalCode, terminalCode))
+            return BadRequest(new { error = "Submission terminal does not match the form terminal scope." });
+
         if (body.ParentSubmissionId.HasValue)
         {
             var parentSubmission = await db.FormSubmissions
@@ -358,6 +377,8 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
                 return BadRequest(new { error = "Parent submission does not exist." });
             if (form.ParentFormId.HasValue && form.ParentFormId.Value != parentSubmission.FormId)
                 return BadRequest(new { error = "This form is not configured as a child of the parent submission's form." });
+            if (!TerminalIsCompatible(parentSubmission.TerminalCode, terminalCode))
+                return BadRequest(new { error = "Submission terminal does not match the parent submission terminal." });
         }
 
         var submission = new FormSubmission
@@ -365,6 +386,7 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             FormId = form.Id,
             ParentSubmissionId = body.ParentSubmissionId,
             UserId = currentUser?.Id,
+            TerminalCode = terminalCode,
             Data = dataJson,
             SubmittedAt = DateTime.UtcNow
         };
@@ -445,6 +467,7 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             AllowAnonymousSubmit = f.AllowAnonymousSubmit ? 1 : 0,
             Visibility = f.Visibility,
             ParentFormId = f.ParentFormId,
+            TerminalCode = f.TerminalCode,
             AllowedRoles = includeRestricted ? f.AllowedRoles.Select(r => r.Role).ToList() : null,
             AllowedUserIds = includeRestricted ? f.AllowedUsers.Select(u => u.UserId).ToList() : null
         };
@@ -549,6 +572,25 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             string s => s == "1" || s.Equals("true", StringComparison.OrdinalIgnoreCase),
             _ => defaultValue
         };
+    }
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
+
+    private static bool TerminalMatches(string? recordTerminalCode, string? selectedTerminalCode) =>
+        selectedTerminalCode == null
+        || recordTerminalCode == null
+        || string.Equals(recordTerminalCode, selectedTerminalCode, StringComparison.OrdinalIgnoreCase);
+
+    private static bool TerminalIsCompatible(string? requiredTerminalCode, string? selectedTerminalCode) =>
+        requiredTerminalCode == null
+        || string.Equals(requiredTerminalCode, selectedTerminalCode, StringComparison.OrdinalIgnoreCase);
+
+    private async Task<IActionResult?> ValidateTerminalCodeAsync(string? terminalCode)
+    {
+        if (terminalCode == null) return null;
+        if (await db.Terminals.AnyAsync(t => t.Code == terminalCode)) return null;
+        return BadRequest(new { error = "Terminal does not exist." });
     }
 
     private static async Task<string> NextCopyName(string originalName, Func<string, Task<bool>> exists)

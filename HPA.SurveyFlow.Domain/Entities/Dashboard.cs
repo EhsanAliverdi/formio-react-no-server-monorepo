@@ -8,10 +8,12 @@ public class Dashboard
     public string? Description { get; set; }
     public string Visibility { get; set; } = "restricted";
     public bool IsActive { get; set; } = true;
+    public string? TerminalCode { get; set; }
     public int CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public User CreatedByUser { get; set; } = null!;
+    public Terminal? Terminal { get; set; }
     public ICollection<DashboardCard> Cards { get; set; } = [];
 }

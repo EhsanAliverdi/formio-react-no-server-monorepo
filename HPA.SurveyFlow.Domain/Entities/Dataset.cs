@@ -19,6 +19,7 @@ public class Dataset
 
     /// <summary>The form whose submissions this dataset queries.</summary>
     public int FormId { get; set; }
+    public string? TerminalCode { get; set; }
 
     /// <summary>Serialised ConditionGroup applied as a fixed base filter on every query.</summary>
     public string? BaseFiltersJson { get; set; }
@@ -37,5 +38,6 @@ public class Dataset
     public bool IsActive { get; set; } = true;
 
     public Form Form { get; set; } = null!;
+    public Terminal? Terminal { get; set; }
     public User CreatedByUser { get; set; } = null!;
 }

@@ -27,6 +27,7 @@ public class ReportTemplatesController(
         [FromQuery] string? tag,
         [FromQuery] int? createdBy,
         [FromQuery] string? q,
+        [FromQuery] string? terminal_code,
         [FromQuery] bool favourite = false,
         [FromQuery] bool drift = false,
         [FromQuery] int limit = 25,
@@ -36,8 +37,12 @@ public class ReportTemplatesController(
         offset = Math.Max(0, offset);
         var user = HttpContext.GetCurrentUser();
         var isManager = user?.Role is "admin" or "editor";
+        var terminalCode = NormaliseTerminalCode(terminal_code);
 
         var query = db.ReportTemplates.Include(t => t.Form).AsQueryable();
+
+        if (terminalCode != null)
+            query = query.Where(t => t.TerminalCode == null || t.TerminalCode == terminalCode);
 
         if (formId.HasValue)
             query = query.Where(t => t.FormId == formId.Value);
@@ -138,6 +143,13 @@ public class ReportTemplatesController(
 
         var form = await db.Forms.FindAsync(body.FormId);
         if (form == null) return NotFound(new { error = "Form not found." });
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
+        if (!TerminalIsCompatible(form.TerminalCode, terminalCode))
+            return BadRequest(new { error = "Report terminal does not match the selected form terminal scope." });
+        var datasetValidation = await ValidateDatasetScopeAsync(body.DatasetId, body.FormId, terminalCode);
+        if (datasetValidation != null) return datasetValidation;
 
         var fields = schemaResolver.ResolveFields(form.Json);
         var schemaVersion = DriftAnalysisService.ComputeFieldsHash(fields);
@@ -145,6 +157,7 @@ public class ReportTemplatesController(
         var template = new ReportTemplate
         {
             FormId = body.FormId,
+            TerminalCode = terminalCode,
             Name = body.Name,
             Description = body.Description,
             IsPublic = body.IsPublic,
@@ -189,11 +202,19 @@ public class ReportTemplatesController(
             form = await db.Forms.FindAsync(body.FormId);
             if (form == null) return NotFound(new { error = "Form not found." });
         }
+        var terminalCode = NormaliseTerminalCode(body.TerminalCode);
+        var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
+        if (terminalValidation != null) return terminalValidation;
+        if (!TerminalIsCompatible(form.TerminalCode, terminalCode))
+            return BadRequest(new { error = "Report terminal does not match the selected form terminal scope." });
+        var datasetValidation = await ValidateDatasetScopeAsync(body.DatasetId, body.FormId, terminalCode);
+        if (datasetValidation != null) return datasetValidation;
 
         var fields = schemaResolver.ResolveFields(form.Json);
         var schemaVersion = DriftAnalysisService.ComputeFieldsHash(fields);
 
         template.FormId = body.FormId;
+        template.TerminalCode = terminalCode;
         template.Name = body.Name;
         template.Description = body.Description;
         template.IsPublic = body.IsPublic;
@@ -242,6 +263,7 @@ public class ReportTemplatesController(
         var copy = new ReportTemplate
         {
             FormId = source.FormId,
+            TerminalCode = source.TerminalCode,
             Name = copyName,
             Description = source.Description,
             IsPublic = source.IsPublic,
@@ -340,6 +362,7 @@ public class ReportTemplatesController(
             Id = t.Id,
             FormId = t.FormId,
             FormName = t.Form?.Name ?? string.Empty,
+            TerminalCode = t.TerminalCode,
             Name = t.Name,
             Description = t.Description,
             IsPublic = t.IsPublic,
@@ -526,5 +549,30 @@ public class ReportTemplatesController(
         if (string.IsNullOrWhiteSpace(json)) return [];
         try { return JsonSerializer.Deserialize<List<string>>(json) ?? []; }
         catch { return []; }
+    }
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
+
+    private static bool TerminalIsCompatible(string? requiredTerminalCode, string? selectedTerminalCode) =>
+        requiredTerminalCode == null
+        || string.Equals(requiredTerminalCode, selectedTerminalCode, StringComparison.OrdinalIgnoreCase);
+
+    private async Task<IActionResult?> ValidateTerminalCodeAsync(string? terminalCode)
+    {
+        if (terminalCode == null) return null;
+        if (await db.Terminals.AnyAsync(t => t.Code == terminalCode)) return null;
+        return BadRequest(new { error = "Terminal does not exist." });
+    }
+
+    private async Task<IActionResult?> ValidateDatasetScopeAsync(int? datasetId, int formId, string? terminalCode)
+    {
+        if (!datasetId.HasValue) return null;
+        var dataset = await db.Datasets.FindAsync(datasetId.Value);
+        if (dataset == null) return BadRequest(new { error = "Dataset does not exist." });
+        if (dataset.FormId != formId) return BadRequest(new { error = "Dataset form does not match the selected report form." });
+        if (!TerminalIsCompatible(dataset.TerminalCode, terminalCode))
+            return BadRequest(new { error = "Report terminal does not match the selected dataset terminal scope." });
+        return null;
     }
 }

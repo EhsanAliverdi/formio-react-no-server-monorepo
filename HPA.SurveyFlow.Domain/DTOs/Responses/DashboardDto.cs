@@ -23,6 +23,9 @@ public class DashboardDto
     [JsonPropertyName("is_active")]
     public bool IsActive { get; set; }
 
+    [JsonPropertyName("terminal_code")]
+    public string? TerminalCode { get; set; }
+
     [JsonPropertyName("created_by_user_id")]
     public int CreatedByUserId { get; set; }
 

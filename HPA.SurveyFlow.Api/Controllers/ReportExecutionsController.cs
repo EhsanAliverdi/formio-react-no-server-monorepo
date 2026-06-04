@@ -34,6 +34,8 @@ public class ReportExecutionsController(
         var template = await db.ReportTemplates.FindAsync(body.TemplateId);
         if (template == null) return NotFound(new { error = "Report template not found." });
         if (!CanAccess(template, user?.Role)) return Forbid();
+        var terminalValidation = await ValidateRuntimeTerminalAsync(template, body.TerminalCode);
+        if (terminalValidation != null) return terminalValidation;
 
         try
         {
@@ -58,14 +60,17 @@ public class ReportExecutionsController(
         [FromQuery] int templateId,
         [FromQuery] string? sortField,
         [FromQuery] string? sortDirection,
-        [FromQuery] string? runtimeFilters)
+        [FromQuery] string? runtimeFilters,
+        [FromQuery] string? terminal_code)
     {
         var user = HttpContext.GetCurrentUser();
         var template = await db.ReportTemplates.Include(t => t.Form).FirstOrDefaultAsync(t => t.Id == templateId);
         if (template == null) return NotFound(new { error = "Report template not found." });
         if (!CanAccess(template, user?.Role)) return Forbid();
 
-        var request = BuildExportRequest(templateId, sortField, sortDirection, runtimeFilters);
+        var request = BuildExportRequest(templateId, sortField, sortDirection, runtimeFilters, terminal_code);
+        var terminalValidation = await ValidateRuntimeTerminalAsync(template, request.TerminalCode);
+        if (terminalValidation != null) return terminalValidation;
         var rlsClause = await BuildRlsClause(template, user);
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var result = IsAggregation(template)
@@ -95,14 +100,17 @@ public class ReportExecutionsController(
         [FromQuery] int templateId,
         [FromQuery] string? sortField,
         [FromQuery] string? sortDirection,
-        [FromQuery] string? runtimeFilters)
+        [FromQuery] string? runtimeFilters,
+        [FromQuery] string? terminal_code)
     {
         var user = HttpContext.GetCurrentUser();
         var template = await db.ReportTemplates.Include(t => t.Form).FirstOrDefaultAsync(t => t.Id == templateId);
         if (template == null) return NotFound(new { error = "Report template not found." });
         if (!CanAccess(template, user?.Role)) return Forbid();
 
-        var request = BuildExportRequest(templateId, sortField, sortDirection, runtimeFilters);
+        var request = BuildExportRequest(templateId, sortField, sortDirection, runtimeFilters, terminal_code);
+        var terminalValidation = await ValidateRuntimeTerminalAsync(template, request.TerminalCode);
+        if (terminalValidation != null) return terminalValidation;
         var rlsClause = await BuildRlsClause(template, user);
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var result = IsAggregation(template)
@@ -160,13 +168,29 @@ public class ReportExecutionsController(
         }
     }
 
-    private static RunReportRequest BuildExportRequest(int templateId, string? sortField, string? sortDirection, string? runtimeFilters)
+    private async Task<IActionResult?> ValidateRuntimeTerminalAsync(Domain.Entities.ReportTemplate template, string? terminalCode)
+    {
+        var normalised = NormaliseTerminalCode(terminalCode);
+        if (normalised == null) return null;
+        if (!await db.Terminals.AnyAsync(t => t.Code == normalised))
+            return BadRequest(new { error = "Terminal does not exist." });
+        if (!string.IsNullOrWhiteSpace(template.TerminalCode)
+            && !string.Equals(template.TerminalCode, normalised, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { error = "Runtime terminal does not match the report terminal scope." });
+        return null;
+    }
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
+
+    private static RunReportRequest BuildExportRequest(int templateId, string? sortField, string? sortDirection, string? runtimeFilters, string? terminalCode)
     {
         var request = new RunReportRequest
         {
             TemplateId = templateId,
             SortField = sortField,
             SortDirection = sortDirection,
+            TerminalCode = NormaliseTerminalCode(terminalCode),
             Page = 1,
             PageSize = 10000,
         };

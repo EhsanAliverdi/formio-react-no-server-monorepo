@@ -10,13 +10,14 @@ export class DatasetService {
   private http = inject(HttpClient);
   private api = inject(ApiService);
 
-  list(formId?: number): Observable<Dataset[]> {
-    return this.listPaged({ formId }).pipe(map(result => result.items));
+  list(formId?: number, terminalCode?: string | null): Observable<Dataset[]> {
+    return this.listPaged({ formId, terminal_code: terminalCode }).pipe(map(result => result.items));
   }
 
-  listPaged(options: { formId?: number; limit?: number; offset?: number } = {}): Observable<PaginatedResult<Dataset>> {
+  listPaged(options: { formId?: number; terminal_code?: string | null; limit?: number; offset?: number } = {}): Observable<PaginatedResult<Dataset>> {
     let params = new HttpParams();
     if (options.formId != null) params = params.set('formId', options.formId);
+    if (options.terminal_code) params = params.set('terminal_code', options.terminal_code);
     if (options.limit != null) params = params.set('limit', options.limit);
     if (options.offset != null) params = params.set('offset', options.offset);
     return this.http.get<PaginatedResult<Dataset>>(this.api.apiUrl('/api/datasets'), { params });

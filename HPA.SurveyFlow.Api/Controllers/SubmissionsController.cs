@@ -25,10 +25,12 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
         [FromQuery] int? form_id = null,
         [FromQuery] string? q = null,
         [FromQuery] string? from = null,
-        [FromQuery] string? to = null)
+        [FromQuery] string? to = null,
+        [FromQuery] string? terminal_code = null)
     {
         limit = Math.Clamp(limit, 1, 200);
         if (offset < 0) offset = 0;
+        var terminalCode = NormaliseTerminalCode(terminal_code);
 
         var query = db.FormSubmissions
             .Include(s => s.Form)
@@ -39,6 +41,9 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
                 .ThenInclude(c => c.User)
             .Where(s => s.DeletedAt == null)
             .AsQueryable();
+
+        if (terminalCode != null)
+            query = query.Where(s => s.TerminalCode == null || s.TerminalCode == terminalCode);
 
         if (form_id.HasValue)
             query = query.Where(s => s.FormId == form_id.Value);
@@ -239,6 +244,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             Id = s.Id,
             FormId = s.FormId,
             FormName = s.Form.Name,
+            TerminalCode = s.TerminalCode,
             SubmittedAt = s.SubmittedAt,
             CanExportPdf = true
         }).ToList();
@@ -278,6 +284,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             Id = submission.Id,
             FormId = submission.FormId,
             FormName = submission.Form.Name,
+            TerminalCode = submission.TerminalCode,
             UserId = submission.UserId,
             UserEmail = submission.User?.Email,
             SubmittedAt = submission.SubmittedAt,
@@ -351,6 +358,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             Id = submission.Id,
             FormId = submission.FormId,
             FormName = submission.Form.Name,
+            TerminalCode = submission.TerminalCode,
             ParentSubmissionId = submission.ParentSubmissionId,
             UserId = submission.UserId,
             UserEmail = submission.User?.Email,
@@ -400,6 +408,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
             Id = s.Id,
             FormId = s.FormId,
             FormName = s.Form.Name,
+            TerminalCode = s.TerminalCode,
             ParentSubmissionId = s.ParentSubmissionId,
             UserId = s.UserId,
             UserEmail = s.User?.Email,
@@ -500,4 +509,7 @@ public class SubmissionsController(AppDbContext db, PdfService pdfService) : Con
         try { return JsonDocument.Parse(raw).RootElement; }
         catch { return raw; }
     }
+
+    private static string? NormaliseTerminalCode(string? terminalCode) =>
+        string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
 }
