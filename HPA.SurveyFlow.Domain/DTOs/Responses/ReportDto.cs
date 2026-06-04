@@ -43,6 +43,9 @@ public class ReportTemplateDto
     [JsonPropertyName("form_name")]
     public string FormName { get; set; } = null!;
 
+    [JsonPropertyName("source_type")]
+    public string SourceType { get; set; } = "form_submissions";
+
     [JsonPropertyName("terminal_code")]
     public string? TerminalCode { get; set; }
 

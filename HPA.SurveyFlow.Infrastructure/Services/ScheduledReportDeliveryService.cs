@@ -17,6 +17,7 @@ public class ScheduledReportDeliveryService(
     AppDbContext db,
     ReportQueryEngineService queryEngine,
     AggregationPipelineService aggregationPipeline,
+    IntegrationActivityReportService integrationActivity,
     ILogger<ScheduledReportDeliveryService> logger)
 {
     public async Task DeliverAsync(int scheduledReportId, CancellationToken ct = default)
@@ -43,7 +44,9 @@ public class ScheduledReportDeliveryService(
                 SortDirection = template.DefaultSortDirection,
             };
 
-            var result = IsAggregation(template)
+            var result = IsIntegrationActivity(template)
+                ? await integrationActivity.ExecuteAsync(template, request)
+                : IsAggregation(template)
                 ? await aggregationPipeline.ExecuteAsync(template, request, null)
                 : await queryEngine.ExecuteAsync(template, request, null);
 
@@ -114,6 +117,9 @@ public class ScheduledReportDeliveryService(
 
     private static bool IsAggregation(ReportTemplate t) =>
         !string.IsNullOrWhiteSpace(t.GroupByJson) || !string.IsNullOrWhiteSpace(t.MeasuresJson);
+
+    private static bool IsIntegrationActivity(ReportTemplate t) =>
+        string.Equals(t.SourceType, "integration_activity", StringComparison.OrdinalIgnoreCase);
 
     private static string BuildCsv(HPA.SurveyFlow.Domain.DTOs.Responses.ReportExecutionResultDto result)
     {

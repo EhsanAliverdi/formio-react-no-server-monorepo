@@ -20,6 +20,7 @@ public class DashboardsController(
     AppDbContext db,
     ReportQueryEngineService queryEngine,
     AggregationPipelineService aggregationPipeline,
+    IntegrationActivityReportService integrationActivity,
     UserContextService userContext) : ControllerBase
 {
     [HttpGet]
@@ -285,10 +286,12 @@ public class DashboardsController(
         body.TerminalCode ??= terminalCode;
         body.Page = Math.Max(1, body.Page);
         body.PageSize = Math.Clamp(body.PageSize, 1, 200);
-        var rlsClause = await BuildRlsClause(card.ReportTemplate, user);
+        var rlsClause = IsIntegrationActivity(card.ReportTemplate) ? null : await BuildRlsClause(card.ReportTemplate, user);
         try
         {
-            var result = IsAggregation(card.ReportTemplate)
+            var result = IsIntegrationActivity(card.ReportTemplate)
+                ? await integrationActivity.ExecuteAsync(card.ReportTemplate, body)
+                : IsAggregation(card.ReportTemplate)
                 ? await aggregationPipeline.ExecuteAsync(card.ReportTemplate, body, rlsClause)
                 : await queryEngine.ExecuteAsync(card.ReportTemplate, body, rlsClause);
             return Ok(result);
@@ -326,6 +329,9 @@ public class DashboardsController(
 
     private static bool IsAggregation(ReportTemplate template) =>
         !string.IsNullOrWhiteSpace(template.GroupByJson) || !string.IsNullOrWhiteSpace(template.MeasuresJson);
+
+    private static bool IsIntegrationActivity(ReportTemplate template) =>
+        string.Equals(template.SourceType, "integration_activity", StringComparison.OrdinalIgnoreCase);
 
     private async Task<IActionResult?> ValidateDashboard(string name, string slug, string visibility, int? currentId = null)
     {

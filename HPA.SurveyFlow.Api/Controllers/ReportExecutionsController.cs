@@ -18,6 +18,7 @@ public class ReportExecutionsController(
     AppDbContext db,
     ReportQueryEngineService queryEngine,
     AggregationPipelineService aggregationPipeline,
+    IntegrationActivityReportService integrationActivity,
     ExcelExportService excelExport,
     UserContextService userContext,
     ILogger<ReportExecutionsController> logger) : ControllerBase
@@ -39,9 +40,11 @@ public class ReportExecutionsController(
 
         try
         {
-            var rlsClause = await BuildRlsClause(template, user);
+            var rlsClause = IsIntegrationActivity(template) ? null : await BuildRlsClause(template, user);
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var result = IsAggregation(template)
+            var result = IsIntegrationActivity(template)
+                ? await integrationActivity.ExecuteAsync(template, body)
+                : IsAggregation(template)
                 ? await aggregationPipeline.ExecuteAsync(template, body, rlsClause)
                 : await queryEngine.ExecuteAsync(template, body, rlsClause);
             sw.Stop();
@@ -71,9 +74,11 @@ public class ReportExecutionsController(
         var request = BuildExportRequest(templateId, sortField, sortDirection, runtimeFilters, terminal_code);
         var terminalValidation = await ValidateRuntimeTerminalAsync(template, request.TerminalCode);
         if (terminalValidation != null) return terminalValidation;
-        var rlsClause = await BuildRlsClause(template, user);
+        var rlsClause = IsIntegrationActivity(template) ? null : await BuildRlsClause(template, user);
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        var result = IsAggregation(template)
+        var result = IsIntegrationActivity(template)
+            ? await integrationActivity.ExecuteAsync(template, request)
+            : IsAggregation(template)
             ? await aggregationPipeline.ExecuteAsync(template, request, rlsClause)
             : await queryEngine.ExecuteAsync(template, request, rlsClause);
         sw.Stop();
@@ -111,9 +116,11 @@ public class ReportExecutionsController(
         var request = BuildExportRequest(templateId, sortField, sortDirection, runtimeFilters, terminal_code);
         var terminalValidation = await ValidateRuntimeTerminalAsync(template, request.TerminalCode);
         if (terminalValidation != null) return terminalValidation;
-        var rlsClause = await BuildRlsClause(template, user);
+        var rlsClause = IsIntegrationActivity(template) ? null : await BuildRlsClause(template, user);
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        var result = IsAggregation(template)
+        var result = IsIntegrationActivity(template)
+            ? await integrationActivity.ExecuteAsync(template, request)
+            : IsAggregation(template)
             ? await aggregationPipeline.ExecuteAsync(template, request, rlsClause)
             : await queryEngine.ExecuteAsync(template, request, rlsClause);
         sw.Stop();
@@ -138,6 +145,9 @@ public class ReportExecutionsController(
 
     private static bool IsAggregation(Domain.Entities.ReportTemplate template) =>
         !string.IsNullOrWhiteSpace(template.GroupByJson) || !string.IsNullOrWhiteSpace(template.MeasuresJson);
+
+    private static bool IsIntegrationActivity(Domain.Entities.ReportTemplate template) =>
+        string.Equals(template.SourceType, "integration_activity", StringComparison.OrdinalIgnoreCase);
 
     private async Task<string?> BuildRlsClause(Domain.Entities.ReportTemplate template, Domain.Entities.User? user)
     {

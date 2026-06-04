@@ -23,6 +23,9 @@ public class SaveReportTemplateRequest
     [JsonPropertyName("form_id")]
     public int FormId { get; set; }
 
+    [JsonPropertyName("source_type")]
+    public string SourceType { get; set; } = "form_submissions";
+
     [JsonPropertyName("terminal_code")]
     public string? TerminalCode { get; set; }
 

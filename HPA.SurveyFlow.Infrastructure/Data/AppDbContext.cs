@@ -328,6 +328,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(r => r.Id);
             e.Property(r => r.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             e.Property(r => r.FormId).HasColumnName("form_id");
+            e.Property(r => r.SourceType).HasColumnName("source_type").HasDefaultValue("form_submissions");
+            e.Property(r => r.TerminalCode).HasColumnName("terminal_code").HasMaxLength(16);
             e.Property(r => r.Name).HasColumnName("name").IsRequired();
             e.Property(r => r.Description).HasColumnName("description");
             e.Property(r => r.IsPublic).HasColumnName("is_public").HasDefaultValue(false);

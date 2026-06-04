@@ -122,6 +122,9 @@ public class ReportTemplatesController(
         return Ok(schemaResolver.ResolveFields(form.Json));
     }
 
+    [HttpGet("integration-activity-fields")]
+    public IActionResult GetIntegrationActivityFields() => Ok(IntegrationActivityReportService.Fields());
+
     [HttpGet("categories")]
     public async Task<IActionResult> GetCategories()
     {
@@ -143,6 +146,8 @@ public class ReportTemplatesController(
 
         var form = await db.Forms.FindAsync(body.FormId);
         if (form == null) return NotFound(new { error = "Form not found." });
+        var sourceType = NormaliseSourceType(body.SourceType);
+        if (sourceType == null) return BadRequest(new { error = "Report source type is invalid." });
         var terminalCode = NormaliseTerminalCode(body.TerminalCode);
         var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
         if (terminalValidation != null) return terminalValidation;
@@ -151,12 +156,13 @@ public class ReportTemplatesController(
         var datasetValidation = await ValidateDatasetScopeAsync(body.DatasetId, body.FormId, terminalCode);
         if (datasetValidation != null) return datasetValidation;
 
-        var fields = schemaResolver.ResolveFields(form.Json);
+        var fields = ResolveFieldsForSource(sourceType, form);
         var schemaVersion = DriftAnalysisService.ComputeFieldsHash(fields);
 
         var template = new ReportTemplate
         {
             FormId = body.FormId,
+            SourceType = sourceType,
             TerminalCode = terminalCode,
             Name = body.Name,
             Description = body.Description,
@@ -202,6 +208,8 @@ public class ReportTemplatesController(
             form = await db.Forms.FindAsync(body.FormId);
             if (form == null) return NotFound(new { error = "Form not found." });
         }
+        var sourceType = NormaliseSourceType(body.SourceType);
+        if (sourceType == null) return BadRequest(new { error = "Report source type is invalid." });
         var terminalCode = NormaliseTerminalCode(body.TerminalCode);
         var terminalValidation = await ValidateTerminalCodeAsync(terminalCode);
         if (terminalValidation != null) return terminalValidation;
@@ -210,10 +218,11 @@ public class ReportTemplatesController(
         var datasetValidation = await ValidateDatasetScopeAsync(body.DatasetId, body.FormId, terminalCode);
         if (datasetValidation != null) return datasetValidation;
 
-        var fields = schemaResolver.ResolveFields(form.Json);
+        var fields = ResolveFieldsForSource(sourceType, form);
         var schemaVersion = DriftAnalysisService.ComputeFieldsHash(fields);
 
         template.FormId = body.FormId;
+        template.SourceType = sourceType;
         template.TerminalCode = terminalCode;
         template.Name = body.Name;
         template.Description = body.Description;
@@ -263,6 +272,7 @@ public class ReportTemplatesController(
         var copy = new ReportTemplate
         {
             FormId = source.FormId,
+            SourceType = source.SourceType,
             TerminalCode = source.TerminalCode,
             Name = copyName,
             Description = source.Description,
@@ -343,13 +353,13 @@ public class ReportTemplatesController(
         List<FieldDriftEntryDto>? driftEntries = null;
         bool hasDrift = false;
 
-        if (includeDrift && t.Form?.Json != null)
+        if (IsFormSubmissionSource(t) && includeDrift && t.Form?.Json != null)
         {
             var drift = driftAnalysis.Analyse(t, t.Form.Json);
             hasDrift = drift.HasDrift;
             driftEntries = drift.HasDrift ? drift.DriftEntries : null;
         }
-        else if (!includeDrift && t.Form?.Json != null && !string.IsNullOrEmpty(t.SchemaVersion))
+        else if (IsFormSubmissionSource(t) && !includeDrift && t.Form?.Json != null && !string.IsNullOrEmpty(t.SchemaVersion))
         {
             // On list view: compute cheaply without returning entries
             var fields = schemaResolver.ResolveFields(t.Form.Json);
@@ -362,6 +372,7 @@ public class ReportTemplatesController(
             Id = t.Id,
             FormId = t.FormId,
             FormName = t.Form?.Name ?? string.Empty,
+            SourceType = t.SourceType,
             TerminalCode = t.TerminalCode,
             Name = t.Name,
             Description = t.Description,
@@ -553,6 +564,20 @@ public class ReportTemplatesController(
 
     private static string? NormaliseTerminalCode(string? terminalCode) =>
         string.IsNullOrWhiteSpace(terminalCode) ? null : terminalCode.Trim().ToUpperInvariant();
+
+    private static string? NormaliseSourceType(string? sourceType)
+    {
+        var value = string.IsNullOrWhiteSpace(sourceType) ? "form_submissions" : sourceType.Trim().ToLowerInvariant();
+        return value is "form_submissions" or "integration_activity" ? value : null;
+    }
+
+    private IReadOnlyList<FieldDescriptorDto> ResolveFieldsForSource(string sourceType, Form form) =>
+        sourceType == "integration_activity"
+            ? IntegrationActivityReportService.Fields()
+            : schemaResolver.ResolveFields(form.Json);
+
+    private static bool IsFormSubmissionSource(ReportTemplate template) =>
+        string.IsNullOrWhiteSpace(template.SourceType) || template.SourceType == "form_submissions";
 
     private static bool TerminalIsCompatible(string? requiredTerminalCode, string? selectedTerminalCode) =>
         requiredTerminalCode == null

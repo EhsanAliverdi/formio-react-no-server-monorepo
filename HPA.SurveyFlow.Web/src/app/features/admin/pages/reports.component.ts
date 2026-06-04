@@ -37,6 +37,10 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
                 </svg>
                 New Report
               </button>
+              <button type="button" (click)="newIntegrationReport()" [disabled]="!newReportFormId"
+                class="ta-btn-group-action disabled:opacity-50 disabled:cursor-not-allowed">
+                Integration
+              </button>
               <app-help-trigger helpKey="admin.reports.new" label="Help for creating a new report" [grouped]="true" />
             </div>
           </div>
@@ -416,6 +420,11 @@ export class ReportsComponent implements OnInit {
   newReport(): void {
     if (!this.newReportFormId) return;
     this.router.navigate(['/admin/reports', this.newReportFormId, 'designer']);
+  }
+
+  newIntegrationReport(): void {
+    if (!this.newReportFormId) return;
+    this.router.navigate(['/admin/reports', this.newReportFormId, 'designer'], { queryParams: { source: 'integration_activity' } });
   }
 
   runReport(t: ReportTemplate): void { this.router.navigate(['/admin/reports', t.id, 'run']); }

@@ -133,6 +133,7 @@ builder.Services.AddScoped<FormSchemaResolverService>();
 builder.Services.AddScoped<DriftAnalysisService>();
 builder.Services.AddScoped<ReportQueryEngineService>();
 builder.Services.AddScoped<AggregationPipelineService>();
+builder.Services.AddScoped<IntegrationActivityReportService>();
 builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<ScheduledReportDeliveryService>();

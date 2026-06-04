@@ -54,6 +54,12 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
         </div>
 
         <div class="flex items-center gap-2 flex-shrink-0">
+          <select [(ngModel)]="sourceType" (ngModelChange)="onSourceTypeChange()" aria-label="Report source"
+            class="ta-field text-sm h-9 w-44">
+            <option value="form_submissions">Form submissions</option>
+            <option value="integration_activity">Integration activity</option>
+          </select>
+
           <!-- Public toggle -->
           <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-600 dark:text-gray-300 pr-2">
             <input type="checkbox" [(ngModel)]="isPublic"
@@ -199,6 +205,7 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
                         @if (fieldType(g.field_key) === 'date') {
                           <select [(ngModel)]="g.date_trunc" class="ta-field text-xs w-24 h-8 py-0">
                             <option value="">Raw</option>
+                            <option value="hour">Hour</option>
                             <option value="day">Day</option>
                             <option value="week">Week</option>
                             <option value="month">Month</option>
@@ -686,6 +693,7 @@ export class ReportDesignerComponent implements OnInit {
   name = '';
   description = '';
   isPublic = false;
+  sourceType: 'form_submissions' | 'integration_activity' = 'form_submissions';
   defaultSortField = '';
   defaultSortDirection: 'asc' | 'desc' = 'asc';
   defaultPageSize = 25;
@@ -745,22 +753,51 @@ export class ReportDesignerComponent implements OnInit {
   ngOnInit(): void {
     const fid = +this.route.snapshot.paramMap.get('formId')!;
     const tid = this.route.snapshot.queryParamMap.get('templateId');
+    const source = this.route.snapshot.queryParamMap.get('source');
     this.formId.set(fid);
+    this.sourceType = source === 'integration_activity' ? 'integration_activity' : 'form_submissions';
 
-    this.reportService.getFormFields(fid).subscribe({
+    this.loadFieldsForCurrentSource(() => {
+      if (tid) this.loadTemplate(+tid);
+    });
+  }
+
+  private loadFieldsForCurrentSource(afterLoad?: () => void): void {
+    this.loadingFields.set(true);
+    const obs = this.sourceType === 'integration_activity'
+      ? this.reportService.getIntegrationActivityFields()
+      : this.reportService.getFormFields(this.formId());
+
+    obs.subscribe({
       next: fields => {
         this.fields.set(fields);
         this.loadingFields.set(false);
-        if (tid) this.loadTemplate(+tid);
+        afterLoad?.();
       },
       error: () => this.loadingFields.set(false),
     });
+  }
+
+  onSourceTypeChange(): void {
+    this.columns.set([]);
+    this.filters.set(null);
+    this.groupByDefs = [];
+    this.measureDefs = [];
+    this.defaultSortField = '';
+    this.chartXAxis = '';
+    this.chartYAxes = [];
+    this.loadFieldsForCurrentSource();
   }
 
   loadTemplate(id: number): void {
     this.templateId.set(id);
     this.reportService.get(id).subscribe({
       next: t => {
+        const templateSource = t.source_type ?? 'form_submissions';
+        if (templateSource !== this.sourceType) {
+          this.sourceType = templateSource;
+          this.loadFieldsForCurrentSource();
+        }
         this.name = t.name;
         this.description = t.description ?? '';
         this.isPublic = t.is_public;
@@ -797,6 +834,7 @@ export class ReportDesignerComponent implements OnInit {
     const tags = this.tagsInput.split(',').map(t => t.trim()).filter(Boolean);
     const req: SaveReportTemplateRequest = {
       form_id: this.formId(),
+      source_type: this.sourceType,
       name: this.name.trim(),
       description: this.description.trim() || undefined,
       is_public: this.isPublic,

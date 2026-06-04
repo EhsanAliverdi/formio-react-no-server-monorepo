@@ -74,6 +74,10 @@ export class ReportTemplateService {
     return this.http.get<FieldDescriptor[]>(this.api.apiUrl(`/api/report-templates/form-fields/${formId}`));
   }
 
+  getIntegrationActivityFields(): Observable<FieldDescriptor[]> {
+    return this.http.get<FieldDescriptor[]>(this.api.apiUrl('/api/report-templates/integration-activity-fields'));
+  }
+
   getCategories(): Observable<string[]> {
     return this.http.get<string[]>(this.api.apiUrl('/api/report-templates/categories'));
   }

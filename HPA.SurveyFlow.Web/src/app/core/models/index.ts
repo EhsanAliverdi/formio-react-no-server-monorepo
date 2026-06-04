@@ -438,7 +438,7 @@ export interface GroupByDef {
   field_key: string;
   label: string;
   alias: string;
-  date_trunc?: 'day' | 'week' | 'month' | 'quarter' | 'year' | null;
+  date_trunc?: 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year' | null;
 }
 
 export interface MeasureDef {
@@ -500,6 +500,7 @@ export interface ReportTemplate {
   id: number;
   form_id: number;
   form_name: string;
+  source_type?: 'form_submissions' | 'integration_activity';
   terminal_code?: string | null;
   name: string;
   description?: string;
@@ -528,6 +529,7 @@ export interface ReportTemplate {
 
 export interface SaveReportTemplateRequest {
   form_id: number;
+  source_type?: 'form_submissions' | 'integration_activity';
   terminal_code?: string | null;
   name: string;
   description?: string;

@@ -19,6 +19,7 @@ public class AlertEvaluatorService(
     AppDbContext db,
     ReportQueryEngineService queryEngine,
     AggregationPipelineService aggregationPipeline,
+    IntegrationActivityReportService integrationActivity,
     ILogger<AlertEvaluatorService> logger)
 {
     public async Task EvaluateAsync(int alertId, CancellationToken ct = default)
@@ -43,7 +44,9 @@ public class AlertEvaluatorService(
                 SortDirection = template.DefaultSortDirection,
             };
 
-            var result = IsAggregation(template)
+            var result = IsIntegrationActivity(template)
+                ? await integrationActivity.ExecuteAsync(template, request)
+                : IsAggregation(template)
                 ? await aggregationPipeline.ExecuteAsync(template, request, null)
                 : await queryEngine.ExecuteAsync(template, request, null);
 
@@ -101,6 +104,9 @@ public class AlertEvaluatorService(
 
     private static bool IsAggregation(ReportTemplate t) =>
         !string.IsNullOrWhiteSpace(t.GroupByJson) || !string.IsNullOrWhiteSpace(t.MeasuresJson);
+
+    private static bool IsIntegrationActivity(ReportTemplate t) =>
+        string.Equals(t.SourceType, "integration_activity", StringComparison.OrdinalIgnoreCase);
 
     private static bool Evaluate(decimal value, string op, decimal threshold) => op switch
     {
