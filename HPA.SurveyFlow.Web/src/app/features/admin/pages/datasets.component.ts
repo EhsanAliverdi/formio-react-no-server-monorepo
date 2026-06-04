@@ -45,11 +45,12 @@ import { Dataset, Form } from '../../../core/models';
         </div>
       } @else {
         <div class="ta-table-shell">
-          <table class="ta-table min-w-[720px]">
+          <table class="ta-table min-w-[840px]">
             <thead>
               <tr class="ta-table-head">
                 <th scope="col" class="ta-table-th">Dataset</th>
                 <th scope="col" class="ta-table-th">Form</th>
+                <th scope="col" class="ta-table-th">Terminal</th>
                 <th scope="col" class="ta-table-th">Status</th>
                 <th scope="col" class="ta-table-th">Updated</th>
                 <th scope="col" class="ta-table-th text-right">Actions</th>
@@ -63,6 +64,7 @@ import { Dataset, Form } from '../../../core/models';
                     <div class="mt-1 max-w-md text-xs text-gray-500 dark:text-gray-400">{{ d.description || 'No description.' }}</div>
                   </td>
                   <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ formName(d.form_id) }}</td>
+                  <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ terminalLabel(d.terminal_code) }}</td>
                   <td class="px-5 py-4">
                     <span class="ta-badge" [class]="d.is_active ? 'ta-badge-success' : 'ta-badge-neutral'">
                       {{ d.is_active ? 'Active' : 'Inactive' }}
@@ -222,6 +224,10 @@ export class DatasetsComponent implements OnInit {
 
   formName(formId: number): string {
     return this.forms().find(f => f.id === formId)?.name ?? 'Unknown form';
+  }
+
+  terminalLabel(code?: string | null): string {
+    return code?.trim() || 'All';
   }
 
   openNew(): void {

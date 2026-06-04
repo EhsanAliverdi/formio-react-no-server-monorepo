@@ -75,11 +75,12 @@ const PAGE_SIZE = 25;
 
         <!-- Table -->
         <div class="ta-table-shell">
-          <table class="ta-table min-w-[640px]">
+          <table class="ta-table min-w-[760px]">
             <thead>
               <tr class="ta-table-head">
                 <th scope="col" class="ta-table-th">#</th>
                 <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Form <app-help-trigger helpKey="admin.submissions.form" label="Help for submitted forms" /></span></th>
+                <th scope="col" class="ta-table-th">Terminal</th>
                 <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Abnormal <app-help-trigger helpKey="admin.submissions.abnormal" label="Help for abnormal answers" /></span></th>
                 <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Integration <app-help-trigger helpKey="admin.submissions.integration" label="Help for integration status" /></span></th>
                 <th scope="col" class="ta-table-th"><span class="flex items-center gap-1">Submitted <app-help-trigger helpKey="admin.submissions.submitted" label="Help for submitted time" /></span></th>
@@ -90,7 +91,7 @@ const PAGE_SIZE = 25;
             <tbody>
               @if (rows().length === 0) {
                 <tr>
-                  <td colspan="7" class="px-5 py-4 text-sm text-gray-500">
+                  <td colspan="8" class="px-5 py-4 text-sm text-gray-500">
                     {{ loading() ? 'Loading…' : 'No submissions yet.' }}
                   </td>
                 </tr>
@@ -112,6 +113,7 @@ const PAGE_SIZE = 25;
                       </div>
                     </td>
                     <td class="px-5 py-4 font-medium text-gray-800 dark:text-gray-100">{{ r.form_name }}</td>
+                    <td class="px-5 py-4 text-gray-700 dark:text-gray-200">{{ terminalLabel(r.terminal_code) }}</td>
                     <td class="px-5 py-4">
                       <div class="flex flex-wrap gap-1">
                         @if (r.error_count > 0) {
@@ -169,6 +171,7 @@ const PAGE_SIZE = 25;
                         <div class="text-xs font-semibold uppercase tracking-wide text-indigo-600">Sub form</div>
                         <div class="font-medium text-gray-800 dark:text-gray-100">{{ child.form_name }}</div>
                       </td>
+                      <td class="px-5 py-3 text-gray-700 dark:text-gray-200">{{ terminalLabel(child.terminal_code) }}</td>
                       <td class="px-5 py-3">
                         <div class="flex flex-wrap gap-1">
                           @if (child.error_count > 0) {
@@ -353,5 +356,9 @@ export class SubmissionsComponent implements OnInit, OnDestroy {
   formatDate(dateStr: string): string {
     if (!dateStr) return '—';
     try { return new Date(dateStr).toLocaleString(); } catch { return dateStr; }
+  }
+
+  terminalLabel(code?: string | null): string {
+    return code?.trim() || 'All';
   }
 }

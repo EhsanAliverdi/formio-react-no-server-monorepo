@@ -30,11 +30,12 @@ import { Page } from '../../../core/models';
       } @else {
         <div class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+            <table class="min-w-[900px] w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
               <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                 <tr>
                   <th class="px-4 py-3">Page</th>
                   <th class="px-4 py-3">URL</th>
+                  <th class="px-4 py-3">Terminal</th>
                   <th class="px-4 py-3">Access</th>
                   <th class="px-4 py-3">Layout</th>
                   <th class="px-4 py-3">Status</th>
@@ -49,6 +50,7 @@ import { Page } from '../../../core/models';
                       <div class="mt-1 max-w-md text-xs text-gray-500 dark:text-gray-400">{{ page.description || 'No description.' }}</div>
                     </td>
                     <td class="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">/page/{{ page.slug }}</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ terminalLabel(page.terminal_code) }}</td>
                     <td class="px-4 py-3">
                       <span class="ta-badge" [class]="page.visibility === 'public' ? 'ta-badge-success' : 'ta-badge-warning'">
                         {{ page.visibility === 'public' ? 'Public' : 'Restricted' }}
@@ -137,6 +139,10 @@ export class PageListComponent implements OnInit {
   previousPage(): void {
     this.offset.update(v => Math.max(0, v - this.pageSize));
     this.load();
+  }
+
+  terminalLabel(code?: string | null): string {
+    return code?.trim() || 'All';
   }
 
   async remove(page: Page): Promise<void> {

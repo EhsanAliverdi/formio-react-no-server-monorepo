@@ -174,11 +174,12 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
       <!-- Reports table -->
       @else {
         <div class="ta-table-shell">
-          <table class="ta-table min-w-[920px]">
+          <table class="ta-table min-w-[1040px]">
             <thead>
               <tr class="ta-table-head">
                 <th scope="col" class="ta-table-th">Report</th>
                 <th scope="col" class="ta-table-th">Form</th>
+                <th scope="col" class="ta-table-th">Terminal</th>
                 <th scope="col" class="ta-table-th">Category / Tags</th>
                 <th scope="col" class="ta-table-th">Columns</th>
                 <th scope="col" class="ta-table-th">Status</th>
@@ -209,6 +210,7 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
                     </div>
                   </td>
                   <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ t.form_name }}</td>
+                  <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ terminalLabel(t.terminal_code) }}</td>
                   <td class="px-5 py-4">
                     <div class="flex flex-wrap gap-1.5">
                       @if (t.category) {
@@ -392,6 +394,10 @@ export class ReportsComponent implements OnInit {
   previousPage(): void {
     this.offset.update(v => Math.max(0, v - this.pageSize));
     this.loadTemplates();
+  }
+
+  terminalLabel(code?: string | null): string {
+    return code?.trim() || 'All';
   }
 
   toggleFavourite(t: ReportTemplate, event: Event): void {

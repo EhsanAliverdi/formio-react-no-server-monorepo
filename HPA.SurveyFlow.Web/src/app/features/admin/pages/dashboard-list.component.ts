@@ -29,11 +29,12 @@ import { Dashboard } from '../../../core/models';
         </div>
       } @else {
         <div class="ta-table-shell">
-          <table class="ta-table min-w-[820px]">
+          <table class="ta-table min-w-[940px]">
             <thead>
               <tr class="ta-table-head">
                 <th scope="col" class="ta-table-th">Dashboard</th>
                 <th scope="col" class="ta-table-th">URL</th>
+                <th scope="col" class="ta-table-th">Terminal</th>
                 <th scope="col" class="ta-table-th">Access</th>
                 <th scope="col" class="ta-table-th">Cards</th>
                 <th scope="col" class="ta-table-th">Updated</th>
@@ -48,6 +49,7 @@ import { Dashboard } from '../../../core/models';
                     <div class="mt-1 max-w-md text-xs text-gray-500 dark:text-gray-400">{{ dashboard.description || 'No description.' }}</div>
                   </td>
                   <td class="px-5 py-4 font-mono text-xs text-gray-500 dark:text-gray-400">/reporting/d/{{ dashboard.slug }}</td>
+                  <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ terminalLabel(dashboard.terminal_code) }}</td>
                   <td class="px-5 py-4">
                     <span class="ta-badge" [class]="dashboard.visibility === 'public' ? 'ta-badge-success' : 'ta-badge-warning'">
                       {{ dashboard.visibility === 'public' ? 'Public' : 'Restricted' }}
@@ -134,6 +136,10 @@ export class DashboardListComponent implements OnInit {
   previousPage(): void {
     this.offset.update(v => Math.max(0, v - this.pageSize));
     this.load();
+  }
+
+  terminalLabel(code?: string | null): string {
+    return code?.trim() || 'All';
   }
 
   async remove(dashboard: Dashboard): Promise<void> {

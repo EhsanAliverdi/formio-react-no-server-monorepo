@@ -68,7 +68,7 @@ import { Form } from '../../../core/models';
 
       <!-- Table -->
       <div *ngIf="!loading()" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
-        <table class="min-w-[640px] w-full divide-y divide-gray-100 dark:divide-gray-700">
+        <table class="min-w-[760px] w-full divide-y divide-gray-100 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
@@ -84,12 +84,13 @@ import { Form } from '../../../core/models';
                   <app-help-trigger helpKey="admin.forms.anonymous" label="Help for anonymous submissions" />
                 </span>
               </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Terminal</th>
               <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
             <tr *ngIf="filteredForms().length === 0">
-              <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
+              <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">
                 {{ searchQuery ? 'No forms match your search.' : 'No forms yet. Create your first form.' }}
               </td>
             </tr>
@@ -133,6 +134,7 @@ import { Form } from '../../../core/models';
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                   {{ form.allow_anonymous_submit ? 'Yes' : 'No' }}
                 </td>
+                <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ terminalLabel(form.terminal_code) }}</td>
                 <td class="px-6 py-4 text-right flex items-center justify-end gap-2">
                   <a
                     [routerLink]="['/admin/forms', form.id, 'view']"
@@ -189,6 +191,7 @@ import { Form } from '../../../core/models';
                       </span>
                     </td>
                     <td class="px-6 py-3 text-sm text-gray-500 dark:text-gray-300">{{ child.allow_anonymous_submit ? 'Yes' : 'No' }}</td>
+                    <td class="px-6 py-3 text-sm text-gray-600 dark:text-gray-300">{{ terminalLabel(child.terminal_code) }}</td>
                     <td class="px-6 py-3 text-right flex items-center justify-end gap-2">
                       <a
                         [routerLink]="['/admin/forms', child.id, 'edit']"
@@ -345,6 +348,10 @@ export class AdminFormsComponent implements OnInit {
   previousPage(): void {
     this.offset.update(v => Math.max(0, v - this.pageSize));
     this.loadForms();
+  }
+
+  terminalLabel(code?: string | null): string {
+    return code?.trim() || 'All';
   }
 
   async deleteForm(form: Form): Promise<void> {
