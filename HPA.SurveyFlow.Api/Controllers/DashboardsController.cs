@@ -105,6 +105,67 @@ public class DashboardsController(
         return Ok(MapDto(dashboard));
     }
 
+    [HttpPost("{id:int}/duplicate")]
+    [RequirePermission(Permissions.Reports.Manage)]
+    public async Task<IActionResult> Duplicate(int id)
+    {
+        var user = HttpContext.GetCurrentUser();
+        if (user == null) return Unauthorized();
+
+        var source = await DashboardQuery().AsNoTracking().FirstOrDefaultAsync(d => d.Id == id);
+        if (source == null) return NotFound(new { error = "Dashboard not found." });
+
+        var copyName = await NextCopyName(
+            source.Name,
+            name => db.Dashboards.AnyAsync(d => d.Name == name));
+        var copySlug = await NextCopySlug(source.Slug, slug => db.Dashboards.AnyAsync(d => d.Slug == slug));
+        var now = DateTime.UtcNow;
+
+        var dashboard = new Dashboard
+        {
+            Name = copyName,
+            Slug = copySlug,
+            Description = source.Description,
+            Visibility = source.Visibility,
+            IsActive = source.IsActive,
+            CreatedByUserId = user.Id,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        db.Dashboards.Add(dashboard);
+        await db.SaveChangesAsync();
+
+        foreach (var card in source.Cards.OrderBy(c => c.Y).ThenBy(c => c.X))
+        {
+            db.DashboardCards.Add(new DashboardCard
+            {
+                DashboardId = dashboard.Id,
+                ReportTemplateId = card.ReportTemplateId,
+                TitleOverride = card.TitleOverride,
+                X = card.X,
+                Y = card.Y,
+                W = card.W,
+                H = card.H,
+                MinW = card.MinW,
+                MinH = card.MinH,
+                MaxW = card.MaxW,
+                MaxH = card.MaxH,
+                SettingsJson = card.SettingsJson,
+                ShowTitle = card.ShowTitle,
+                FitContent = card.FitContent,
+                CustomCss = card.CustomCss,
+                DisplayMode = card.DisplayMode,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
+
+        await db.SaveChangesAsync();
+        var created = await DashboardQuery().FirstAsync(d => d.Id == dashboard.Id);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, MapDto(created));
+    }
+
     [HttpDelete("{id:int}")]
     [RequirePermission(Permissions.Reports.Manage)]
     public async Task<IActionResult> Delete(int id)
@@ -251,6 +312,26 @@ public class DashboardsController(
 
     private static string NormaliseSlug(string value) =>
         Regex.Replace(value.Trim().ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
+
+    private static async Task<string> NextCopyName(string originalName, Func<string, Task<bool>> exists)
+    {
+        var baseName = $"Copy of {originalName}".Trim();
+        var candidate = baseName;
+        var suffix = 2;
+        while (await exists(candidate))
+            candidate = $"{baseName} {suffix++}";
+        return candidate;
+    }
+
+    private static async Task<string> NextCopySlug(string originalSlug, Func<string, Task<bool>> exists)
+    {
+        var baseSlug = NormaliseSlug($"copy-of-{originalSlug}");
+        var candidate = baseSlug;
+        var suffix = 2;
+        while (await exists(candidate))
+            candidate = $"{baseSlug}-{suffix++}";
+        return candidate;
+    }
 
     private static void ApplyCard(DashboardCard card, SaveDashboardCardRequest body)
     {

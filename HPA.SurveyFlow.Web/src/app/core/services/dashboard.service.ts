@@ -50,6 +50,10 @@ export class DashboardService {
     return this.http.delete<void>(this.api.apiUrl(`/api/reporting/dashboards/${id}`));
   }
 
+  duplicate(id: number): Observable<Dashboard> {
+    return this.http.post<Dashboard>(this.api.apiUrl(`/api/reporting/dashboards/${id}/duplicate`), {});
+  }
+
   addCard(id: number, data: SaveDashboardCardRequest): Observable<DashboardCard> {
     return this.http.post<DashboardCard>(this.api.apiUrl(`/api/reporting/dashboards/${id}/cards`), data);
   }

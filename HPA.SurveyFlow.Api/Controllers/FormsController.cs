@@ -261,6 +261,53 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
         return Ok(new { success = true });
     }
 
+    [HttpPost("{id:int}/duplicate")]
+    public async Task<IActionResult> DuplicateForm(int id)
+    {
+        User currentUser;
+        try { currentUser = HttpContext.RequireRole(UserRole.Admin, UserRole.Editor); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(new { error = ex.Message }); }
+
+        var source = await db.Forms
+            .AsNoTracking()
+            .Include(f => f.AllowedRoles)
+            .Include(f => f.AllowedUsers)
+            .FirstOrDefaultAsync(f => f.Id == id);
+        if (source == null)
+            return NotFound(new { error = "Form not found." });
+
+        var copyName = await NextCopyName(
+            source.Name,
+            name => db.Forms.AnyAsync(f => f.Name == name));
+
+        var copy = new Form
+        {
+            Name = copyName,
+            Json = source.Json,
+            AllowAnonymousSubmit = source.AllowAnonymousSubmit,
+            Visibility = source.Visibility,
+            ParentFormId = source.ParentFormId,
+        };
+
+        db.Forms.Add(copy);
+        await db.SaveChangesAsync();
+
+        foreach (var role in source.AllowedRoles)
+            db.FormAllowedRoles.Add(new FormAllowedRole { FormId = copy.Id, Role = role.Role });
+
+        if (currentUser.Role == UserRole.Admin)
+        {
+            foreach (var allowedUser in source.AllowedUsers)
+                db.FormAllowedUsers.Add(new FormAllowedUser { FormId = copy.Id, UserId = allowedUser.UserId });
+        }
+
+        await DuplicateNotificationRules(id, copy.Id);
+        await DuplicateIntegrationRules(id, copy.Id);
+        await db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetForm), new { id = copy.Id }, new { success = true, id = copy.Id });
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteForm(int id)
     {
@@ -502,6 +549,116 @@ public class FormsController(AppDbContext db, FormAccessService formAccessServic
             string s => s == "1" || s.Equals("true", StringComparison.OrdinalIgnoreCase),
             _ => defaultValue
         };
+    }
+
+    private static async Task<string> NextCopyName(string originalName, Func<string, Task<bool>> exists)
+    {
+        var baseName = $"Copy of {originalName}".Trim();
+        var candidate = baseName;
+        var suffix = 2;
+        while (await exists(candidate))
+            candidate = $"{baseName} {suffix++}";
+        return candidate;
+    }
+
+    private async Task DuplicateNotificationRules(int sourceFormId, int targetFormId)
+    {
+        var rules = await db.FormNotificationRules
+            .AsNoTracking()
+            .Include(r => r.EmailConfig)
+            .Include(r => r.SmsConfig)
+            .Where(r => r.FormId == sourceFormId)
+            .OrderBy(r => r.SortOrder)
+            .ToListAsync();
+
+        foreach (var rule in rules)
+        {
+            var copy = new FormNotificationRule
+            {
+                FormId = targetFormId,
+                Name = rule.Name,
+                Enabled = rule.Enabled,
+                Channel = rule.Channel,
+                ConditionGroupJson = rule.ConditionGroupJson,
+                SortOrder = rule.SortOrder,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+            db.FormNotificationRules.Add(copy);
+            await db.SaveChangesAsync();
+
+            if (rule.EmailConfig is not null)
+            {
+                db.FormNotificationRuleEmails.Add(new FormNotificationRuleEmail
+                {
+                    RuleId = copy.Id,
+                    ToAddressesJson = rule.EmailConfig.ToAddressesJson,
+                    Subject = rule.EmailConfig.Subject,
+                    BodyHtml = rule.EmailConfig.BodyHtml,
+                    AttachPdf = rule.EmailConfig.AttachPdf,
+                });
+            }
+
+            if (rule.SmsConfig is not null)
+            {
+                db.FormNotificationRuleSmsConfigs.Add(new FormNotificationRuleSms
+                {
+                    RuleId = copy.Id,
+                    ToNumbersJson = rule.SmsConfig.ToNumbersJson,
+                    Body = rule.SmsConfig.Body,
+                });
+            }
+        }
+    }
+
+    private async Task DuplicateIntegrationRules(int sourceFormId, int targetFormId)
+    {
+        var rules = await db.FormIntegrationRules
+            .AsNoTracking()
+            .Include(r => r.MexConfig)
+            .Include(r => r.WebhookConfig)
+            .Where(r => r.FormId == sourceFormId)
+            .OrderBy(r => r.SortOrder)
+            .ToListAsync();
+
+        foreach (var rule in rules)
+        {
+            var copy = new FormIntegrationRule
+            {
+                FormId = targetFormId,
+                Name = rule.Name,
+                Enabled = rule.Enabled,
+                Channel = rule.Channel,
+                ConditionGroupJson = rule.ConditionGroupJson,
+                SortOrder = rule.SortOrder,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+            db.FormIntegrationRules.Add(copy);
+            await db.SaveChangesAsync();
+
+            if (rule.MexConfig is not null)
+            {
+                db.FormIntegrationRuleMexConfigs.Add(new FormIntegrationRuleMex
+                {
+                    RuleId = copy.Id,
+                    Action = rule.MexConfig.Action,
+                    FieldMappingsJson = rule.MexConfig.FieldMappingsJson,
+                });
+            }
+
+            if (rule.WebhookConfig is not null)
+            {
+                db.FormIntegrationRuleWebhooks.Add(new FormIntegrationRuleWebhook
+                {
+                    RuleId = copy.Id,
+                    Url = rule.WebhookConfig.Url,
+                    Method = rule.WebhookConfig.Method,
+                    HeadersJson = rule.WebhookConfig.HeadersJson,
+                    BodyTemplate = rule.WebhookConfig.BodyTemplate,
+                });
+            }
+        }
     }
 
     private async Task TrySendOutcomeEmailAsync(

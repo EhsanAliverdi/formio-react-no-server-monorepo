@@ -221,6 +221,77 @@ public class ReportTemplatesController(
         return Ok(MapDto(template, includeDrift: false));
     }
 
+    [HttpPost("{id:int}/duplicate")]
+    [RequirePermission(Permissions.Reports.Manage)]
+    public async Task<IActionResult> Duplicate(int id)
+    {
+        var user = HttpContext.GetCurrentUser();
+        if (user == null) return Unauthorized();
+
+        var source = await db.ReportTemplates
+            .AsNoTracking()
+            .Include(t => t.Form)
+            .FirstOrDefaultAsync(t => t.Id == id);
+        if (source == null) return NotFound(new { error = "Report template not found." });
+
+        var copyName = await NextCopyName(
+            source.Name,
+            name => db.ReportTemplates.AnyAsync(t => t.Name == name));
+        var now = DateTime.UtcNow;
+
+        var copy = new ReportTemplate
+        {
+            FormId = source.FormId,
+            Name = copyName,
+            Description = source.Description,
+            IsPublic = source.IsPublic,
+            CreatedBy = user.Id,
+            CreatedAt = now,
+            UpdatedAt = now,
+            ColumnsJson = source.ColumnsJson,
+            FiltersJson = source.FiltersJson,
+            DefaultSortField = source.DefaultSortField,
+            DefaultSortDirection = source.DefaultSortDirection,
+            DefaultPageSize = source.DefaultPageSize,
+            DisplayMode = source.DisplayMode,
+            SchemaVersion = source.SchemaVersion,
+            FieldDriftJson = null,
+            Tags = source.Tags,
+            Category = source.Category,
+            SharedWithRolesJson = source.SharedWithRolesJson,
+            GroupByJson = source.GroupByJson,
+            MeasuresJson = source.MeasuresJson,
+            ChartType = source.ChartType,
+            ChartConfigJson = source.ChartConfigJson,
+            DatasetId = source.DatasetId,
+        };
+
+        db.ReportTemplates.Add(copy);
+        await db.SaveChangesAsync();
+
+        var policies = await db.RlsPolicies
+            .AsNoTracking()
+            .Where(p => p.ReportTemplateId == id)
+            .OrderBy(p => p.Id)
+            .ToListAsync();
+        foreach (var policy in policies)
+        {
+            db.RlsPolicies.Add(new RlsPolicy
+            {
+                ReportTemplateId = copy.Id,
+                Name = policy.Name,
+                WhereFragment = policy.WhereFragment,
+                AppliestoRoles = policy.AppliestoRoles,
+                IsActive = policy.IsActive,
+                CreatedAt = now,
+            });
+        }
+
+        await db.SaveChangesAsync();
+        copy.Form = source.Form;
+        return CreatedAtAction(nameof(Get), new { id = copy.Id }, MapDto(copy, includeDrift: false));
+    }
+
     [HttpDelete("{id:int}")]
     [RequirePermission(Permissions.Reports.Manage)]
     public async Task<IActionResult> Delete(int id)
@@ -299,6 +370,16 @@ public class ReportTemplatesController(
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
         try { return JsonDocument.Parse(json).RootElement; } catch { return null; }
+    }
+
+    private static async Task<string> NextCopyName(string originalName, Func<string, Task<bool>> exists)
+    {
+        var baseName = $"Copy of {originalName}".Trim();
+        var candidate = baseName;
+        var suffix = 2;
+        while (await exists(candidate))
+            candidate = $"{baseName} {suffix++}";
+        return candidate;
     }
 
     // ── Favourites ────────────────────────────────────────────────────────────

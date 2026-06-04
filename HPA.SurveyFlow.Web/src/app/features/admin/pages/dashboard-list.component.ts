@@ -60,6 +60,9 @@ import { Dashboard } from '../../../core/models';
                       <a [routerLink]="['/admin/reporting/dashboards', dashboard.id, 'designer']" class="ta-btn ta-btn-primary px-3 py-1.5 text-xs">Design</a>
                       <a [routerLink]="['/admin/reporting/dashboards', dashboard.id, 'edit']" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs">Edit</a>
                       <a [routerLink]="['/reporting/d', dashboard.slug]" target="_blank" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs">View</a>
+                      <button type="button" (click)="duplicate(dashboard)" [disabled]="duplicatingId() === dashboard.id" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs disabled:opacity-50">
+                        {{ duplicatingId() === dashboard.id ? 'Copying...' : 'Duplicate' }}
+                      </button>
                       <button type="button" (click)="remove(dashboard)" class="ta-btn ta-btn-ghost px-3 py-1.5 text-xs text-red-600">Delete</button>
                     </div>
                   </td>
@@ -96,6 +99,7 @@ export class DashboardListComponent implements OnInit {
   offset = signal(0);
   loading = signal(true);
   error = signal('');
+  duplicatingId = signal<number | null>(null);
   pageSize = 25;
   readonly Math = Math;
   currentPage = computed(() => Math.floor(this.offset() / this.pageSize) + 1);
@@ -142,6 +146,22 @@ export class DashboardListComponent implements OnInit {
         this.load();
       },
       error: () => this.error.set('Failed to delete dashboard.'),
+    });
+  }
+
+  duplicate(dashboard: Dashboard): void {
+    if (this.duplicatingId() !== null) return;
+    this.error.set('');
+    this.duplicatingId.set(dashboard.id);
+    this.dashboardsService.duplicate(dashboard.id).subscribe({
+      next: () => {
+        this.duplicatingId.set(null);
+        this.load();
+      },
+      error: () => {
+        this.duplicatingId.set(null);
+        this.error.set('Failed to duplicate dashboard.');
+      },
     });
   }
 }

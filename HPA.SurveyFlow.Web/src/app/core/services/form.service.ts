@@ -54,6 +54,10 @@ export class FormService {
     return this.http.delete<{ success: boolean }>(this.api.apiUrl(`/api/forms/${id}`));
   }
 
+  duplicate(id: number): Observable<{ success: boolean; id: number }> {
+    return this.http.post<{ success: boolean; id: number }>(this.api.apiUrl(`/api/forms/${id}/duplicate`), {});
+  }
+
   submit(id: number, data: any, parentSubmissionId?: number | null): Observable<{
     success: boolean;
     id: number;

@@ -39,4 +39,8 @@ export class PageService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(this.api.apiUrl(`/api/pages/${id}`));
   }
+
+  duplicate(id: number): Observable<Page> {
+    return this.http.post<Page>(this.api.apiUrl(`/api/pages/${id}/duplicate`), {});
+  }
 }

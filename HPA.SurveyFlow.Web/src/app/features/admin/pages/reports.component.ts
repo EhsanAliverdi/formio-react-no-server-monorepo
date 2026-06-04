@@ -240,6 +240,9 @@ import { HelpTriggerComponent } from '../../../shared/help/help-trigger.componen
                     <div class="flex justify-end gap-2">
                       <button type="button" (click)="runReport(t)" class="ta-btn ta-btn-primary px-3 py-1.5 text-xs">Run</button>
                       <button type="button" (click)="editReport(t)" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs">Edit</button>
+                      <button type="button" (click)="duplicateReport(t)" [disabled]="duplicatingId() === t.id" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs disabled:opacity-50">
+                        {{ duplicatingId() === t.id ? 'Copying...' : 'Duplicate' }}
+                      </button>
                       <button type="button" (click)="deleteReport(t)" class="ta-btn ta-btn-ghost px-3 py-1.5 text-xs text-red-600">Delete</button>
                     </div>
                   </td>
@@ -303,6 +306,7 @@ export class ReportsComponent implements OnInit {
   error = signal('');
   deletingTemplate = signal<ReportTemplate | null>(null);
   deleting = signal(false);
+  duplicatingId = signal<number | null>(null);
 
   filterFormId = '';
   filterCategory = '';
@@ -412,6 +416,22 @@ export class ReportsComponent implements OnInit {
 
   editReport(t: ReportTemplate): void {
     this.router.navigate(['/admin/reports', t.form_id, 'designer'], { queryParams: { templateId: t.id } });
+  }
+
+  duplicateReport(t: ReportTemplate): void {
+    if (this.duplicatingId() !== null) return;
+    this.error.set('');
+    this.duplicatingId.set(t.id);
+    this.reportService.duplicate(t.id).subscribe({
+      next: () => {
+        this.duplicatingId.set(null);
+        this.loadTemplates();
+      },
+      error: () => {
+        this.duplicatingId.set(null);
+        this.error.set('Failed to duplicate report template.');
+      },
+    });
   }
 
   deleteReport(t: ReportTemplate): void { this.deletingTemplate.set(t); }

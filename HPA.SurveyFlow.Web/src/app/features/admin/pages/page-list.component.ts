@@ -62,6 +62,9 @@ import { Page } from '../../../core/models';
                       <div class="flex justify-end gap-2">
                         <a [routerLink]="['/admin/pages', page.id, 'designer']" class="ta-btn ta-btn-primary px-3 py-1.5 text-xs">Design</a>
                         <a [routerLink]="['/page', page.slug]" target="_blank" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs">View</a>
+                        <button type="button" (click)="duplicate(page)" [disabled]="duplicatingId() === page.id" class="ta-btn ta-btn-secondary px-3 py-1.5 text-xs disabled:opacity-50">
+                          {{ duplicatingId() === page.id ? 'Copying...' : 'Duplicate' }}
+                        </button>
                         <button type="button" (click)="remove(page)" class="ta-btn ta-btn-ghost px-3 py-1.5 text-xs text-red-600">Delete</button>
                       </div>
                     </td>
@@ -99,6 +102,7 @@ export class PageListComponent implements OnInit {
   offset = signal(0);
   loading = signal(true);
   error = signal('');
+  duplicatingId = signal<number | null>(null);
   pageSize = 25;
   readonly Math = Math;
   currentPage = computed(() => Math.floor(this.offset() / this.pageSize) + 1);
@@ -145,6 +149,22 @@ export class PageListComponent implements OnInit {
         this.load();
       },
       error: () => this.error.set('Failed to delete page.'),
+    });
+  }
+
+  duplicate(page: Page): void {
+    if (this.duplicatingId() !== null) return;
+    this.error.set('');
+    this.duplicatingId.set(page.id);
+    this.pageService.duplicate(page.id).subscribe({
+      next: () => {
+        this.duplicatingId.set(null);
+        this.load();
+      },
+      error: () => {
+        this.duplicatingId.set(null);
+        this.error.set('Failed to duplicate page.');
+      },
     });
   }
 }

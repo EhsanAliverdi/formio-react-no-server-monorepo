@@ -64,6 +64,10 @@ export class ReportTemplateService {
     return this.http.delete<void>(this.api.apiUrl(`/api/report-templates/${id}`));
   }
 
+  duplicate(id: number): Observable<ReportTemplate> {
+    return this.http.post<ReportTemplate>(this.api.apiUrl(`/api/report-templates/${id}/duplicate`), {});
+  }
+
   getFormFields(formId: number): Observable<FieldDescriptor[]> {
     return this.http.get<FieldDescriptor[]>(this.api.apiUrl(`/api/report-templates/form-fields/${formId}`));
   }

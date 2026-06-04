@@ -155,6 +155,14 @@ import { Form } from '../../../core/models';
                   </button>
                   <button
                     type="button"
+                    (click)="duplicateForm(form)"
+                    [disabled]="duplicatingId() === form.id"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition disabled:opacity-50"
+                  >
+                    {{ duplicatingId() === form.id ? 'Copying...' : 'Duplicate' }}
+                  </button>
+                  <button
+                    type="button"
                     (click)="deleteForm(form)"
                     class="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition"
                   >
@@ -188,6 +196,14 @@ import { Form } from '../../../core/models';
                       >
                         Edit
                       </a>
+                      <button
+                        type="button"
+                        (click)="duplicateForm(child)"
+                        [disabled]="duplicatingId() === child.id"
+                        class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition disabled:opacity-50"
+                      >
+                        {{ duplicatingId() === child.id ? 'Copying...' : 'Duplicate' }}
+                      </button>
                       <button
                         type="button"
                         (click)="deleteSubForm(child)"
@@ -236,6 +252,7 @@ export class AdminFormsComponent implements OnInit {
   offset = signal(0);
   loading = signal(true);
   error = signal('');
+  duplicatingId = signal<number | null>(null);
   searchQuery = '';
   pageSize = 25;
   readonly Math = Math;
@@ -367,6 +384,22 @@ export class AdminFormsComponent implements OnInit {
       },
       error: (err) => {
         this.toastr.error(err?.error?.error || 'Failed to delete sub-form.', 'Error');
+      },
+    });
+  }
+
+  duplicateForm(form: Form): void {
+    if (this.duplicatingId() !== null) return;
+    this.duplicatingId.set(form.id);
+    this.formService.duplicate(form.id).subscribe({
+      next: () => {
+        this.toastr.success(`Form "${form.name}" duplicated.`, 'Duplicated');
+        this.duplicatingId.set(null);
+        this.loadForms();
+      },
+      error: (err) => {
+        this.duplicatingId.set(null);
+        this.toastr.error(err?.error?.error || 'Failed to duplicate form.', 'Error');
       },
     });
   }
