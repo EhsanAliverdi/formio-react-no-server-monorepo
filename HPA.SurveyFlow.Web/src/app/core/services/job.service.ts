@@ -107,6 +107,21 @@ export class JobService {
     if (opts.category) params = params.set('category',  opts.category);
     return this.http.get<any>(this.api.apiUrl('/api/assets/tree'), { params });
   }
+
+  getMexRequests(opts: { q?: string; status?: string; limit?: number; offset?: number } = {}): Observable<{
+    items: MexRequestRecord[];
+    total: number;
+    limit: number;
+    offset: number;
+    last_created_at?: string | null;
+  }> {
+    let params = new HttpParams();
+    if (opts.q) params = params.set('q', opts.q);
+    if (opts.status) params = params.set('status', opts.status);
+    if (opts.limit !== undefined) params = params.set('limit', opts.limit);
+    if (opts.offset !== undefined) params = params.set('offset', opts.offset);
+    return this.http.get<any>(this.api.apiUrl('/api/assets/requests'), { params });
+  }
 }
 
 export interface AssetTreeNode extends ExternalAsset {
@@ -128,4 +143,19 @@ export interface ExternalAsset {
   last_synced_at: string;
   source_modified_at?: string | null;
   raw?: any;
+}
+
+export interface MexRequestRecord {
+  id: number;
+  submission_id: number;
+  form_name: string;
+  terminal_code?: string | null;
+  rule_name: string;
+  action?: string | null;
+  status: string;
+  status_code?: number | null;
+  triggered_at: string;
+  completed_at?: string | null;
+  request_number?: string | null;
+  error_message?: string | null;
 }

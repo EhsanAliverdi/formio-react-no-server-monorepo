@@ -134,6 +134,69 @@ public class AssetsController(AppDbContext db, ISchedulerFactory schedulerFactor
         });
     }
 
+    [HttpGet("requests")]
+    [RequirePermission(Permissions.Jobs.Read)]
+    public async Task<IActionResult> ListRequests(
+        [FromQuery] string? q = null,
+        [FromQuery] string? status = null,
+        [FromQuery] int limit = 50,
+        [FromQuery] int offset = 0)
+    {
+        limit = Math.Clamp(limit, 1, 200);
+        offset = Math.Max(0, offset);
+
+        var query = db.SubmissionRuleLogs
+            .AsNoTracking()
+            .Include(l => l.Submission).ThenInclude(s => s.Form)
+            .Where(l => l.RuleType == "integration"
+                && l.Channel == "mex"
+                && (l.Action == null || l.Action == "create_request")
+                && l.Submission.DeletedAt == null);
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var statusFilter = status.Trim().ToLowerInvariant();
+            query = query.Where(l => l.Status.ToLower() == statusFilter);
+        }
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var search = q.Trim().ToLower();
+            query = query.Where(l =>
+                l.RuleName.ToLower().Contains(search) ||
+                l.Submission.Form.Name.ToLower().Contains(search) ||
+                l.SubmissionId.ToString().Contains(search) ||
+                (l.ResponseJson != null && l.ResponseJson.ToLower().Contains(search)));
+        }
+
+        var total = await query.CountAsync();
+        var lastCreatedAt = await query.Select(l => (DateTime?)l.TriggeredAt).MaxAsync();
+
+        var logs = await query
+            .OrderByDescending(l => l.TriggeredAt)
+            .Skip(offset)
+            .Take(limit)
+            .ToListAsync();
+
+        var rows = logs.Select(l => new
+        {
+            id = l.Id,
+            submission_id = l.SubmissionId,
+            form_name = l.Submission.Form.Name,
+            terminal_code = l.Submission.TerminalCode,
+            rule_name = l.RuleName,
+            action = l.Action,
+            status = l.Status,
+            status_code = l.StatusCode,
+            triggered_at = l.TriggeredAt,
+            completed_at = l.CompletedAt,
+            request_number = ExtractRequestNumber(l.ResponseJson),
+            error_message = l.ErrorMessage,
+        }).ToList();
+
+        return Ok(new { items = rows, total, limit, offset, last_created_at = lastCreatedAt });
+    }
+
     [HttpPost("repair-hierarchy")]
     [RequirePermission(Permissions.Jobs.Manage)]
     public async Task<IActionResult> RepairHierarchy([FromQuery] string source = "mex")
@@ -415,6 +478,42 @@ public class AssetsController(AppDbContext db, ISchedulerFactory schedulerFactor
                 return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
         }
         return null;
+    }
+
+    private static string? ExtractRequestNumber(string? responseJson)
+    {
+        if (string.IsNullOrWhiteSpace(responseJson)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(responseJson);
+            if (TryExtractRequestNumber(doc.RootElement, out var requestNumber))
+                return requestNumber;
+
+            if (doc.RootElement.TryGetProperty("body", out var bodyEl)
+                || (doc.RootElement.TryGetProperty("result", out var result) && result.TryGetProperty("body", out bodyEl)))
+            {
+                var body = bodyEl.ValueKind == JsonValueKind.String ? bodyEl.GetString() : bodyEl.GetRawText();
+                if (!string.IsNullOrWhiteSpace(body))
+                {
+                    using var bodyDoc = JsonDocument.Parse(body);
+                    if (TryExtractRequestNumber(bodyDoc.RootElement, out requestNumber))
+                        return requestNumber;
+                }
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private static bool TryExtractRequestNumber(JsonElement root, out string? requestNumber)
+    {
+        requestNumber = null;
+        if (!root.TryGetProperty("requestNumber", out var value)
+            && !root.TryGetProperty("RequestNumber", out value))
+            return false;
+
+        requestNumber = value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText();
+        return !string.IsNullOrWhiteSpace(requestNumber);
     }
 
     private static Type? ResolveJobType(string typeName)

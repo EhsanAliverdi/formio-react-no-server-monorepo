@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { JobService, ExternalAsset, AssetTreeNode } from '../../../core/services/job.service';
+import { JobService, ExternalAsset, AssetTreeNode, MexRequestRecord } from '../../../core/services/job.service';
 import { HelpTriggerComponent } from '../../../shared/help/help-trigger.component';
 import { getFieldMap } from '../../../core/utils/field-maps/source-field-map.registry';
 import { renderGroups, RenderedGroup } from '../../../core/utils/field-maps/field-renderer';
@@ -28,7 +28,7 @@ const INTEGRATIONS: Integration[] = [
   {
     key: 'mex',
     label: 'MEX',
-    description: 'Maintenance management system. Syncs asset hierarchy and work orders.',
+    description: 'Maintenance management system. Syncs asset hierarchy and tracks requests created by SurveyFlow.',
     connected: true,
     dataTypes: [
       {
@@ -39,11 +39,11 @@ const INTEGRATIONS: Integration[] = [
         available: true,
       },
       {
-        key: 'work-orders',
-        label: 'Work Orders',
+        key: 'requests',
+        label: 'Requests',
         description: 'Planned — work order sync coming soon.',
         icon: 'work-order',
-        available: false,
+        available: true,
       },
     ],
   },
@@ -165,9 +165,9 @@ const INTEGRATIONS: Integration[] = [
                 [class]="dt.available ? 'group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition' : ''">
                 {{ dt.label }}
               </h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ dt.description }}</p>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ dataTypeDescription(dt) }}</p>
               @if (dt.available) {
-                <div class="mt-3 text-xs text-gray-400 dark:text-gray-500">Last synced: {{ formatDate(lastSynced()) }}</div>
+                <div class="mt-3 text-xs text-gray-400 dark:text-gray-500">{{ dataTypeTimestampLabel(dt) }}: {{ formatDate(dataTypeTimestamp(dt)) }}</div>
               }
             </button>
           }
@@ -176,6 +176,91 @@ const INTEGRATIONS: Integration[] = [
 
       <!-- ── Level 3: Records view ─────────────────────────────────────── -->
       @if (level() === 'records') {
+        @if (isRequestsView()) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div class="ta-admin-surface p-4">
+              <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Requests</div>
+              <div class="text-3xl font-bold text-indigo-700 dark:text-indigo-400">{{ requestTotal() | number }}</div>
+              <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">Latest created: {{ formatDate(requestLastCreatedAt()) }}</div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-3 mb-4">
+            <input type="search" [(ngModel)]="filterQ" (ngModelChange)="onSearch()"
+              placeholder="Search request, form, rule, submission..."
+              class="ta-admin-control flex-1 min-w-48 px-3 py-1.5 text-sm"/>
+            <select [(ngModel)]="requestStatus" (ngModelChange)="load()" aria-label="Filter by request status"
+              class="ta-admin-control px-3 py-1.5 text-sm">
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="success">Success</option>
+              <option value="failed">Failed</option>
+            </select>
+            <div class="text-sm text-gray-500 dark:text-gray-400 self-center ml-auto">
+              {{ loading() ? 'Loading...' : requests().length + ' of ' + requestTotal() + ' request(s)' }}
+            </div>
+          </div>
+
+          @if (error()) {
+            <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+          }
+
+          <div class="ta-admin-surface overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-300">Request</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-300">Form</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-300 w-28">Terminal</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-300 w-28">Status</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-300">Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (loading()) {
+                    <tr><td colspan="5" class="px-5 py-8 text-center text-gray-500">
+                      <div class="flex justify-center">
+                        <div class="w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    </td></tr>
+                  } @else if (requests().length === 0) {
+                    <tr><td colspan="5" class="px-5 py-8 text-center text-gray-500">
+                      No requests found. Submitted forms that create MEX requests will appear here.
+                    </td></tr>
+                  } @else {
+                    @for (request of requests(); track request.id) {
+                      <tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50/70 dark:hover:bg-gray-700/60 transition">
+                        <td class="px-4 py-3">
+                          <div class="font-semibold text-gray-900 dark:text-white">{{ request.request_number || 'Pending reference' }}</div>
+                          <div class="mt-0.5 text-xs text-gray-500">
+                            Submission #{{ request.submission_id }} · {{ request.rule_name }}
+                          </div>
+                          @if (request.error_message) {
+                            <div class="mt-1 text-xs text-red-600">{{ request.error_message }}</div>
+                          }
+                        </td>
+                        <td class="px-4 py-3 text-gray-700 dark:text-gray-200">{{ request.form_name }}</td>
+                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ request.terminal_code || 'All' }}</td>
+                        <td class="px-4 py-3">
+                          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                            [class]="request.status === 'success'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : request.status === 'failed'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'">
+                            {{ request.status }}
+                          </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ formatDate(request.triggered_at) }}</td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        } @else {
 
         <!-- Stat + action cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -340,6 +425,7 @@ const INTEGRATIONS: Integration[] = [
             </table>
           </div>
         </div>
+        }
       }
 
       <!-- ── Detail modal ──────────────────────────────────────────────── -->
@@ -467,6 +553,9 @@ export class SyncedDataComponent implements OnInit {
   bestEffortResult  = signal<any>(null);
 
   nodes      = signal<AssetTreeNode[]>([]);
+  requests   = signal<MexRequestRecord[]>([]);
+  requestTotal = signal(0);
+  requestLastCreatedAt = signal<string | null>(null);
   loading    = signal(false);
   error      = signal<string | null>(null);
   sources    = signal<{ source: string; count: number; last_synced_at: string }[]>([]);
@@ -475,6 +564,7 @@ export class SyncedDataComponent implements OnInit {
 
   filterQ      = '';
   filterActive = '';
+  requestStatus = '';
 
   selectedAsset  = signal<ExternalAsset | null>(null);
   rawLoading     = signal(false);
@@ -506,6 +596,7 @@ export class SyncedDataComponent implements OnInit {
       next: (res) => this.sources.set(res.sources),
       error: () => {},
     });
+    this.loadRequestSummary();
   }
 
   goTo(level: ViewLevel): void {
@@ -530,17 +621,39 @@ export class SyncedDataComponent implements OnInit {
     this.level.set('records');
     this.filterQ = '';
     this.filterActive = '';
+    this.requestStatus = '';
     this.syncOneResult.set(null);
     this.bestEffortResult.set(null);
     this.load();
   }
 
   recordCount(dtKey: string): number {
+    if (dtKey === 'requests') return this.requestTotal();
     if (dtKey !== 'assets') return 0;
     return this.sources().find(s => s.source === this.activeIntegration()?.key)?.count ?? 0;
   }
 
+  dataTypeDescription(dt: DataType): string {
+    return dt.key === 'requests' ? 'MEX maintenance requests created by SurveyFlow submissions.' : dt.description;
+  }
+
+  dataTypeTimestampLabel(dt: DataType): string {
+    return dt.key === 'requests' ? 'Latest created' : 'Last synced';
+  }
+
+  dataTypeTimestamp(dt: DataType): string | null {
+    return dt.key === 'requests' ? this.requestLastCreatedAt() : this.lastSynced();
+  }
+
+  isRequestsView(): boolean {
+    return this.activeDataType()?.key === 'requests';
+  }
+
   load(): void {
+    if (this.isRequestsView()) {
+      this.loadRequests();
+      return;
+    }
     this.loading.set(true);
     this.error.set(null);
     this.jobService.getAssetTree({
@@ -569,6 +682,38 @@ export class SyncedDataComponent implements OnInit {
   onSearch(): void {
     clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.load(), 350);
+  }
+
+  private loadRequestSummary(): void {
+    this.jobService.getMexRequests({ limit: 1 }).subscribe({
+      next: (res) => {
+        this.requestTotal.set(res.total ?? 0);
+        this.requestLastCreatedAt.set(res.last_created_at ?? null);
+      },
+      error: () => {},
+    });
+  }
+
+  private loadRequests(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.jobService.getMexRequests({
+      q: this.filterQ || undefined,
+      status: this.requestStatus || undefined,
+      limit: 100,
+      offset: 0,
+    }).subscribe({
+      next: (res) => {
+        this.requests.set(res.items ?? []);
+        this.requestTotal.set(res.total ?? 0);
+        this.requestLastCreatedAt.set(res.last_created_at ?? null);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err?.error?.error || 'Failed to load requests.');
+      },
+    });
   }
 
   toggleNode(externalId: string): void {
