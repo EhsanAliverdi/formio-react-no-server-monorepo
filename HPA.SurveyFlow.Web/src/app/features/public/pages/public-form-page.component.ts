@@ -448,6 +448,7 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
         this.submitting.set(false);
         this.previewOpen.set(false);
         this.handleSubmitResult(res);
+        this.notifyEmbeddedSubmission(res);
       },
       error: (err: any) => {
         this.submitting.set(false);
@@ -459,6 +460,11 @@ export class PublicFormPageComponent implements OnInit, OnDestroy {
         this.submitResultRaw.set({ level: 'error', message: msg });
       },
     });
+  }
+
+  private notifyEmbeddedSubmission(res: any): void {
+    if (this.route.snapshot.queryParamMap.get('embed') !== '1') return;
+    window.parent?.postMessage({ type: 'surveyflow:form-submitted', submissionId: res?.id ?? null }, window.location.origin);
   }
 
   private handleSubmitResult(res: any): void {

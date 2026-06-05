@@ -280,9 +280,9 @@ internal static class DemoPagesSeedData
               <img src="{{logoUrl}}" alt="Hutchison Ports" />
             </a>
             <div class="hp-menu">
-              <button class="hp-menu-button" type="button">Report Fault</button>
+              <button class="hp-menu-button" type="button" data-sf-open-form-modal="{{faultFormId}}">Report Fault</button>
               <div class="hp-dropdown">
-                <a href="/forms/{{faultFormId}}/fill">Create fault report</a>
+                <a href="/form-public/{{faultFormId}}" data-sf-open-form-modal="{{faultFormId}}">Create fault report</a>
               </div>
             </div>
           </nav>

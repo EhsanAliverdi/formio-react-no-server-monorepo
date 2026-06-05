@@ -1,7 +1,7 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { PageService } from '../../../core/services/page.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SettingsService } from '../../../core/services/settings.service';
@@ -42,8 +42,19 @@ import type { HeaderUser } from '../../../template/tail-admin/layout/app-header.
         </app-layout>
       } @else {
         <article class="dynamic-page dynamic-page-canvas">
-          <div [innerHTML]="safeDocument()"></div>
+          <div [innerHTML]="safeDocument()" (click)="handleDynamicClick($event)"></div>
         </article>
+      }
+
+      @if (formModalUrl()) {
+        <div class="form-modal-backdrop" role="dialog" aria-modal="true">
+          <div class="form-modal-panel">
+            <button type="button" class="form-modal-close" aria-label="Close form" (click)="closeFormModal()">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <iframe [src]="formModalUrl()" title="Fault report form"></iframe>
+          </div>
+        </div>
       }
     }
   `,
@@ -52,6 +63,60 @@ import type { HeaderUser } from '../../../template/tail-admin/layout/app-header.
     .dynamic-page-canvas { min-height: 100vh; }
     .dynamic-page-framed { border-radius: 8px; overflow: hidden; }
     .dynamic-page iframe { max-width: 100%; }
+    .form-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.68);
+    }
+    .form-modal-panel {
+      position: relative;
+      width: min(960px, 100%);
+      height: min(86vh, 920px);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.35);
+    }
+    .form-modal-panel iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+    }
+    .form-modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      background: #fff;
+      color: #111827;
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+    }
+    .form-modal-close:hover { background: #f3f4f6; }
+    @media (max-width: 640px) {
+      .form-modal-backdrop { padding: 0; }
+      .form-modal-panel {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+    }
   `],
 })
 export class DynamicPageComponent implements OnInit {
@@ -67,6 +132,7 @@ export class DynamicPageComponent implements OnInit {
   siteSettings = signal<SiteSettings | null>(null);
   loading = signal(true);
   error = signal('');
+  formModalUrl = signal<SafeResourceUrl | null>(null);
 
   readonly publicNavItems: NavItem[] = [
     { name: 'Home', path: '/', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -125,6 +191,33 @@ export class DynamicPageComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  handleDynamicClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    const trigger = target?.closest?.('[data-sf-open-form-modal]') as HTMLElement | null;
+    if (!trigger) return;
+
+    const rawId = trigger.getAttribute('data-sf-open-form-modal');
+    const formId = Number(rawId);
+    if (!Number.isFinite(formId) || formId <= 0) return;
+
+    event.preventDefault();
+    this.openFormModal(formId);
+  }
+
+  openFormModal(formId: number): void {
+    this.formModalUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(`/form-public/${formId}?embed=1`));
+  }
+
+  closeFormModal(): void {
+    this.formModalUrl.set(null);
+  }
+
+  @HostListener('window:message', ['$event'])
+  handleWindowMessage(event: MessageEvent): void {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === 'surveyflow:form-submitted') this.closeFormModal();
   }
 
   logout(): void {
